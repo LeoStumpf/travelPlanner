@@ -25,3 +25,12 @@ dart run build_runner build   # nach Änderungen an lib/data/db.dart
 flutter test
 flutter run
 ```
+
+## Release
+
+```bash
+flutter build apk --release --split-per-abi   # kleinere APKs pro Architektur
+flutter build appbundle --release             # für den Play Store
+```
+
+Signiert wird mit dem Upload-Key aus `android/key.properties`. Die Datei liegt nicht im Repo, der Keystore liegt unter `~/travelplanner-upload-keystore.jks`. Fehlt die Datei, wird mit dem Debug-Key signiert. Das App-Icon entsteht aus `assets/icon/*.svg` (als PNG rendern, dann `dart run flutter_launcher_icons`).
