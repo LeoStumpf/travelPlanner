@@ -189,6 +189,21 @@ void main() {
     });
   });
 
+  group('resizeStart', () {
+    test('arriving a day earlier only changes the item', () {
+      final r = Scheduler.resizeStart(trip(), 'lyon', -minutesPerDay);
+      expect(r.changedIds, {'lyon'});
+      expect(dayOf(byId(r)['lyon']!.start!), 2);
+      expect(findConflicts(r.items), hasLength(1), reason: 'now overlaps Paris');
+    });
+
+    test('start can not pass the end', () {
+      final r = Scheduler.resizeStart(trip(), 'lyon', 10 * minutesPerDay);
+      final l = byId(r)['lyon']!;
+      expect(l.end! - l.start!, 60);
+    });
+  });
+
   group('insert / reschedule', () {
     test('insert with push makes room', () {
       final r = Scheduler.insert(trip(), stay('dijon', 3, 2), ShiftMode.push);

@@ -69,4 +69,25 @@ void main() {
     expect(after.item(flight.id)!.start, flight.start);
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('two-finger pinch zooms the time axis', (tester) async {
+    await pump(tester);
+    double dayWidth() => tester.getTopLeft(find.text('Tag 2')).dx - tester.getTopLeft(find.text('Tag 1')).dx;
+    final before = dayWidth();
+
+    final center = tester.getCenter(find.text('Tag 2')) + const Offset(0, 200);
+    final a = await tester.startGesture(center - const Offset(40, 0), pointer: 1);
+    final b = await tester.startGesture(center + const Offset(40, 0), pointer: 2);
+    await tester.pump();
+    for (var k = 0; k < 5; k++) {
+      await a.moveBy(const Offset(-16, 0));
+      await b.moveBy(const Offset(16, 0));
+      await tester.pump();
+    }
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+
+    expect(dayWidth(), greaterThan(before * 1.8));
+  });
 }

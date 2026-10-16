@@ -8,6 +8,8 @@
 // * children  – items anchored to another item (lodging/activities via
 //               parentId, transports via their destination). They always
 //               travel with their anchor unless they are fixed.
+import 'dart:math' as math;
+
 import 'models.dart';
 import 'time.dart';
 
@@ -109,6 +111,17 @@ class Scheduler {
           break;
       }
     }
+    return s._result();
+  }
+
+  /// Moves the start of item [id] by [delta] minutes (arrive earlier/later).
+  /// Only the item changes; overlaps show up as conflicts.
+  static ScheduleResult resizeStart(List<PlanItem> items, String id, int delta) {
+    final s = Scheduler._(items);
+    final target = s._byId[id];
+    if (target == null || !target.isScheduled || delta == 0) return s._result();
+    final newStart = math.min(target.start! + delta, target.end! - 60);
+    if (newStart != target.start) s._set(target.copyWith(start: newStart));
     return s._result();
   }
 
