@@ -1,0 +1,87 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+
+import '../../domain/models.dart';
+import '../editor/card_editor_page.dart';
+import 'card_preview.dart';
+
+/// Google-Keep-like masonry grid of notes, checklists, links and images.
+class NotesView extends ConsumerStatefulWidget {
+  final TripData data;
+  const NotesView({super.key, required this.data});
+
+  @override
+  ConsumerState<NotesView> createState() => _NotesViewState();
+}
+
+class _NotesViewState extends ConsumerState<NotesView> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.toLowerCase();
+    bool matches(NoteCard c) =>
+        q.isEmpty ||
+        c.title.toLowerCase().contains(q) ||
+        c.text.toLowerCase().contains(q) ||
+        (c.url ?? '').toLowerCase().contains(q) ||
+        c.checklist.any((e) => e.text.toLowerCase().contains(q));
+    final cards = widget.data.cards.where(matches).toList();
+    final pinned = cards.where((c) => c.pinned).toList();
+    final others = cards.where((c) => !c.pinned).toList();
+
+    Widget grid(List<NoteCard> list) => SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          sliver: SliverMasonryGrid.count(
+            crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 3 : 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childCount: list.length,
+            itemBuilder: (_, k) => GestureDetector(
+              onTap: () => openCardEditor(context, widget.data, card: list[k]),
+              child: CardPreview(card: list[k], data: widget.data),
+            ),
+          ),
+        );
+
+    Widget header(String t) => SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: Text(t, style: Theme.of(context).textTheme.labelLarge),
+          ),
+        );
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: SearchBar(
+              hintText: 'Notizen durchsuchen',
+              leading: const Icon(Icons.search),
+              elevation: const WidgetStatePropertyAll(0),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+        ),
+        if (cards.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'Sammle hier Ideen, Links, Screenshots und Checklisten.\nTippe auf + um etwas hinzuzufügen.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        if (pinned.isNotEmpty) ...[header('ANGEHEFTET'), grid(pinned)],
+        if (others.isNotEmpty) ...[if (pinned.isNotEmpty) header('WEITERE'), grid(others)],
+        const SliverToBoxAdapter(child: SizedBox(height: 96)),
+      ],
+    );
+  }
+}
