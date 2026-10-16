@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -85,7 +87,12 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> {
     final cleaned = c.copyWith(
       checklist: [for (final e in c.checklist) if (e.text.trim().isNotEmpty) e],
     );
-    await ref.read(repositoryProvider).saveCard(cleaned);
+    // Leaving without changes must not add an undo step.
+    if (!widget.isNew && jsonEncode(cleaned.toJson()) == jsonEncode(widget.initial.toJson())) return;
+    final name = cleaned.title.isEmpty ? 'Notiz' : '„${cleaned.title}“';
+    await ref
+        .read(planActionsProvider)
+        .record(widget.tripId, widget.isNew ? '$name angelegt' : '$name geändert', (r) => r.saveCard(cleaned));
   }
 
   @override
@@ -291,7 +298,9 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> {
           }
         } else if (await confirm(context, 'Notiz löschen?')) {
           _deleted = true;
-          await ref.read(repositoryProvider).deleteCard(data, _c.id);
+          await ref
+              .read(planActionsProvider)
+              .record(widget.tripId, 'Notiz gelöscht', (r) => r.deleteCard(data, _c.id));
         } else {
           return;
         }

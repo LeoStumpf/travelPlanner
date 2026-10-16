@@ -205,7 +205,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         if (others > 0) '$others weitere mitverschoben',
         if (conflicts > 0) '$conflicts Konflikt${conflicts == 1 ? '' : 'e'}',
       ].join(' · '),
-      action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo()),
+      action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(data.trip.id)),
     );
   }
 

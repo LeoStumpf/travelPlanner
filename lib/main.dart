@@ -18,7 +18,9 @@ Future<void> main() async {
   final docs = await getApplicationDocumentsDirectory();
   final attachments = Directory(p.join(docs.path, 'attachments'));
   await attachments.create(recursive: true);
-  final repo = Repository(AppDatabase(), AttachmentStore(attachments));
+  final store = AttachmentStore(attachments);
+  await store.emptyTrash();
+  final repo = Repository(AppDatabase(), store);
 
   runApp(ProviderScope(
     overrides: [repositoryProvider.overrideWithValue(repo)],

@@ -59,17 +59,20 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
     if (data == null) return;
 
     NoteCard? last;
-    for (final m in media) {
-      last = await _store(data, m);
-    }
+    await ref.read(planActionsProvider).record(tripId, 'Geteilte Inhalte gespeichert', (_) async {
+      for (final m in media) {
+        last = await _store(data, m) ?? last;
+      }
+    });
     final ctx = navigatorKey.currentContext;
-    if (last == null || ctx == null || !ctx.mounted) return;
+    final card = last;
+    if (card == null || ctx == null || !ctx.mounted) return;
     openTrip(ctx, ref, tripId);
     ref.read(tripUiProvider.notifier).setView(TripView.notes);
     final fresh = await repo.loadTrip(tripId);
     final ctx2 = navigatorKey.currentContext;
     if (fresh != null && ctx2 != null && ctx2.mounted) {
-      await openCardEditor(ctx2, fresh, card: fresh.card(last.id));
+      await openCardEditor(ctx2, fresh, card: fresh.card(card.id));
     }
   }
 

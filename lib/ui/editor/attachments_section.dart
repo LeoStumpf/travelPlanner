@@ -91,32 +91,28 @@ class AttachmentsSection extends ConsumerWidget {
   Future<void> _addImage(BuildContext context, WidgetRef ref, ImageSource source) async {
     final x = await ImagePicker().pickImage(source: source, maxWidth: 2400, imageQuality: 85);
     if (x == null) return;
-    final repo = ref.read(repositoryProvider);
-    final a = await repo.files.addBytes(
-      tripId: tripId,
-      ownerId: ownerId,
-      bytes: await x.readAsBytes(),
-      fileName: x.name,
-    );
-    await repo.saveAttachment(a);
+    final bytes = await x.readAsBytes();
+    await ref.read(planActionsProvider).record(tripId, 'Bild angehängt', (repo) async {
+      final a = await repo.files.addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: x.name);
+      await repo.saveAttachment(a);
+    });
   }
 
   Future<void> _addFile(BuildContext context, WidgetRef ref) async {
     final f = await FilePicker.pickFile(dialogTitle: 'Datei anhängen');
     if (f == null) return;
-    final repo = ref.read(repositoryProvider);
-    final a = await repo.files.addBytes(
-      tripId: tripId,
-      ownerId: ownerId,
-      bytes: await f.xFile.readAsBytes(),
-      fileName: f.name,
-    );
-    await repo.saveAttachment(a);
+    final bytes = await f.xFile.readAsBytes();
+    await ref.read(planActionsProvider).record(tripId, '„${f.name}“ angehängt', (repo) async {
+      final a = await repo.files.addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: f.name);
+      await repo.saveAttachment(a);
+    });
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref, Attachment a) async {
     if (await confirm(context, '„${a.fileName}“ entfernen?')) {
-      await ref.read(repositoryProvider).deleteAttachment(a);
+      await ref
+          .read(planActionsProvider)
+          .record(tripId, '„${a.fileName}“ entfernt', (repo) => repo.deleteAttachment(a));
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/db.dart';
 import '../data/repository.dart';
 import '../domain/models.dart';
 import '../domain/scheduler.dart';
@@ -83,51 +84,60 @@ class TripUiNotifier extends Notifier<TripUi> {
 
 final tripUiProvider = NotifierProvider<TripUiNotifier, TripUi>(TripUiNotifier.new);
 
-/// One undoable change to plan items: what they looked like before
-/// (null = the item did not exist).
+/// One undoable step: the trip's documents as they were before.
 class UndoEntry {
   final String label;
   final String tripId;
-  final Map<String, PlanItem?> before;
+  final List<DocRow> before;
   const UndoEntry(this.label, this.tripId, this.before);
 }
 
-class UndoNotifier extends Notifier<List<UndoEntry>> {
+/// Undo history per trip (kept while the app runs).
+class UndoNotifier extends Notifier<Map<String, List<UndoEntry>>> {
   @override
-  List<UndoEntry> build() => const [];
+  Map<String, List<UndoEntry>> build() => const {};
 
   void push(UndoEntry e) {
-    final next = [...state, e];
-    state = next.length > 50 ? next.sublist(next.length - 50) : next;
+    final list = [...?state[e.tripId], e];
+    state = {...state, e.tripId: list.length > 50 ? list.sublist(list.length - 50) : list};
   }
 
-  UndoEntry? pop() {
-    if (state.isEmpty) return null;
-    final e = state.last;
-    state = state.sublist(0, state.length - 1);
-    return e;
+  UndoEntry? pop(String tripId) {
+    final list = state[tripId];
+    if (list == null || list.isEmpty) return null;
+    state = {...state, tripId: list.sublist(0, list.length - 1)};
+    return list.last;
   }
 
-  void clear() => state = const [];
+  void forget(String tripId) => state = {...state}..remove(tripId);
 }
 
-final undoProvider = NotifierProvider<UndoNotifier, List<UndoEntry>>(UndoNotifier.new);
+final undoProvider = NotifierProvider<UndoNotifier, Map<String, List<UndoEntry>>>(UndoNotifier.new);
 
-/// Write operations on plan items that record undo history.
+/// Label of the step that undo would revert, or null.
+final undoLabelProvider = Provider.family<String?, String>(
+  (ref, tripId) => ref.watch(undoProvider)[tripId]?.lastOrNull?.label,
+);
+
+/// Every change to a trip goes through here so it can be undone.
 class PlanActions {
   final Ref ref;
   PlanActions(this.ref);
 
   Repository get _repo => ref.read(repositoryProvider);
 
-  /// Saves new or changed items as one undoable step.
+  /// Runs [change] as one undoable step.
+  Future<T> record<T>(String tripId, String label, Future<T> Function(Repository repo) change) async {
+    final before = await _repo.snapshotTrip(tripId);
+    final result = await change(_repo);
+    ref.read(undoProvider.notifier).push(UndoEntry(label, tripId, before));
+    return result;
+  }
+
   Future<void> saveItems(TripData data, Iterable<PlanItem> items, String label) async {
     final list = items.toList();
     if (list.isEmpty) return;
-    ref
-        .read(undoProvider.notifier)
-        .push(UndoEntry(label, data.trip.id, {for (final i in list) i.id: data.item(i.id)}));
-    await _repo.saveItems(list);
+    await record(data.trip.id, label, (r) => r.saveItems(list));
   }
 
   Future<void> applySchedule(TripData data, ScheduleResult r, String label) =>
@@ -136,30 +146,14 @@ class PlanActions {
   Future<void> deleteItem(TripData data, String id) async {
     final item = data.item(id);
     if (item == null) return;
-    // Linked items lose their anchor; remember them so undo restores the links.
-    final affected = <String, PlanItem?>{
-      id: item,
-      for (final i in data.items)
-        if (i.parentId == id || i.fromId == id || i.toId == id) i.id: i,
-    };
-    ref.read(undoProvider.notifier).push(UndoEntry('„${item.title}“ gelöscht', data.trip.id, affected));
-    await _repo.deleteItem(data, id);
+    await record(data.trip.id, '„${item.title}“ gelöscht', (r) => r.deleteItem(data, id));
   }
 
-  /// Reverts the last step. Returns its label, or null if nothing to undo.
-  Future<String?> undo() async {
-    final e = ref.read(undoProvider.notifier).pop();
+  /// Reverts the last step of [tripId]. Returns its label, or null.
+  Future<String?> undo(String tripId) async {
+    final e = ref.read(undoProvider.notifier).pop(tripId);
     if (e == null) return null;
-    final created = [for (final en in e.before.entries) if (en.value == null) en.key];
-    if (created.isNotEmpty) {
-      final data = await _repo.loadTrip(e.tripId);
-      if (data != null) {
-        for (final id in created) {
-          await _repo.deleteItem(data, id);
-        }
-      }
-    }
-    await _repo.saveItems([for (final v in e.before.values) ?v]);
+    await _repo.restoreTrip(tripId, e.before);
     return e.label;
   }
 }

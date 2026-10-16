@@ -116,14 +116,17 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
   }
 
   Future<void> _savePosition(String id, Offset p) async {
-    final repo = ref.read(repositoryProvider);
+    final actions = ref.read(planActionsProvider);
     final item = data.item(id);
-    if (item != null) {
-      await repo.saveItem(item.copyWith(canvasX: p.dx, canvasY: p.dy));
-    } else {
-      final c = data.card(id);
-      if (c != null) await repo.saveCard(c.copyWith(canvasX: p.dx, canvasY: p.dy));
-    }
+    final card = data.card(id);
+    final title = item?.title ?? (card?.title.isNotEmpty == true ? card!.title : 'Notiz');
+    await actions.record(data.trip.id, '„$title“ auf dem Canvas verschoben', (repo) async {
+      if (item != null) {
+        await repo.saveItem(item.copyWith(canvasX: p.dx, canvasY: p.dy));
+      } else if (card != null) {
+        await repo.saveCard(card.copyWith(canvasX: p.dx, canvasY: p.dy));
+      }
+    });
   }
 
   Future<void> _tapNode(String id) async {
@@ -139,14 +142,17 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
       final a = _connectFrom!;
       setState(() => _connectFrom = null);
       final existing = data.edges.where((e) => (e.fromId == a && e.toId == id) || (e.fromId == id && e.toId == a));
-      final repo = ref.read(repositoryProvider);
+      final actions = ref.read(planActionsProvider);
       if (existing.isNotEmpty) {
-        for (final e in existing) {
-          await repo.deleteEdge(e.id);
-        }
+        await actions.record(data.trip.id, 'Verbindung entfernt', (repo) async {
+          for (final e in existing) {
+            await repo.deleteEdge(e.id);
+          }
+        });
         if (mounted) showSnack(context, 'Verbindung entfernt');
       } else {
-        await repo.saveEdge(Edge(id: newId(), tripId: data.trip.id, fromId: a, toId: id));
+        await actions.record(data.trip.id, 'Verbindung erstellt',
+            (repo) => repo.saveEdge(Edge(id: newId(), tripId: data.trip.id, fromId: a, toId: id)));
       }
       return;
     }

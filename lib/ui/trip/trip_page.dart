@@ -30,7 +30,7 @@ class _TripPageState extends ConsumerState<TripPage> {
   Widget build(BuildContext context) {
     final async = ref.watch(tripDataProvider(widget.tripId));
     final ui = ref.watch(tripUiProvider);
-    final canUndo = ref.watch(undoProvider).isNotEmpty;
+    final undoLabel = ref.watch(undoLabelProvider(widget.tripId));
     _visited.add(ui.view);
 
     return async.when(
@@ -44,15 +44,17 @@ class _TripPageState extends ConsumerState<TripPage> {
             title: Text(data.trip.title),
             actions: [
               IconButton(
-                tooltip: 'Rückgängig',
-                onPressed: canUndo ? _undo : null,
+                tooltip: undoLabel == null ? 'Rückgängig' : 'Rückgängig: $undoLabel',
+                onPressed: undoLabel != null ? _undo : null,
                 icon: const Icon(Icons.undo),
               ),
               PopupMenuButton<String>(
                 onSelected: (v) async {
                   if (v == 'settings') {
                     final t = await showTripSettingsDialog(context, data.trip);
-                    if (t != null) await ref.read(repositoryProvider).saveTrip(t);
+                    if (t != null) {
+                      await ref.read(planActionsProvider).record(t.id, 'Reise bearbeitet', (r) => r.saveTrip(t));
+                    }
                   } else if (v == 'export') {
                     if (context.mounted) await exportTrip(context, ref, data.trip);
                   }
@@ -103,7 +105,7 @@ class _TripPageState extends ConsumerState<TripPage> {
   }
 
   Future<void> _undo() async {
-    final label = await ref.read(planActionsProvider).undo();
+    final label = await ref.read(planActionsProvider).undo(widget.tripId);
     if (label != null && mounted) showSnack(context, 'Rückgängig: $label');
   }
 }

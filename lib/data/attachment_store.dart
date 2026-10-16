@@ -49,9 +49,36 @@ class AttachmentStore {
     );
   }
 
+  Directory get _trash => Directory(p.join(root.path, '.trash'));
+  File _trashFor(Attachment a) => File(p.join(_trash.path, a.relPath));
+
+  /// Moves the file to the trash so that an undo can bring it back.
   Future<void> delete(Attachment a) async {
     final f = fileFor(a);
-    if (await f.exists()) await f.delete();
+    if (!await f.exists()) return;
+    final t = _trashFor(a);
+    await t.parent.create(recursive: true);
+    await f.rename(t.path);
+  }
+
+  /// Brings a file back from the trash (after an undo).
+  Future<void> restore(Attachment a) async {
+    final f = fileFor(a);
+    final t = _trashFor(a);
+    if (await f.exists() || !await t.exists()) return;
+    await f.parent.create(recursive: true);
+    await t.rename(f.path);
+  }
+
+  Future<void> deletePermanently(Attachment a) async {
+    for (final f in [fileFor(a), _trashFor(a)]) {
+      if (await f.exists()) await f.delete();
+    }
+  }
+
+  /// Called on app start: undo history does not survive a restart.
+  Future<void> emptyTrash() async {
+    if (await _trash.exists()) await _trash.delete(recursive: true);
   }
 
   static String mimeFor(String fileName) {

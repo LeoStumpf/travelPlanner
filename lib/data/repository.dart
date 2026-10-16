@@ -130,7 +130,29 @@ class Repository {
     final data = await loadTrip(tripId);
     await (db.delete(db.docs)..where((d) => d.tripId.equals(tripId))).go();
     for (final a in data?.attachments ?? const <Attachment>[]) {
-      await files.delete(a);
+      await files.deletePermanently(a);
+    }
+  }
+
+  /// All stored documents of a trip, for undo.
+  Future<List<DocRow>> snapshotTrip(String tripId) =>
+      (db.select(db.docs)..where((d) => d.tripId.equals(tripId))).get();
+
+  /// Puts a trip back to [rows] exactly (documents and attachment files).
+  Future<void> restoreTrip(String tripId, List<DocRow> rows) async {
+    final current = await snapshotTrip(tripId);
+    final keep = {for (final r in rows) r.id};
+    await db.transaction(() async {
+      await (db.delete(db.docs)..where((d) => d.tripId.equals(tripId))).go();
+      await db.batch((b) => b.insertAll(db.docs, rows));
+    });
+    for (final r in current) {
+      if (r.type == 'attachment' && !keep.contains(r.id)) {
+        await files.delete(Attachment.fromJson(_decode(r.json)));
+      }
+    }
+    for (final r in rows) {
+      if (r.type == 'attachment') await files.restore(Attachment.fromJson(_decode(r.json)));
     }
   }
 

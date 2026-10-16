@@ -425,7 +425,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       showSnack(
         context,
         '${moved == 1 ? '1 weiteres Element' : '$moved weitere Elemente'} verschoben (${mode.shortLabel})',
-        action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo()),
+        action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(widget.tripId)),
       );
     }
     Navigator.pop(context, item.id);

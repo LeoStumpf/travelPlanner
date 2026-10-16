@@ -96,7 +96,6 @@ class TripsPage extends ConsumerWidget {
 
 void openTrip(BuildContext context, WidgetRef ref, String tripId) {
   ref.read(tripUiProvider.notifier).reset();
-  ref.read(undoProvider.notifier).clear();
   Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => TripPage(tripId: tripId)));
 }
@@ -181,7 +180,7 @@ class _TripTile extends ConsumerWidget {
     switch (v) {
       case 'edit':
         final t = await showTripSettingsDialog(context, trip);
-        if (t != null) await repo.saveTrip(t);
+        if (t != null) await ref.read(planActionsProvider).record(t.id, 'Reise bearbeitet', (r) => r.saveTrip(t));
       case 'export':
         await exportTrip(context, ref, trip);
       case 'copy':
@@ -193,7 +192,10 @@ class _TripTile extends ConsumerWidget {
           'Reise „${trip.title}“ löschen?',
           'Alle Orte, Notizen und Anhänge dieser Reise werden entfernt.',
         );
-        if (ok) await repo.deleteTrip(trip.id);
+        if (ok) {
+          await repo.deleteTrip(trip.id);
+          ref.read(undoProvider.notifier).forget(trip.id);
+        }
     }
   }
 }

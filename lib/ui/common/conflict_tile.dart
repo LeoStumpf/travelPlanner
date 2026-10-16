@@ -38,7 +38,7 @@ class ConflictTile extends ConsumerWidget {
                     showSnack(
                       context,
                       'Behoben: ${fix.label}',
-                      action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo()),
+                      action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(data.trip.id)),
                     );
                   }
                 },
