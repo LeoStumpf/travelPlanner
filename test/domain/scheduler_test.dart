@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_planner/domain/analysis.dart';
+import 'package:travel_planner/domain/demo.dart';
 import 'package:travel_planner/domain/models.dart';
 import 'package:travel_planner/domain/scheduler.dart';
 import 'package:travel_planner/domain/time.dart';
@@ -245,6 +246,87 @@ void main() {
       expect(rows['a'], 0);
       expect(rows['b'], 1);
       expect(rows['c'], 0);
+    });
+  });
+
+  group('conflict fixes', () {
+    PlanItem tgv({int day = 3}) => PlanItem(
+          id: 'tgv',
+          tripId: 't',
+          kind: ItemKind.transport,
+          title: 'TGV',
+          fromId: 'paris',
+          toId: 'lyon',
+          start: at(day, 11 * 60),
+          end: at(day, 13 * 60),
+          createdAt: _t0,
+        );
+
+    List<PlanItem> applyFix(List<PlanItem> items, Conflict c) {
+      final changed = {for (final i in c.fix!.apply(items)) i.id: i};
+      return [for (final i in items) changed[i.id] ?? i];
+    }
+
+    test('moving the destination later leaves a day without a place, fix extends the origin', () {
+      final items = [...trip(), tgv()];
+      final r = Scheduler.move(items, 'lyon', minutesPerDay, ShiftMode.following);
+      final c = findConflicts(r.items).single;
+      expect(c.itemId, 'tgv');
+      expect(c.otherId, 'paris');
+      expect(c.message, contains('1 Tag ohne Ort'));
+
+      final fixed = applyFix(r.items, c);
+      expect(findConflicts(fixed), isEmpty);
+      final paris = fixed.firstWhere((i) => i.id == 'paris');
+      expect(paris.end, at(4, 11 * 60), reason: 'Paris now lasts until the train leaves');
+    });
+
+    test('origin ending after departure is fixed by shortening it', () {
+      final items = [...trip(), tgv()];
+      final r = Scheduler.resizeEnd(items, 'paris', minutesPerDay, ShiftMode.single);
+      final c = findConflicts(r.items).firstWhere((c) => c.otherId == 'paris' && c.itemId == 'tgv');
+      expect(c.fix!.label, contains('kürzen'));
+      expect(findConflicts(applyFix(r.items, c)).where((c) => c.itemId == 'tgv'), isEmpty);
+    });
+
+    test('destination starting days after arrival is fixed by starting it on arrival', () {
+      final items = [...trip(), tgv(day: 2)];
+      final c = findConflicts(items).firstWhere((c) => c.otherId == 'lyon');
+      expect(c.message, contains('ohne Ort'));
+      final fixed = applyFix(items, c);
+      expect(fixed.firstWhere((i) => i.id == 'lyon').start, at(2, 13 * 60));
+    });
+
+    test('overlapping stays are fixed by pushing the later one', () {
+      final r = Scheduler.move(trip(), 'paris', minutesPerDay, ShiftMode.single);
+      final c = findConflicts(r.items).single;
+      expect(findConflicts(applyFix(r.items, c)), isEmpty);
+    });
+
+    test('activity outside its stay is moved back inside', () {
+      final items = [
+        stay('kandy', 2, 3),
+        PlanItem(
+          id: 'temple',
+          tripId: 't',
+          kind: ItemKind.activity,
+          title: 'Tempel',
+          parentId: 'kandy',
+          start: at(7, 9 * 60),
+          end: at(7, 11 * 60),
+          createdAt: _t0,
+        ),
+      ];
+      final c = findConflicts(items).single;
+      final t = applyFix(items, c).firstWhere((i) => i.id == 'temple');
+      expect(dayOf(t.start!), 5);
+      expect(t.end! - t.start!, 120);
+      expect(findConflicts(applyFix(items, c)), isEmpty);
+    });
+
+    test('demo trips have no conflicts', () {
+      expect(findConflicts(demoInterrail().items), isEmpty);
+      expect(findConflicts(demoSriLanka().items), isEmpty);
     });
   });
 }

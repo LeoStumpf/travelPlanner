@@ -9,6 +9,7 @@ import '../../domain/time.dart';
 import '../../state/providers.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
+import 'conflict_tile.dart';
 import 'style.dart';
 
 String timeSummary(PlanItem i, DateTime? tripStart) {
@@ -116,12 +117,7 @@ class _ItemSheet extends ConsumerWidget {
           ),
         if (item.placeName != null)
           ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.place_outlined), title: Text(item.placeName!)),
-        for (final c in conflicts)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.warning_amber, color: theme.colorScheme.error),
-            title: Text(c.message, style: TextStyle(color: theme.colorScheme.error)),
-          ),
+        for (final c in conflicts) ConflictTile(conflict: c, data: data),
         const SizedBox(height: 4),
         Wrap(spacing: 8, runSpacing: 8, children: [
           FilledButton.icon(

@@ -1,13 +1,30 @@
 // Read-only analysis of a plan: conflicts, free days, nights without a bed,
 // and lane packing for the timeline.
+import 'dart:math' as math;
+
 import 'models.dart';
+import 'scheduler.dart';
 import 'time.dart';
+
+/// A one-tap repair for a conflict: new start/end times for some items.
+class ConflictFix {
+  final String label;
+  final Map<String, (int, int)> times;
+  const ConflictFix(this.label, this.times);
+
+  /// [items] with the fix applied; only changed items are returned.
+  List<PlanItem> apply(List<PlanItem> items) => [
+        for (final i in items)
+          if (times[i.id] case (final s, final e)) i.copyWith(start: s, end: e),
+      ];
+}
 
 class Conflict {
   final String itemId;
   final String? otherId;
   final String message;
-  const Conflict(this.itemId, this.otherId, this.message);
+  final ConflictFix? fix;
+  const Conflict(this.itemId, this.otherId, this.message, [this.fix]);
 
   bool involves(String id) => itemId == id || otherId == id;
 
@@ -49,8 +66,17 @@ List<Conflict> findConflicts(List<PlanItem> items) {
       final x = chain[a], y = chain[b];
       if (y.start! >= x.end!) break;
       final overlap = x.end! - y.start!;
-      out.add(Conflict(y.id, x.id,
-          '„${y.title}“ beginnt ${_duration(overlap)} bevor „${x.title}“ endet'));
+      final pushed = Scheduler.move(items, y.id, _ceilDays(overlap), ShiftMode.push);
+      out.add(Conflict(
+        y.id,
+        x.id,
+        '„${y.title}“ beginnt ${_duration(overlap)} bevor „${x.title}“ endet',
+        y.fixed
+            ? null
+            : ConflictFix('„${y.title}“ nach hinten schieben', {
+                for (final c in pushed.changed) c.id: (c.start!, c.end!),
+              }),
+      ));
     }
   }
 
@@ -64,26 +90,73 @@ List<Conflict> findConflicts(List<PlanItem> items) {
         if (i.kind == ItemKind.accommodation) {
           // Nights must lie within the days of the stay.
           if (dayOf(i.start!) < dayOf(p.start!) || lastDayOf(i.end!) > lastDayOf(p.end!)) {
-            out.add(Conflict(i.id, p.id, '„${i.title}“ passt nicht zu den Tagen in ${p.title}'));
+            final s = at(dayOf(p.start!), minuteOfDay(i.start!));
+            final e = at(math.max(lastDayOf(p.end!), dayOf(p.start!) + 1), minuteOfDay(i.end!));
+            out.add(Conflict(i.id, p.id, '„${i.title}“ passt nicht zu den Tagen in ${p.title}',
+                i.fixed ? null : ConflictFix('Nächte an ${p.title} anpassen', {i.id: (s, e)})));
           }
         } else if (i.start! < p.start! || i.end! > p.end!) {
-          out.add(Conflict(i.id, p.id, '„${i.title}“ liegt außerhalb des Aufenthalts in ${p.title}'));
+          final dur = i.duration;
+          final day = dayOf(i.start!).clamp(dayOf(p.start!), lastDayOf(p.end!));
+          var s = at(day, minuteOfDay(i.start!));
+          if (s < p.start!) s = p.start!;
+          if (s + dur > p.end!) s = math.max(p.start!, p.end! - dur);
+          out.add(Conflict(i.id, p.id, '„${i.title}“ liegt außerhalb des Aufenthalts in ${p.title}',
+              i.fixed ? null : ConflictFix('In ${p.title} verschieben', {i.id: (s, s + dur)})));
         }
       case ItemKind.transport:
-        final from = byId[i.fromId];
-        final to = byId[i.toId];
-        if (from != null && from.isScheduled && !from.isOption && lastDayOf(from.end!) > dayOf(i.start!)) {
-          out.add(Conflict(i.id, from.id, '„${from.title}“ endet nach Abfahrt von „${i.title}“'));
-        }
-        if (to != null && to.isScheduled && !to.isOption && dayOf(to.start!) < lastDayOf(i.end!)) {
-          out.add(Conflict(i.id, to.id, '„${to.title}“ beginnt vor Ankunft von „${i.title}“'));
-        }
+        _transportConflicts(i, byId[i.fromId], byId[i.toId], out);
       case ItemKind.stay:
         break;
     }
   }
   return out;
 }
+
+/// The stays on both ends of a transport must meet it on the same day:
+/// leaving a place days before the train departs (or arriving days before
+/// the next stay begins) leaves you nowhere in between.
+void _transportConflicts(PlanItem t, PlanItem? from, PlanItem? to, List<Conflict> out) {
+  bool usable(PlanItem? s) => s != null && s.isScheduled && !s.isOption;
+
+  if (usable(from)) {
+    final f = from!;
+    final lastDay = lastDayOf(f.end!), depDay = dayOf(t.start!);
+    final fix = f.fixed || t.start! <= f.start! + 60
+        ? null
+        : ConflictFix(
+            lastDay > depDay ? '„${f.title}“ bis zur Abfahrt kürzen' : '„${f.title}“ bis zur Abfahrt verlängern',
+            {f.id: (f.start!, t.start!)},
+          );
+    if (lastDay > depDay) {
+      out.add(Conflict(t.id, f.id, '„${f.title}“ endet nach Abfahrt von „${t.title}“', fix));
+    } else if (lastDay < depDay) {
+      out.add(Conflict(t.id, f.id,
+          'Zwischen „${f.title}“ und Abfahrt von „${t.title}“ ${_lie(depDay - lastDay)} ohne Ort', fix));
+    }
+  }
+
+  if (usable(to)) {
+    final d = to!;
+    final firstDay = dayOf(d.start!), arrDay = lastDayOf(t.end!);
+    final fix = d.fixed || t.end! >= d.end! - 60
+        ? null
+        : ConflictFix(
+            firstDay < arrDay ? '„${d.title}“ erst ab Ankunft' : '„${d.title}“ ab Ankunft beginnen',
+            {d.id: (t.end!, d.end!)},
+          );
+    if (firstDay < arrDay) {
+      out.add(Conflict(t.id, d.id, '„${d.title}“ beginnt vor Ankunft von „${t.title}“', fix));
+    } else if (firstDay > arrDay) {
+      out.add(Conflict(t.id, d.id,
+          'Zwischen Ankunft von „${t.title}“ und „${d.title}“ ${_lie(firstDay - arrDay)} ohne Ort', fix));
+    }
+  }
+}
+
+String _lie(int days) => days == 1 ? 'liegt 1 Tag' : 'liegen $days Tage';
+
+int _ceilDays(int minutes) => ((minutes + minutesPerDay - 1) ~/ minutesPerDay) * minutesPerDay;
 
 String _duration(int minutes) {
   final days = minutes ~/ minutesPerDay;

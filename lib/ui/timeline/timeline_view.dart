@@ -9,6 +9,7 @@ import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
+import '../common/conflict_tile.dart';
 import '../common/dialogs.dart';
 import '../common/item_sheet.dart';
 import '../common/style.dart';
@@ -736,9 +737,10 @@ class _Toolbar extends ConsumerWidget {
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           for (final k in conflicts)
-            ListTile(
-              leading: Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.error),
-              title: Text(k.message),
+            ConflictTile(
+              conflict: k,
+              data: data,
+              onFixed: () => Navigator.pop(c),
               onTap: () {
                 Navigator.pop(c);
                 showItemSheet(context, ref, data.trip.id, k.itemId);
