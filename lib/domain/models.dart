@@ -71,7 +71,7 @@ class Trip {
     required this.title,
     this.startDate,
     this.plannedDays,
-    this.color = 0xFF3F7CAC,
+    this.color = 0xFF00876A,
     required this.createdAt,
   });
 
@@ -104,7 +104,7 @@ class Trip {
         title: j['title'] as String? ?? '',
         startDate: j['startDate'] == null ? null : DateTime.parse(j['startDate'] as String),
         plannedDays: j['plannedDays'] as int?,
-        color: j['color'] as int? ?? 0xFF3F7CAC,
+        color: j['color'] as int? ?? 0xFF00876A,
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 }

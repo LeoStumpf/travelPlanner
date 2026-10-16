@@ -72,10 +72,10 @@ void main() {
 
   testWidgets('two-finger pinch zooms the time axis', (tester) async {
     await pump(tester);
-    double dayWidth() => tester.getTopLeft(find.text('Tag 2')).dx - tester.getTopLeft(find.text('Tag 1')).dx;
+    double dayWidth() => tester.getTopLeft(find.text('02')).dx - tester.getTopLeft(find.text('01')).dx;
     final before = dayWidth();
 
-    final center = tester.getCenter(find.text('Tag 2')) + const Offset(0, 200);
+    final center = tester.getCenter(find.text('02')) + const Offset(0, 200);
     final a = await tester.startGesture(center - const Offset(40, 0), pointer: 1);
     final b = await tester.startGesture(center + const Offset(40, 0), pointer: 2);
     await tester.pump();

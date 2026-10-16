@@ -13,10 +13,11 @@ import '../common/conflict_tile.dart';
 import '../common/dialogs.dart';
 import '../common/item_sheet.dart';
 import '../common/style.dart';
+import '../common/theme.dart';
 import '../editor/item_editor_page.dart';
 import '../trip/trip_page.dart';
 
-const _headerH = 44.0;
+const _headerH = 52.0;
 const _labelW = 40.0;
 const _lanePad = 6.0;
 
@@ -425,6 +426,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
                                   headerH: _headerH,
                                   tripStart: data.trip.startDate,
                                   color: Theme.of(context).colorScheme.onSurface,
+                                  nightColor: AppColors.of(context).night,
                                   today: _todayIndex(),
                                 ),
                               ),
@@ -528,6 +530,11 @@ class _Block extends StatelessWidget {
         ? nightsIn(item.start!, item.end!)
         : null;
 
+    final rail = item.kind == ItemKind.stay;
+    final ink = scheme.onSurface;
+    // On a line the stations already mark the ends; keep the grip invisible.
+    final Color? handleColor = rail ? null : fg;
+
     return GestureDetector(
       onTap: onTap,
       onLongPressStart: (_) => onLongPressStart(),
@@ -536,51 +543,26 @@ class _Block extends StatelessWidget {
       onLongPressCancel: onLongPressEnd,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(item.kind == ItemKind.accommodation ? 18 : 8),
-          border: Border.all(color: borderColor, width: conflict || selected ? 2 : 1),
-          boxShadow: moving ? [BoxShadow(color: base.withValues(alpha: 0.5), blurRadius: 8)] : null,
-        ),
+        decoration: rail
+            // Stays are drawn as a transit line; the box only shows state.
+            ? BoxDecoration(
+                color: selected || moving ? scheme.surfaceContainerHigh : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                border: conflict ? Border.all(color: scheme.error, width: 2) : null,
+              )
+            : BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(item.kind == ItemKind.accommodation ? 18 : 8),
+                border: Border.all(color: borderColor, width: conflict || selected ? 2 : 1),
+                boxShadow: moving ? [BoxShadow(color: base.withValues(alpha: 0.5), blurRadius: 8)] : null,
+              ),
         child: Stack(
           children: [
-            // Narrow blocks (short transports, zoomed out) show less detail.
             Positioned.fill(
               child: LayoutBuilder(
-                builder: (context, c) {
-                  final w = c.maxWidth;
-                  if (w < 40) return Center(child: Icon(itemIcon(item), size: 14, color: fg));
-                  return Padding(
-                    padding: EdgeInsets.only(left: 6 + titleInset, right: 6),
-                    child: Row(
-                      children: [
-                        Icon(itemIcon(item), size: 15, color: fg),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.clip,
-                            softWrap: false,
-                            style: TextStyle(
-                              color: fg,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              fontStyle: item.isOption ? FontStyle.italic : null,
-                            ),
-                          ),
-                        ),
-                        if (w > 110 && item.fixed) Icon(Icons.lock, size: 13, color: fg),
-                        if (w > 110 && item.status == ItemStatus.booked) Icon(Icons.verified, size: 13, color: fg),
-                        if (w > 80 && nights != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 2, right: 8),
-                            child: Text('${nights}N', style: TextStyle(color: fg, fontSize: 11)),
-                          ),
-                      ],
-                    ),
-                  );
-                },
+                builder: (context, c) => rail
+                    ? _rail(context, c.maxWidth, base, option, ink, nights)
+                    : _box(c.maxWidth, fg, nights),
               ),
             ),
             if (onResizeStart != null)
@@ -589,7 +571,7 @@ class _Block extends StatelessWidget {
                 top: 0,
                 bottom: 0,
                 width: 16,
-                child: _ResizeHandle(callbacks: onResizeStart!, color: fg),
+                child: _ResizeHandle(callbacks: onResizeStart!, color: handleColor),
               ),
             if (onResizeEnd != null)
               Positioned(
@@ -597,10 +579,101 @@ class _Block extends StatelessWidget {
                 top: 0,
                 bottom: 0,
                 width: 16,
-                child: _ResizeHandle(callbacks: onResizeEnd!, color: fg),
+                child: _ResizeHandle(callbacks: onResizeEnd!, color: handleColor),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// A stay: name above a thick line with a station at each end.
+  Widget _rail(BuildContext context, double w, Color base, bool option, Color ink, int? nights) {
+    final line = option ? base.withValues(alpha: 0.45) : base;
+    final station = Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        shape: BoxShape.circle,
+        border: Border.all(color: line, width: 4),
+      ),
+    );
+    return Stack(
+      children: [
+        Positioned(
+          left: 4 + titleInset,
+          right: 4,
+          top: 2,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: item.isOption ? FontStyle.italic : null,
+                  ),
+                ),
+              ),
+              if (w > 110 && item.fixed) Icon(Icons.lock, size: 13, color: ink),
+              if (w > 80 && nights != null)
+                Text('${nights}N', style: TextStyle(color: ink, fontSize: 11, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+        Positioned(
+          left: 8,
+          right: 8,
+          bottom: 8,
+          height: 8,
+          child: DecoratedBox(
+            decoration: BoxDecoration(color: line, borderRadius: BorderRadius.circular(4)),
+          ),
+        ),
+        Positioned(left: 0, bottom: 4, child: station),
+        Positioned(right: 0, bottom: 4, child: station),
+      ],
+    );
+  }
+
+  /// Transport, lodging and activities: a filled block.
+  Widget _box(double w, Color fg, int? nights) {
+    // Narrow blocks (short transports, zoomed out) show less detail.
+    if (w < 40) return Center(child: Icon(itemIcon(item), size: 14, color: fg));
+    return Padding(
+      padding: EdgeInsets.only(left: 6 + titleInset, right: 6),
+      child: Row(
+        children: [
+          Icon(itemIcon(item), size: 15, color: fg),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              softWrap: false,
+              style: TextStyle(
+                color: fg,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                fontStyle: item.isOption ? FontStyle.italic : null,
+              ),
+            ),
+          ),
+          if (w > 110 && item.fixed) Icon(Icons.lock, size: 13, color: fg),
+          if (w > 110 && item.status == ItemStatus.booked) Icon(Icons.verified, size: 13, color: fg),
+          if (w > 80 && nights != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 2, right: 8),
+              child: Text('${nights}N', style: TextStyle(color: fg, fontSize: 11)),
+            ),
+        ],
       ),
     );
   }
@@ -610,7 +683,9 @@ class _Block extends StatelessWidget {
 /// dragged since the gesture started.
 class _ResizeHandle extends StatefulWidget {
   final _ResizeCallbacks callbacks;
-  final Color color;
+
+  /// Grip colour; null draws no grip (the touch area stays).
+  final Color? color;
   const _ResizeHandle({required this.callbacks, required this.color});
 
   @override
@@ -630,13 +705,18 @@ class _ResizeHandleState extends State<_ResizeHandle> {
     onHorizontalDragUpdate: (d) => widget.callbacks.update(d.globalPosition.dx - _startX),
     onHorizontalDragEnd: (_) => widget.callbacks.end(),
     onHorizontalDragCancel: widget.callbacks.end,
-    child: Center(
-      child: Container(
-        width: 3,
-        height: 16,
-        decoration: BoxDecoration(color: widget.color.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(2)),
-      ),
-    ),
+    child: widget.color == null
+        ? const SizedBox.expand()
+        : Center(
+            child: Container(
+              width: 3,
+              height: 16,
+              decoration: BoxDecoration(
+                color: widget.color!.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
   );
 }
 
@@ -679,15 +759,27 @@ class _MissingNight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme.error;
+    final colors = AppColors.of(context);
     return Tooltip(
       message: 'Noch keine Unterkunft für diese Nacht',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: CustomPaint(
-          painter: _DashedRectPainter(c, radius: 18),
-          child: Center(child: Icon(Icons.bed_outlined, size: 15, color: c)),
+      child: Material(
+        color: colors.signal,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bed_outlined, size: 15, color: colors.onSignal),
+                  Text('!', style: TextStyle(color: colors.onSignal, fontWeight: FontWeight.w900, fontSize: 14)),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -696,8 +788,8 @@ class _MissingNight extends StatelessWidget {
 
 class _DashedRectPainter extends CustomPainter {
   final Color color;
-  final double radius;
-  _DashedRectPainter(this.color, {this.radius = 8});
+  final double radius = 8;
+  _DashedRectPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -737,6 +829,14 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.labelSmall;
+    final number = TextStyle(
+      fontSize: dayWidth > 44 ? 22 : 16,
+      fontWeight: FontWeight.w900,
+      letterSpacing: -1,
+      height: 1.1,
+      fontFeatures: const [FontFeature.tabularFigures()],
+      color: Theme.of(context).colorScheme.onSurface,
+    );
     return SizedBox(
       height: _headerH,
       child: Row(
@@ -751,7 +851,7 @@ class _DayHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tag ${d + 1}', style: style?.copyWith(fontWeight: FontWeight.bold), maxLines: 1),
+                      Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
                       if (tripStart != null && dayWidth > 44)
                         Text(formatDay(tripStart, d), style: style, maxLines: 1, overflow: TextOverflow.clip),
                     ],
@@ -773,6 +873,7 @@ class _GridPainter extends CustomPainter {
   final double headerH;
   final DateTime? tripStart;
   final Color color;
+  final Color nightColor;
   final int? today;
 
   _GridPainter({
@@ -781,6 +882,7 @@ class _GridPainter extends CustomPainter {
     required this.headerH,
     required this.tripStart,
     required this.color,
+    required this.nightColor,
     required this.today,
   });
 
@@ -790,7 +892,7 @@ class _GridPainter extends CustomPainter {
     final line = Paint()
       ..color = color.withValues(alpha: 0.12)
       ..strokeWidth = 1;
-    final night = Paint()..color = color.withValues(alpha: 0.05);
+    final night = Paint()..color = nightColor;
     final weekend = Paint()..color = color.withValues(alpha: 0.03);
     final days = (size.width / dayWidth).ceil();
     for (var k = 0; k <= days; k++) {
@@ -810,8 +912,8 @@ class _GridPainter extends CustomPainter {
         Offset(x, 0),
         Offset(x, size.height),
         Paint()
-          ..color = Colors.redAccent
-          ..strokeWidth = 1.5,
+          ..color = const Color(0xFFFFC21A)
+          ..strokeWidth = 3,
       );
     }
   }
@@ -822,6 +924,7 @@ class _GridPainter extends CustomPainter {
       old.dayWidth != dayWidth ||
       old.tripStart != tripStart ||
       old.color != color ||
+      old.nightColor != nightColor ||
       old.today != today;
 }
 

@@ -8,6 +8,7 @@ import '../../domain/models.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/route_line.dart';
 import '../trip/trip_page.dart';
 import 'trip_settings_dialog.dart';
 
@@ -113,60 +114,44 @@ class _TripTile extends ConsumerWidget {
             .toList() ??
         [];
     stays.sort((a, b) => a.start!.compareTo(b.start!));
-    final route = stays.map((s) => s.title).join(' → ');
-    final subtitle = [
-      if (trip.startDate != null) formatDay(trip.startDate, 0),
-      if (trip.plannedDays != null) pluralDays(trip.plannedDays!),
-    ].join(' · ');
+    final days = trip.plannedDays ?? (stays.isEmpty ? null : lastDayOf(stays.last.end!) + 1);
+    final theme = Theme.of(context);
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: InkWell(
         onTap: () => openTrip(context, ref, trip.id),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 4, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 8, color: Color(trip.color)),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        trip.title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      if (subtitle.isNotEmpty)
-                        Text(
-                          subtitle,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      if (route.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          route,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(trip.title, style: theme.textTheme.titleLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ),
+                  if (days != null) SignalPill(pluralDays(days)),
+                  PopupMenuButton<String>(
+                    onSelected: (v) => _menu(context, ref, v),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Bearbeiten')),
+                      PopupMenuItem(value: 'export', child: Text('Als Backup exportieren')),
+                      PopupMenuItem(value: 'copy', child: Text('Duplizieren')),
+                      PopupMenuItem(value: 'delete', child: Text('Löschen')),
                     ],
                   ),
-                ),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (v) => _menu(context, ref, v),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Bearbeiten')),
-                  PopupMenuItem(
-                    value: 'export',
-                    child: Text('Als Backup exportieren'),
-                  ),
-                  PopupMenuItem(value: 'copy', child: Text('Duplizieren')),
-                  PopupMenuItem(value: 'delete', child: Text('Löschen')),
                 ],
+              ),
+              if (trip.startDate != null)
+                Text(formatDay(trip.startDate, 0), style: theme.textTheme.labelMedium),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: stays.isEmpty
+                    ? Text('Noch keine Orte geplant', style: theme.textTheme.bodyMedium)
+                    : RouteLine(stations: [for (final s in stays) s.title], color: Color(trip.color)),
               ),
             ],
           ),

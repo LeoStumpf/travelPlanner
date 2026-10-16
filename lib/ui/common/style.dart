@@ -5,10 +5,10 @@ import '../../domain/models.dart';
 /// Colours per planning layer; shared by timeline, map and canvas so the
 /// same thing looks the same everywhere.
 Color kindColor(ItemKind k) => switch (k) {
-      ItemKind.stay => const Color(0xFF2E7D6B),
-      ItemKind.transport => const Color(0xFF3F6FD8),
-      ItemKind.accommodation => const Color(0xFF8E5BC8),
-      ItemKind.activity => const Color(0xFFE08A1E),
+      ItemKind.stay => const Color(0xFF00876A),
+      ItemKind.transport => const Color(0xFF1F5FD1),
+      ItemKind.accommodation => const Color(0xFF8B3FBF),
+      ItemKind.activity => const Color(0xFFC2410C),
     };
 
 String kindHex(ItemKind k) => '#${(kindColor(k).toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
@@ -63,12 +63,13 @@ Color noteBackground(BuildContext context, int color) {
   return c;
 }
 
+/// Trip line colours (like metro lines).
 const tripColors = <int>[
-  0xFF2E7D6B,
-  0xFFD9822B,
-  0xFF3F6FD8,
-  0xFF8E5BC8,
-  0xFFC0392B,
-  0xFF16A085,
-  0xFF7F8C8D,
+  0xFF00876A,
+  0xFF1F5FD1,
+  0xFF8B3FBF,
+  0xFFC2410C,
+  0xFFD6336C,
+  0xFF0B7285,
+  0xFF5C677D,
 ];

@@ -98,6 +98,19 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
       ..scaleByDouble(s, s, 1, 1);
   }
 
+  /// Fits everything once the view has a size (retries for a few frames).
+  void _fitWhenLaidOut([int attempt = 0]) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final size = context.size;
+      if ((size == null || size.isEmpty) && attempt < 30) {
+        _fitWhenLaidOut(attempt + 1);
+        return;
+      }
+      _fitAll();
+    });
+  }
+
   void _fitAll() {
     final pos = _positions();
     final size = context.size;
@@ -181,9 +194,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
     });
     if (!_initialised) {
       _initialised = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _fitAll();
-      });
+      _fitWhenLaidOut();
     }
 
     final links = <_Link>[

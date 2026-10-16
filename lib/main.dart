@@ -10,6 +10,7 @@ import 'data/attachment_store.dart';
 import 'data/db.dart';
 import 'data/repository.dart';
 import 'state/providers.dart';
+import 'ui/common/theme.dart';
 import 'ui/share/share_listener.dart';
 import 'ui/trips/trips_page.dart';
 
@@ -31,18 +32,12 @@ Future<void> main() async {
 class TravelPlannerApp extends StatelessWidget {
   const TravelPlannerApp({super.key});
 
-  static ThemeData _theme(Brightness b) => ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D6B), brightness: b),
-        useMaterial3: true,
-        visualDensity: VisualDensity.standard,
-      );
-
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Reiseplaner',
+        title: 'Tripboard',
         debugShowCheckedModeBanner: false,
-        theme: _theme(Brightness.light),
-        darkTheme: _theme(Brightness.dark),
+        theme: buildTheme(Brightness.light),
+        darkTheme: buildTheme(Brightness.dark),
         locale: const Locale('de'),
         supportedLocales: const [Locale('de'), Locale('en')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,

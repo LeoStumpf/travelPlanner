@@ -152,7 +152,7 @@ TripData demoInterrail() {
     id: b.tripId,
     title: 'Interrail Frankreich & Spanien',
     plannedDays: 14,
-    color: 0xFF2E7D6B,
+    color: 0xFF1F5FD1,
     createdAt: b.now,
   );
   final paris = b.stay('Paris', 48.8566, 2.3522, 0, 3);
@@ -195,7 +195,7 @@ TripData demoSriLanka() {
     id: b.tripId,
     title: 'Sri Lanka 2,5 Wochen',
     plannedDays: 18,
-    color: 0xFFD9822B,
+    color: 0xFF00876A,
     createdAt: b.now,
   );
   final colombo = b.stay('Colombo', 6.9271, 79.8612, 0, 1);
