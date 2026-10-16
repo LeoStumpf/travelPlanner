@@ -1,10 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="165 132 780 780">
-  <!-- Content stays inside the adaptive-icon safe zone (central ~66%). -->
-  <g fill="none" stroke="#FFFFFF" stroke-linecap="round">
-    <path d="M330 640 C 400 760, 520 770, 610 732" stroke-width="34" stroke-dasharray="2 62"/>
-  </g>
-  <circle cx="330" cy="640" r="44" fill="#FFFFFF"/>
-  <circle cx="330" cy="640" r="20" fill="#2E7D6B"/>
-  <path d="M664 300 c -92 0 -160 70 -160 158 c 0 112 160 262 160 262 s 160 -150 160 -262 c 0 -88 -68 -158 -160 -158 z" fill="#FFFFFF"/>
-  <circle cx="664" cy="456" r="62" fill="#2E7D6B"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="46 46 420 420">
+  <!-- Adaptive foreground; flutter_launcher_icons insets it by 16%. -->
+  <rect x="96" y="132" width="320" height="248" rx="40" fill="#0B0D12"/>
+  <path d="M150 300 H250 L300 250 H362" fill="none" stroke="#FFC21A" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="150" cy="300" r="20" fill="#0B0D12" stroke="#FFC21A" stroke-width="12"/>
+  <circle cx="362" cy="250" r="20" fill="#FFC21A"/>
+  <rect x="150" y="184" width="120" height="20" rx="10" fill="#FFFFFF"/>
+  <rect x="290" y="184" width="72" height="20" rx="10" fill="#5A606B"/>
 </svg>

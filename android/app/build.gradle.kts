@@ -17,7 +17,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "io.github.leostumpf.travelplanner"
+    namespace = "io.github.leostumpf.tripboard"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -27,7 +27,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.github.leostumpf.travelplanner"
+        applicationId = "io.github.leostumpf.tripboard"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24

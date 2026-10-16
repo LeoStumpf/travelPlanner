@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="165 132 780 780">
-  <g fill="none" stroke="#FFFFFF" stroke-linecap="round">
-    <path d="M330 640 C 400 760, 520 770, 610 732" stroke-width="34" stroke-dasharray="2 62"/>
-  </g>
-  <path fill-rule="evenodd" fill="#FFFFFF" d="M330 596 a44 44 0 1 0 0.01 0 z M330 620 a20 20 0 1 1 -0.01 0 z"/>
-  <path fill-rule="evenodd" fill="#FFFFFF" d="M664 300 c -92 0 -160 70 -160 158 c 0 112 160 262 160 262 s 160 -150 160 -262 c 0 -88 -68 -158 -160 -158 z M664 394 a62 62 0 1 0 0.01 0 z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="46 46 420 420">
+  <!-- Themed icon: outline board, route and text line in one colour. -->
+  <rect x="110" y="146" width="292" height="220" rx="28" fill="none" stroke="#FFFFFF" stroke-width="28"/>
+  <path d="M150 300 H250 L300 250 H362" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="150" cy="300" r="22" fill="#FFFFFF"/>
+  <circle cx="362" cy="250" r="22" fill="#FFFFFF"/>
+  <rect x="150" y="184" width="120" height="20" rx="10" fill="#FFFFFF"/>
 </svg>

@@ -2,7 +2,7 @@
     <!-- Map tiles, place search and link previews. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="Reiseplaner"
+        android:label="Tripboard"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

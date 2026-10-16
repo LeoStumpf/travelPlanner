@@ -1,4 +1,4 @@
-package io.github.leostumpf.travelplanner
+package io.github.leostumpf.tripboard
 
 import io.flutter.embedding.android.FlutterActivity
 
