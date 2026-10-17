@@ -4,14 +4,17 @@ import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
+import '../common/zone_picker.dart';
 
-/// Create ([trip] == null) or edit a trip's title, start date and length.
-Future<Trip?> showTripSettingsDialog(BuildContext context, Trip? trip) =>
-    showDialog<Trip>(context: context, builder: (_) => _TripSettingsDialog(trip: trip));
+/// Create ([trip] == null) or edit a trip's title, start date, length and
+/// home time zone. [usedZones] are offered first in the zone picker.
+Future<Trip?> showTripSettingsDialog(BuildContext context, Trip? trip, {List<String> usedZones = const []}) =>
+    showDialog<Trip>(context: context, builder: (_) => _TripSettingsDialog(trip: trip, usedZones: usedZones));
 
 class _TripSettingsDialog extends StatefulWidget {
   final Trip? trip;
-  const _TripSettingsDialog({this.trip});
+  final List<String> usedZones;
+  const _TripSettingsDialog({this.trip, this.usedZones = const []});
 
   @override
   State<_TripSettingsDialog> createState() => _TripSettingsDialogState();
@@ -22,6 +25,7 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
   late final _days = TextEditingController(text: widget.trip?.plannedDays?.toString() ?? '');
   late DateTime? _start = widget.trip?.startDate;
   late int _color = widget.trip?.color ?? tripColors.first;
+  late String? _homeZone = widget.trip?.homeZone;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +79,15 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
               l.withoutDateHint,
               style: const TextStyle(fontSize: 12),
             ),
+            ZoneTile(
+              key: const ValueKey('home-zone'),
+              label: l.homeZoneLabel,
+              zone: _homeZone,
+              noneLabel: l.zoneNone,
+              subtitle: l.homeZoneHint,
+              suggestions: widget.usedZones,
+              onChanged: (z) => setState(() => _homeZone = z),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -109,9 +122,10 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                       startDate: _start,
                       plannedDays: days,
                       color: _color,
+                      homeZone: _homeZone,
                       createdAt: DateTime.now(),
                     )
-                  : t.copyWith(title: title, startDate: _start, plannedDays: days, color: _color),
+                  : t.copyWith(title: title, startDate: _start, plannedDays: days, color: _color, homeZone: _homeZone),
             );
           },
           child: Text(l.save),

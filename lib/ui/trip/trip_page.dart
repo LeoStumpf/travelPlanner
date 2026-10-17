@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/agenda.dart';
 import '../../domain/models.dart';
+import '../../domain/zones.dart';
 import '../../state/providers.dart';
 import '../agenda/agenda_view.dart';
 import '../canvas/canvas_view.dart';
@@ -57,7 +58,7 @@ class _TripPageState extends ConsumerState<TripPage> {
               PopupMenuButton<String>(
                 onSelected: (v) async {
                   if (v == 'settings') {
-                    final t = await showTripSettingsDialog(context, data.trip);
+                    final t = await showTripSettingsDialog(context, data.trip, usedZones: data.usedZones);
                     if (t != null) {
                       await ref.read(planActionsProvider).record(t.id, l.stepTripEdited, (r) => r.saveTrip(t));
                     }

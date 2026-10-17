@@ -23,7 +23,8 @@ You are helping plan a trip for the travel planner app **Tripboard**. Research w
     "id": "…",                        // keep as given; omit for a new trip
     "title": "Sri Lanka",
     "startDate": "2027-02-03",        // optional, YYYY-MM-DD = day 1
-    "days": 10                        // optional, planned length
+    "days": 10,                       // optional, planned length
+    "tz": "Europe/Berlin"             // optional, home time zone (IANA)
   },
   "items": [ … ],                     // plan items, see below
   "notes": [ … ],                     // free notes / checklists / links
@@ -52,10 +53,14 @@ Every item has a `ref` (unique string; for new items use short slugs like `"kand
 | `number` | string | transport only, optional: train, flight, bus or ferry number, e.g. `"IC 1009"`, `"LH 754"` |
 | `seat` | string | transport only, optional: seat and/or platform, e.g. `"Car 3, seat 42"` |
 | `bookingRef` | string | transport only, optional: booking reference / PNR – only if the user gave it, never invent one |
+| `tz` | string | optional IANA time zone, e.g. `"Asia/Colombo"`. On a `stay`: the zone of the place. On a `transport`: departure zone, only needed when it differs from the `from` stay's |
+| `endTz` | string | transport only, optional: arrival zone, only needed when it differs from the `to` stay's |
 | `notes` | string | details, prices, tips |
 | `links` | string[] | URLs |
 
 **Moments** are `{"day": 1, "time": "14:00"}`. Day 1 is the first day of the trip, `time` is local 24-hour time (`"24:00"` = midnight at the end of that day). Overnight trips simply end on a later day. If the trip has a `startDate` you may write `{"date": "2027-02-05", "time": "14:00"}` instead.
+
+**Time zones** (optional). Every time is the local clock time of where it happens: a stay's times (and those of its accommodation and activities) in the stay's zone, a transport's `start` in the zone it departs from and its `end` in the zone it arrives in – exactly as printed on a ticket. Give each `stay` its IANA zone in `tz` and the trip a home zone in `trip.tz` (used for anything without a zone, e.g. the outbound flight from home). A transport takes its zones from its `from`/`to` stays (else the home zone), so `tz`/`endTz` on transports are rarely needed. The app then computes real durations and orders everything correctly, even when a flight lands "earlier" than it left. Leave all `tz` out to plan without time zones.
 
 **How the layers fit together**
 
@@ -86,15 +91,15 @@ Good uses: packing list, visa/vaccination to-dos, budget overview, alternatives 
 {
   "format": "tripboard-plan",
   "version": 1,
-  "trip": { "title": "Sri Lanka in 10 days", "startDate": "2027-02-03", "days": 10 },
+  "trip": { "title": "Sri Lanka in 10 days", "startDate": "2027-02-03", "days": 11, "tz": "Europe/Berlin" },
   "items": [
-    { "ref": "flight-out", "kind": "transport", "mode": "plane", "title": "Flight Frankfurt → Colombo", "to": "colombo", "departure": "Frankfurt FRA", "arrival": "Colombo CMB", "number": "UL 554", "start": {"day": 1, "time": "01:30"}, "end": {"day": 1, "time": "09:00"}, "status": "booked", "fixed": true },
-    { "ref": "colombo", "kind": "stay", "title": "Colombo", "place": "Colombo, Sri Lanka", "lat": 6.9271, "lng": 79.8612, "start": {"day": 1, "time": "10:00"}, "end": {"day": 2, "time": "08:00"} },
-    { "ref": "hotel-colombo", "kind": "accommodation", "title": "Hotel near Colombo Fort", "stay": "colombo", "place": "Colombo Fort, Sri Lanka", "start": {"day": 1, "time": "14:00"}, "end": {"day": 2, "time": "07:30"} },
-    { "ref": "train-colombo-kandy", "kind": "transport", "mode": "train", "title": "Train Colombo Fort → Kandy", "from": "colombo", "to": "kandy", "departure": "Colombo Fort", "arrival": "Kandy", "number": "1009", "start": {"day": 2, "time": "08:30"}, "end": {"day": 2, "time": "11:20"}, "notes": "Intercity, reserve 2nd class seats", "links": ["https://eservices.railway.gov.lk/schedule/searchTrain.action?lang=en"] },
-    { "ref": "kandy", "kind": "stay", "title": "Kandy", "place": "Kandy, Sri Lanka", "lat": 7.2906, "lng": 80.6337, "start": {"day": 2, "time": "12:00"}, "end": {"day": 4, "time": "08:00"} },
-    { "ref": "temple", "kind": "activity", "title": "Temple of the Tooth", "stay": "kandy", "lat": 7.2936, "lng": 80.6413, "start": {"day": 3, "time": "09:00"}, "end": {"day": 3, "time": "11:00"} },
-    { "ref": "galle", "kind": "stay", "title": "Galle", "place": "Galle Fort, Sri Lanka", "status": "idea" }
+    { "ref": "flight-out", "kind": "transport", "mode": "plane", "title": "Flight Frankfurt → Colombo", "to": "colombo", "departure": "Frankfurt FRA", "arrival": "Colombo CMB", "number": "UL 554", "start": {"day": 1, "time": "21:15"}, "end": {"day": 2, "time": "10:20"}, "status": "booked", "fixed": true },
+    { "ref": "colombo", "kind": "stay", "title": "Colombo", "tz": "Asia/Colombo", "place": "Colombo, Sri Lanka", "lat": 6.9271, "lng": 79.8612, "start": {"day": 2, "time": "11:00"}, "end": {"day": 3, "time": "08:00"} },
+    { "ref": "hotel-colombo", "kind": "accommodation", "title": "Hotel near Colombo Fort", "stay": "colombo", "place": "Colombo Fort, Sri Lanka", "start": {"day": 2, "time": "14:00"}, "end": {"day": 3, "time": "07:30"} },
+    { "ref": "train-colombo-kandy", "kind": "transport", "mode": "train", "title": "Train Colombo Fort → Kandy", "from": "colombo", "to": "kandy", "departure": "Colombo Fort", "arrival": "Kandy", "number": "1009", "start": {"day": 3, "time": "08:30"}, "end": {"day": 3, "time": "11:20"}, "notes": "Intercity, reserve 2nd class seats", "links": ["https://eservices.railway.gov.lk/schedule/searchTrain.action?lang=en"] },
+    { "ref": "kandy", "kind": "stay", "title": "Kandy", "tz": "Asia/Colombo", "place": "Kandy, Sri Lanka", "lat": 7.2906, "lng": 80.6337, "start": {"day": 3, "time": "12:00"}, "end": {"day": 5, "time": "08:00"} },
+    { "ref": "temple", "kind": "activity", "title": "Temple of the Tooth", "stay": "kandy", "lat": 7.2936, "lng": 80.6413, "start": {"day": 4, "time": "09:00"}, "end": {"day": 4, "time": "11:00"} },
+    { "ref": "galle", "kind": "stay", "title": "Galle", "tz": "Asia/Colombo", "place": "Galle Fort, Sri Lanka", "status": "idea" }
   ],
   "notes": [
     { "ref": "packing", "type": "checklist", "title": "Packing list", "checklist": ["Passport", "ETA visa printout", "Mosquito repellent"] },

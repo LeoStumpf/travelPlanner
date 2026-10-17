@@ -7,6 +7,7 @@ import 'package:open_filex/open_filex.dart';
 import '../../domain/agenda.dart';
 import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../domain/zones.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
@@ -98,6 +99,9 @@ class _AgendaViewState extends ConsumerState<AgendaView> {
     final nowMinute = tripMinuteAt(data.trip, now);
     final agenda = agendaFor(data.items, day, now: nowMinute);
     final start = data.trip.startDate;
+    // UTC offsets on a transport's times when it crosses zones.
+    String depZone(PlanItem t) => data.zones.crossesZones(t) ? ' ${data.zones.startOffsetLabel(t)}' : '';
+    String arrZone(PlanItem t) => data.zones.crossesZones(t) ? ' ${data.zones.endOffsetLabel(t)}' : '';
     final relative = l.relativeDay(start, day, today);
     final theme = Theme.of(context);
 
@@ -173,7 +177,7 @@ class _AgendaViewState extends ConsumerState<AgendaView> {
                   item: s,
                   lines: [
                     if (s.placeName != null && s.placeName != s.title) s.placeName!,
-                    timeSummary(l, s, start),
+                    timeSummary(l, s, start, zones: data.zones),
                   ],
                 ),
               if (agenda.lodging.isNotEmpty || agenda.needsBed) _Header(l.kindAccommodation),
@@ -201,7 +205,7 @@ class _AgendaViewState extends ConsumerState<AgendaView> {
                   ),
                 ),
               for (final o in agenda.lodgingOptions)
-                _ItemCard(data: data, item: o, lines: [if (o.placeName != null) o.placeName!, timeSummary(l, o, start)]),
+                _ItemCard(data: data, item: o, lines: [if (o.placeName != null) o.placeName!, timeSummary(l, o, start, zones: data.zones)]),
               if (agenda.nextTransport case final t?) ...[
                 _Header(l.agendaNextTransport),
                 _ItemCard(
@@ -211,8 +215,11 @@ class _AgendaViewState extends ConsumerState<AgendaView> {
                   highlight: true,
                   lines: [
                     _route(data, t),
-                    l.agendaDeparts(dayOf(t.start!) == day ? formatClock(t.start!) : l.moment(start, t.start!)),
-                    l.agendaArrives(dayOf(t.end!) == day ? formatClock(t.end!) : l.moment(start, t.end!)),
+                    l.agendaDeparts(
+                        (dayOf(t.start!) == day ? formatClock(t.start!) : l.moment(start, t.start!)) + depZone(t)),
+                    l.agendaArrives((dayOf(t.end!) == day ? formatClock(t.end!) : l.moment(start, t.end!)) + arrZone(t)),
+                    if (data.zones.crossesZones(t))
+                      l.realDuration(l.duration(data.zones.absDuration(t), withMinutes: true)),
                   ],
                 ),
               ],
@@ -226,7 +233,7 @@ class _AgendaViewState extends ConsumerState<AgendaView> {
                     time: dayOf(e.start!) == day ? formatClock(e.start!) : '…',
                     lines: [
                       if (e.kind == ItemKind.transport) _route(data, e) else if (e.placeName != null) e.placeName!,
-                      timeSummary(l, e, start),
+                      timeSummary(l, e, start, zones: data.zones),
                     ],
                   ),
                 ),

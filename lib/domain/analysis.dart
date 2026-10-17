@@ -1,10 +1,14 @@
 // Read-only analysis of a plan: conflicts, free days, nights without a bed,
 // and lane packing for the timeline.
+//
+// Functions taking [TripZones] compare items in different time zones on
+// absolute time; without zones they behave as before (zones.dart).
 import 'dart:math' as math;
 
 import 'models.dart';
 import 'scheduler.dart';
 import 'time.dart';
+import 'zones.dart';
 
 /// What a [ConflictFix] does; the UI turns it into a label.
 enum ConflictFixType {
@@ -109,24 +113,31 @@ class DayGap {
   String toString() => 'DayGap($firstDay..$lastDay)';
 }
 
-/// The confirmed (non-option, scheduled) stays in chronological order.
-List<PlanItem> stayChain(Iterable<PlanItem> items) => [
-      for (final i in items)
-        if (i.kind == ItemKind.stay && i.isScheduled && !i.isOption) i,
-    ]..sort((a, b) => a.start!.compareTo(b.start!));
+/// The confirmed (non-option, scheduled) stays in chronological order
+/// (absolute time with [zones]).
+List<PlanItem> stayChain(Iterable<PlanItem> items, {TripZones? zones}) {
+  final z = zones ?? TripZones.none;
+  return [
+    for (final i in items)
+      if (i.kind == ItemKind.stay && i.isScheduled && !i.isOption) i,
+  ]..sort((a, b) => z.absStart(a).compareTo(z.absStart(b)));
+}
 
-List<Conflict> findConflicts(List<PlanItem> items) {
+List<Conflict> findConflicts(List<PlanItem> items, {TripZones? zones}) {
+  final z = zones ?? TripZones.none;
   final byId = {for (final i in items) i.id: i};
   final out = <Conflict>[];
 
-  // Overlapping stays: you can't be in two places at once.
-  final chain = stayChain(items);
+  // Overlapping stays: you can't be in two places at once – judged on
+  // absolute time, so leaving Colombo at 10:00 and reaching Frankfurt at
+  // 08:00 the same day is fine.
+  final chain = stayChain(items, zones: z);
   for (var a = 0; a < chain.length; a++) {
     for (var b = a + 1; b < chain.length; b++) {
       final x = chain[a], y = chain[b];
-      if (y.start! >= x.end!) break;
-      final overlap = x.end! - y.start!;
-      final pushed = Scheduler.move(items, y.id, _ceilDays(overlap), ShiftMode.push);
+      if (z.absStart(y) >= z.absEnd(x)) break;
+      final overlap = z.absEnd(x) - z.absStart(y);
+      final pushed = Scheduler.move(items, y.id, _ceilDays(overlap), ShiftMode.push, zones: z);
       out.add(Conflict(
         y.id,
         x.id,
@@ -172,7 +183,7 @@ List<Conflict> findConflicts(List<PlanItem> items) {
               fix: i.fixed ? null : ConflictFix(ConflictFixType.moveIntoStay, p.title, {i.id: (s, s + dur)})));
         }
       case ItemKind.transport:
-        _transportConflicts(i, byId[i.fromId], byId[i.toId], out);
+        _transportConflicts(i, byId[i.fromId], byId[i.toId], z, out);
       case ItemKind.stay:
         break;
     }
@@ -182,19 +193,22 @@ List<Conflict> findConflicts(List<PlanItem> items) {
 
 /// The stays on both ends of a transport must meet it on the same day:
 /// leaving a place days before the train departs (or arriving days before
-/// the next stay begins) leaves you nowhere in between.
-void _transportConflicts(PlanItem t, PlanItem? from, PlanItem? to, List<Conflict> out) {
+/// the next stay begins) leaves you nowhere in between. Departure and
+/// arrival are compared in the local time of the stay they meet (the same
+/// zone unless the transport overrides it).
+void _transportConflicts(PlanItem t, PlanItem? from, PlanItem? to, TripZones z, List<Conflict> out) {
   bool usable(PlanItem? s) => s != null && s.isScheduled && !s.isOption;
 
   if (usable(from)) {
     final f = from!;
-    final lastDay = lastDayOf(f.end!), depDay = dayOf(t.start!);
-    final fix = f.fixed || t.start! <= f.start! + 60
+    final dep = z.convert(t.start!, z.startZone(t), z.zoneOfStay(f));
+    final lastDay = lastDayOf(f.end!), depDay = dayOf(dep);
+    final fix = f.fixed || dep <= f.start! + 60
         ? null
         : ConflictFix(
             lastDay > depDay ? ConflictFixType.shortenToDeparture : ConflictFixType.extendToDeparture,
             f.title,
-            {f.id: (f.start!, t.start!)},
+            {f.id: (f.start!, dep)},
           );
     if (lastDay > depDay) {
       out.add(Conflict(t.id, f.id, ConflictType.stayEndsAfterDeparture,
@@ -207,13 +221,14 @@ void _transportConflicts(PlanItem t, PlanItem? from, PlanItem? to, List<Conflict
 
   if (usable(to)) {
     final d = to!;
-    final firstDay = dayOf(d.start!), arrDay = lastDayOf(t.end!);
-    final fix = d.fixed || t.end! >= d.end! - 60
+    final arr = z.convert(t.end!, z.endZone(t), z.zoneOfStay(d));
+    final firstDay = dayOf(d.start!), arrDay = lastDayOf(arr);
+    final fix = d.fixed || arr >= d.end! - 60
         ? null
         : ConflictFix(
             firstDay < arrDay ? ConflictFixType.startLaterAtArrival : ConflictFixType.startEarlierAtArrival,
             d.title,
-            {d.id: (t.end!, d.end!)},
+            {d.id: (arr, d.end!)},
           );
     if (firstDay < arrDay) {
       out.add(Conflict(t.id, d.id, ConflictType.stayStartsBeforeArrival,
@@ -377,8 +392,8 @@ const defaultTransportMinutes = 3 * 60;
 /// Pairs of consecutive stays in [stayChain] that no transport connects
 /// (fromId = earlier, toId = later stay). Any transport counts, also an
 /// option or one without dates: then the leg is already being planned.
-List<TransportGap> missingTransports(List<PlanItem> items) {
-  final chain = stayChain(items);
+List<TransportGap> missingTransports(List<PlanItem> items, {TripZones? zones}) {
+  final chain = stayChain(items, zones: zones);
   final linked = {
     for (final i in items)
       if (i.kind == ItemKind.transport && i.fromId != null && i.toId != null) (i.fromId, i.toId),
@@ -392,23 +407,32 @@ List<TransportGap> missingTransports(List<PlanItem> items) {
 /// Departure and arrival for a new transport from [from] to [to]: it leaves
 /// when [from] ends and takes [defaultTransportMinutes], arriving no later
 /// than [to] begins when that leaves room. With only [to] it arrives as
-/// [to] begins. Null when neither end has dates.
-(int, int)? suggestTransportTimes(PlanItem? from, PlanItem? to) {
+/// [to] begins. Null when neither end has dates. With [zones] the
+/// departure is in [from]'s local time and the arrival in [to]'s.
+(int, int)? suggestTransportTimes(PlanItem? from, PlanItem? to, {TripZones? zones}) {
+  final z = zones ?? TripZones.none;
   final f = from?.isScheduled == true ? from : null;
   final t = to?.isScheduled == true ? to : null;
+  // Zones of the new transport's ends: those of the stays, else home.
+  final depZone = from != null ? z.zoneOfStay(from) : z.homeZone;
+  final arrZone = to != null ? z.zoneOfStay(to) : z.homeZone;
   if (f != null) {
-    final s = f.end!;
-    final e = t != null && t.start! > s ? math.min(s + defaultTransportMinutes, t.start!) : s + defaultTransportMinutes;
-    return (s, e);
+    final s = z.absEnd(f);
+    final next = t == null ? null : z.absStart(t);
+    final e = next != null && next > s ? math.min(s + defaultTransportMinutes, next) : s + defaultTransportMinutes;
+    return (f.end!, z.isActive ? z.toLocal(arrZone, e) : e);
   }
-  if (t != null) return (t.start! - defaultTransportMinutes, t.start!);
+  if (t != null) {
+    final s = z.absStart(t) - defaultTransportMinutes;
+    return (z.isActive ? z.toLocal(depZone, s) : s, t.start!);
+  }
   return null;
 }
 
 /// The stays right before and after [stayId] in [stayChain] (null at the
 /// ends or when the stay is not part of the chain).
-(PlanItem?, PlanItem?) neighbourStays(List<PlanItem> items, String stayId) {
-  final chain = stayChain(items);
+(PlanItem?, PlanItem?) neighbourStays(List<PlanItem> items, String stayId, {TripZones? zones}) {
+  final chain = stayChain(items, zones: zones);
   final k = chain.indexWhere((s) => s.id == stayId);
   if (k < 0) return (null, null);
   return (k > 0 ? chain[k - 1] : null, k + 1 < chain.length ? chain[k + 1] : null);

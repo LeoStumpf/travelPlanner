@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../domain/zones.dart';
 import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
@@ -31,7 +32,7 @@ const canvasMoveThreshold = 4.0;
 Map<String, Offset> autoLayout(TripData d) {
   final out = <String, Offset>{};
   final stays = [
-    ...stayChain(d.items),
+    ...stayChain(d.items, zones: d.zones),
     ...d.items.where((i) => i.kind == ItemKind.stay && (!i.isScheduled || i.isOption)),
   ];
   for (var k = 0; k < stays.length; k++) {
@@ -231,7 +232,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
       ],
     ];
     // Stays in order, unless a transport already connects them.
-    final chain = stayChain(data.items);
+    final chain = stayChain(data.items, zones: data.zones);
     for (var k = 0; k + 1 < chain.length; k++) {
       final a = chain[k].id, b = chain[k + 1].id;
       final viaTransport = data.items.any((t) => t.kind == ItemKind.transport && t.fromId == a && t.toId == b);
@@ -312,6 +313,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
                         _ItemNode(
                           item: i,
                           tripStart: data.trip.startDate,
+                          zones: data.zones,
                           selected: ui.selectedId == i.id || _connectFrom == i.id,
                         ),
                         _itemW,
@@ -376,8 +378,9 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
 class _ItemNode extends StatelessWidget {
   final PlanItem item;
   final DateTime? tripStart;
+  final TripZones zones;
   final bool selected;
-  const _ItemNode({required this.item, required this.tripStart, required this.selected});
+  const _ItemNode({required this.item, required this.tripStart, required this.zones, required this.selected});
 
   @override
   Widget build(BuildContext context) {
@@ -418,7 +421,7 @@ class _ItemNode extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(timeSummary(context.l10n, item, tripStart), style: theme.textTheme.bodySmall, maxLines: 2),
+                  Text(timeSummary(context.l10n, item, tripStart, zones: zones), style: theme.textTheme.bodySmall, maxLines: 2),
                   Text(context.l10n.status(item.status), style: theme.textTheme.labelSmall),
                 ],
               ),

@@ -1687,4 +1687,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookingRefCopied => 'Booking reference copied';
+
+  @override
+  String get timeZoneLabel => 'Time zone';
+
+  @override
+  String get homeZoneLabel => 'Home time zone';
+
+  @override
+  String get homeZoneHint =>
+      'Applies to places and times without a zone of their own. Leave empty to plan without time zones.';
+
+  @override
+  String get zoneNone => 'None';
+
+  @override
+  String zoneNoneHome(String zone) {
+    return 'None – trip\'s zone ($zone)';
+  }
+
+  @override
+  String zoneAutomatic(String zone) {
+    return 'Automatic ($zone)';
+  }
+
+  @override
+  String get zoneAutomaticNone => 'Automatic (no zone)';
+
+  @override
+  String get departureZoneLabel => 'Departure time zone';
+
+  @override
+  String get arrivalZoneLabel => 'Arrival time zone';
+
+  @override
+  String get transportZoneHint =>
+      'Automatic uses the zone of the place you leave or reach.';
+
+  @override
+  String get stayZoneHint =>
+      'Times of this place, its accommodation and activities are local times there.';
+
+  @override
+  String get pickTimeZone => 'Choose time zone';
+
+  @override
+  String get searchTimeZone => 'Search city, zone or UTC offset';
+
+  @override
+  String get zonesInTrip => 'Used in this trip';
+
+  @override
+  String get allZones => 'All zones';
+
+  @override
+  String get noZoneMatches => 'No matching time zone';
+
+  @override
+  String localTimeIn(String zone) {
+    return 'Local time $zone';
+  }
+
+  @override
+  String realDuration(String duration) {
+    return 'Duration $duration';
+  }
+
+  @override
+  String warnUnknownTimeZone(String entry, String field, String value) {
+    return '“$entry”: $field: unknown time zone “$value” (expected e.g. “Asia/Colombo”) – ignored';
+  }
+
+  @override
+  String warnUnknownTripTimeZone(String value) {
+    return 'Trip: unknown time zone “$value” (expected e.g. “Europe/Berlin”) – ignored';
+  }
 }

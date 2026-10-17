@@ -11,6 +11,7 @@ import 'dart:convert';
 
 import 'models.dart';
 import 'time.dart';
+import 'zones.dart';
 
 const planFormat = 'tripboard-plan';
 const planFormatVersion = 1;
@@ -107,6 +108,9 @@ enum PlanWarningType {
 
   /// A moment field (field) can't be read (value, as JSON); ignored.
   invalidMoment,
+
+  /// A time zone field (field) names no known IANA zone (value); ignored.
+  unknownTimeZone,
 }
 
 /// A problem with one part of a plan that did not stop the import.
@@ -191,6 +195,7 @@ class PlanExchange {
         'title': d.trip.title,
         if (d.trip.startDate != null) 'startDate': _date(d.trip.startDate!),
         if (d.trip.plannedDays != null) 'days': d.trip.plannedDays,
+        if (d.trip.homeZone != null) 'tz': d.trip.homeZone,
       },
       'items': [for (final i in items) _exportItem(i)],
       'notes': [
@@ -229,6 +234,8 @@ class PlanExchange {
         if (i.transportNumber != null) 'number': i.transportNumber,
         if (i.seat != null) 'seat': i.seat,
         if (i.bookingRef != null) 'bookingRef': i.bookingRef,
+        if (i.tz != null && _zoned(i.kind)) 'tz': i.tz,
+        if (i.endTz != null && i.kind == ItemKind.transport) 'endTz': i.endTz,
         if (i.notes.isNotEmpty) 'notes': i.notes,
         if (i.links.isNotEmpty) 'links': i.links,
       };
@@ -246,6 +253,9 @@ class PlanExchange {
         if (c.pinned) 'pinned': true,
         if (c.itemId != null) 'item': c.itemId,
       };
+
+  /// Kinds whose own `tz` means something (see zones.dart).
+  static bool _zoned(ItemKind k) => k == ItemKind.stay || k == ItemKind.transport;
 
   static Map<String, Object?> _moment(int minute) => {'day': dayOf(minute) + 1, 'time': formatClock(minute)};
 
@@ -325,6 +335,7 @@ class PlanExchange {
     var tripChanged = false;
     final startDate = t.containsKey('startDate') ? _parseDate(t['startDate'], warnings) : null;
     final days = t.containsKey('days') ? _parseInt(t['days'], 'days', warnings) : null;
+    final homeZone = t.containsKey('tz') ? _parseZone(t['tz'], 'tz', null, warnings) : null;
     if (into == null) {
       final title = (t['title'] as String?)?.trim();
       trip = Trip(
@@ -332,6 +343,7 @@ class PlanExchange {
         title: title == null || title.isEmpty ? newTripTitle : title,
         startDate: startDate?.value,
         plannedDays: days?.value,
+        homeZone: homeZone?.value,
         createdAt: now,
       );
     } else {
@@ -340,6 +352,7 @@ class PlanExchange {
       if (title != null && title.isNotEmpty) tr = tr.copyWith(title: title);
       if (startDate != null) tr = tr.copyWith(startDate: startDate.value);
       if (days != null) tr = tr.copyWith(plannedDays: days.value);
+      if (homeZone != null) tr = tr.copyWith(homeZone: homeZone.value);
       tripChanged = jsonEncode(tr.toJson()) != jsonEncode(into.trip.toJson());
       trip = tr;
     }
@@ -404,6 +417,7 @@ class PlanExchange {
 
     // Items.
     final outItems = <PlanItem>[];
+    final timeChecks = <(String, Map<String, Object?>, int?, int?)>[];
     var created = 0, updated = 0, n = 0;
     for (final (id, e) in itemEntries) {
       if (removeItems.contains(id)) continue;
@@ -467,6 +481,16 @@ class PlanExchange {
       if (has('number')) item = item.copyWith(transportNumber: _text(e['number']));
       if (has('seat')) item = item.copyWith(seat: _text(e['seat']));
       if (has('bookingRef')) item = item.copyWith(bookingRef: _text(e['bookingRef']));
+      if (has('tz')) {
+        final z = _parseZone(e['tz'], 'tz', label(e), warnings);
+        if (z != null) item = item.copyWith(tz: z.value);
+      }
+      if (has('endTz')) {
+        final z = _parseZone(e['endTz'], 'endTz', label(e), warnings);
+        if (z != null) item = item.copyWith(endTz: z.value);
+      }
+      if (item.kind != ItemKind.stay && item.kind != ItemKind.transport) item = item.copyWith(tz: null);
+      if (item.kind != ItemKind.transport) item = item.copyWith(endTz: null);
       if (has('stay')) item = item.copyWith(parentId: resolveItem(e['stay'], 'stay', e));
       if (has('from')) item = item.copyWith(fromId: resolveItem(e['from'], 'from', e));
       if (has('to')) item = item.copyWith(toId: resolveItem(e['to'], 'to', e));
@@ -505,11 +529,18 @@ class PlanExchange {
           warn(PlanWarningType.startOrEndOnly, e);
           start = end = null;
         }
-        if (ok && start != null && end! < start) {
+        // A transport's end is in the arrival zone and may read earlier
+        // than its start (westwards); it is checked on absolute time below.
+        if (ok && start != null && end! < start && item.kind != ItemKind.transport) {
           warn(PlanWarningType.endBeforeStart, e);
           ok = false;
         }
-        if (ok) item = item.copyWith(start: start, end: end);
+        if (ok) {
+          if (item.kind == ItemKind.transport && start != null) {
+            timeChecks.add((id, e, item.start, item.end));
+          }
+          item = item.copyWith(start: start, end: end);
+        }
       }
 
       if (old == null) {
@@ -518,6 +549,30 @@ class PlanExchange {
       } else if (jsonEncode(item.toJson()) != jsonEncode(old.toJson())) {
         updated++;
         outItems.add(item);
+      }
+    }
+
+    // Transports whose end might lie before their start once zones are
+    // applied: check them against the final plan, and keep the old times
+    // (none for a new entry) when the arrival is before the departure.
+    if (timeChecks.isNotEmpty) {
+      final merged = {...oldItems, for (final i in outItems) i.id: i};
+      merged.removeWhere((id, _) => removeItems.contains(id));
+      final zones = TripZones.of(trip, merged.values);
+      for (final (id, e, oldStart, oldEnd) in timeChecks) {
+        final k = outItems.indexWhere((i) => i.id == id);
+        if (k < 0) continue; // unchanged
+        final item = outItems[k];
+        if (zones.absEnd(item) >= zones.absStart(item)) continue;
+        warn(PlanWarningType.endBeforeStart, e);
+        final reverted = item.copyWith(start: oldStart, end: oldEnd);
+        final old = oldItems[id];
+        if (old != null && jsonEncode(reverted.toJson()) == jsonEncode(old.toJson())) {
+          outItems.removeAt(k);
+          updated--;
+        } else {
+          outItems[k] = reverted;
+        }
       }
     }
 
@@ -620,6 +675,15 @@ class PlanExchange {
     if (v == null) return (value: null);
     if (v is num && v == v.roundToDouble()) return (value: v.toInt());
     warnings.add(PlanWarning(PlanWarningType.notAnInteger, field: field, value: '$v'));
+    return null;
+  }
+
+  /// A zone field: an IANA name, or null / blank to clear it.
+  static ({String? value})? _parseZone(Object? v, String field, String? entry, List<PlanWarning> warnings) {
+    final name = _text(v);
+    if (name == null) return (value: null);
+    if (isKnownZone(name)) return (value: name);
+    warnings.add(PlanWarning(PlanWarningType.unknownTimeZone, entry: entry, field: field, value: name));
     return null;
   }
 

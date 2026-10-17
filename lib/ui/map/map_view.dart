@@ -9,6 +9,7 @@ import '../../data/offline_maps.dart';
 import '../../domain/analysis.dart';
 import '../../domain/map_offline.dart';
 import '../../domain/models.dart';
+import '../../domain/zones.dart';
 import '../../state/hints.dart';
 import '../../state/offline_map.dart';
 import '../../state/providers.dart';
@@ -137,7 +138,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
 
     // Route: confirmed stays in order.
     if (ui.layers.contains(ItemKind.stay)) {
-      final route = [for (final s in stayChain(data.items)) if (s.hasLocation) LatLng(s.lat!, s.lng!)];
+      final route = [for (final s in stayChain(data.items, zones: data.zones)) if (s.hasLocation) LatLng(s.lat!, s.lng!)];
       if (route.length >= 2) {
         await map.addLine(LineOptions(
           geometry: route,
@@ -163,7 +164,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       );
     }
 
-    final chain = stayChain(data.items);
+    final chain = stayChain(data.items, zones: data.zones);
     // Smaller things first so stays end up on top.
     final order = [ItemKind.activity, ItemKind.accommodation, ItemKind.stay];
     for (final kind in order) {

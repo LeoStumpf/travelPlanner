@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../domain/zones.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
 import '../../state/hints.dart';
@@ -120,9 +121,9 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     final isRoot = item != null && item.anchorId == null;
     final m = isRoot ? mode : ShiftMode.single;
     return switch (_dragType!) {
-      _DragType.move => Scheduler.move(data.items, id, _dragMinutes, m),
-      _DragType.resizeEnd => Scheduler.resizeEnd(data.items, id, _dragMinutes, m),
-      _DragType.resizeStart => Scheduler.resizeStart(data.items, id, _dragMinutes),
+      _DragType.move => Scheduler.move(data.items, id, _dragMinutes, m, zones: data.zones),
+      _DragType.resizeEnd => Scheduler.resizeEnd(data.items, id, _dragMinutes, m, zones: data.zones),
+      _DragType.resizeStart => Scheduler.resizeStart(data.items, id, _dragMinutes, zones: data.zones),
     };
   }
 
@@ -243,7 +244,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     await actions.applySchedule(data, r, label);
     if (!mounted) return;
     final others = r.changedIds.length - 1;
-    final conflicts = findConflicts(r.items).length;
+    final conflicts = findConflicts(r.items, zones: data.zones).length;
     showSnack(
       context,
       [
@@ -280,7 +281,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     final firstDay = first;
     final lastDay = lastRaw + 2;
     final totalW = (lastDay - firstDay + 1) * _dayWidth;
-    final conflicts = findConflicts(items);
+    final conflicts = findConflicts(items, zones: data.zones);
     final conflictIds = {
       for (final c in conflicts) ...[c.itemId, ?c.otherId],
     };
@@ -292,7 +293,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     });
 
     final missingNights = uncoveredNights(items);
-    final transportGaps = missingTransports(items);
+    final transportGaps = missingTransports(items, zones: data.zones);
     final lanes = <_LaneSpec>[];
     for (final k in ItemKind.values) {
       if (!ui.layers.contains(k)) continue;
@@ -343,7 +344,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       }
       if (lane.kind == ItemKind.accommodation) {
         for (final n in missingNights) {
-          final stay = stayChain(items).where((s) => dayOf(s.start!) <= n && n < lastDayOf(s.end!)).firstOrNull;
+          final stay = stayChain(items, zones: data.zones).where((s) => dayOf(s.start!) <= n && n < lastDayOf(s.end!)).firstOrNull;
           children.add(
             Positioned(
               left: x(at(n, 19 * 60)),

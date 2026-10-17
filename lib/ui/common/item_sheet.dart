@@ -7,6 +7,7 @@ import '../../domain/analysis.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
+import '../../domain/zones.dart';
 import '../../state/providers.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
@@ -16,13 +17,20 @@ import 'l10n.dart';
 import 'style.dart';
 import 'transport_details.dart';
 
-String timeSummary(AppLocalizations l, PlanItem i, DateTime? tripStart) {
+/// "Day 2 21:30 → 23:00 · …" in local times. With [zones], a transport
+/// across zones gets the UTC offset of each end and its real duration.
+String timeSummary(AppLocalizations l, PlanItem i, DateTime? tripStart, {TripZones? zones}) {
   if (!i.isScheduled) return l.notScheduledYet;
-  final s = l.moment(tripStart, i.start!);
-  final e = dayOf(i.start!) == dayOf(i.end!) ? formatClock(i.end!) : l.moment(tripStart, i.end!);
+  final z = zones ?? TripZones.none;
+  final cross = z.crossesZones(i);
+  String tag(String? offset) => cross && offset != null ? ' $offset' : '';
+  final s = l.moment(tripStart, i.start!) + tag(z.startOffsetLabel(i));
+  final e = (dayOf(i.start!) == dayOf(i.end!) ? formatClock(i.end!) : l.moment(tripStart, i.end!)) +
+      tag(z.endOffsetLabel(i));
   final extra = switch (i.kind) {
     ItemKind.stay => ' · ${l.days(daysTouched(i.start!, i.end!))} · ${l.nights(nightsIn(i.start!, i.end!))}',
     ItemKind.accommodation => ' · ${l.nights(nightsIn(i.start!, i.end!))}',
+    _ when cross => ' · ${l.duration(z.absDuration(i), withMinutes: true)}',
     _ => '',
   };
   return '$s → $e$extra';
@@ -62,7 +70,8 @@ Future<void> toggleFixed(AppLocalizations l, WidgetRef ref, TripData data, PlanI
 /// Moves [item] by [days] whole days with the scheduler, rippling like a
 /// drag on the timeline in the current shift mode. One undoable step.
 Future<void> shiftItemDays(AppLocalizations l, WidgetRef ref, TripData data, PlanItem item, int days) {
-  final r = Scheduler.move(data.items, item.id, days * minutesPerDay, ref.read(tripUiProvider).shiftMode);
+  final r = Scheduler.move(data.items, item.id, days * minutesPerDay, ref.read(tripUiProvider).shiftMode,
+      zones: data.zones);
   final label = l.stepShiftedDays(item.title, days > 0 ? '+' : '−', l.days(days.abs()));
   return ref.read(planActionsProvider).applySchedule(data, r, label);
 }
@@ -97,7 +106,9 @@ class _ItemSheet extends ConsumerWidget {
     final item = data?.item(id);
     if (data == null || item == null) return const SizedBox(height: 120);
     final tripStart = data.trip.startDate;
-    final conflicts = findConflicts(data.items).where((c) => c.involves(id)).toList();
+    final zones = data.zones;
+    final conflicts = findConflicts(data.items, zones: zones).where((c) => c.involves(id)).toList();
+    final zone = item.isScheduled && !zones.crossesZones(item) ? zones.startZone(item) : null;
     final children = [for (final i in data.items) if (i.parentId == id) i];
     final lodging = children.where((i) => i.kind == ItemKind.accommodation).toList();
     final activities = children.where((i) => i.kind == ItemKind.activity).toList()
@@ -142,8 +153,15 @@ class _ItemSheet extends ConsumerWidget {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.schedule),
-          title: Text(timeSummary(l, item, tripStart)),
+          title: Text(timeSummary(l, item, tripStart, zones: zones)),
         ),
+        if (zone != null)
+          ListTile(
+            key: const ValueKey('item-zone'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.public),
+            title: Text(l.localTimeIn('$zone (${zones.startOffsetLabel(item)})')),
+          ),
         if (item.kind == ItemKind.transport)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -263,7 +281,7 @@ class _ItemSheet extends ConsumerWidget {
   /// to the next one (by [stayChain]); without a neighbour the other end
   /// stays open in the editor.
   Widget _transportActions(BuildContext context, TripData data, PlanItem stay) {
-    final (prev, next) = neighbourStays(data.items, stay.id);
+    final (prev, next) = neighbourStays(data.items, stay.id, zones: data.zones);
     void open({PlanItem? from, PlanItem? to}) {
       Navigator.pop(context);
       openTransportEditor(context, data, from: from, to: to);
@@ -294,7 +312,7 @@ class _ItemSheet extends ConsumerWidget {
       leading: Icon(itemIcon(i), color: kindColor(i.kind).withValues(alpha: i.isOption ? 0.5 : 1)),
       title: Text(i.title,
           style: i.isOption ? const TextStyle(fontStyle: FontStyle.italic) : null),
-      subtitle: Text('${l.status(i.status)} · ${timeSummary(l, i, data.trip.startDate)}'),
+      subtitle: Text('${l.status(i.status)} · ${timeSummary(l, i, data.trip.startDate, zones: data.zones)}'),
       trailing: canChoose
           ? TextButton(
               onPressed: () => chooseAccommodation(context, ref, data, i, undoSnack: false),

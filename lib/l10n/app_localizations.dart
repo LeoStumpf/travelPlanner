@@ -2628,6 +2628,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Booking reference copied'**
   String get bookingRefCopied;
+
+  /// No description provided for @timeZoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get timeZoneLabel;
+
+  /// No description provided for @homeZoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Home time zone'**
+  String get homeZoneLabel;
+
+  /// No description provided for @homeZoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to places and times without a zone of their own. Leave empty to plan without time zones.'**
+  String get homeZoneHint;
+
+  /// No description provided for @zoneNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get zoneNone;
+
+  /// No description provided for @zoneNoneHome.
+  ///
+  /// In en, this message translates to:
+  /// **'None – trip\'s zone ({zone})'**
+  String zoneNoneHome(String zone);
+
+  /// No description provided for @zoneAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic ({zone})'**
+  String zoneAutomatic(String zone);
+
+  /// No description provided for @zoneAutomaticNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic (no zone)'**
+  String get zoneAutomaticNone;
+
+  /// No description provided for @departureZoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure time zone'**
+  String get departureZoneLabel;
+
+  /// No description provided for @arrivalZoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival time zone'**
+  String get arrivalZoneLabel;
+
+  /// No description provided for @transportZoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic uses the zone of the place you leave or reach.'**
+  String get transportZoneHint;
+
+  /// No description provided for @stayZoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Times of this place, its accommodation and activities are local times there.'**
+  String get stayZoneHint;
+
+  /// No description provided for @pickTimeZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose time zone'**
+  String get pickTimeZone;
+
+  /// No description provided for @searchTimeZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city, zone or UTC offset'**
+  String get searchTimeZone;
+
+  /// No description provided for @zonesInTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in this trip'**
+  String get zonesInTrip;
+
+  /// No description provided for @allZones.
+  ///
+  /// In en, this message translates to:
+  /// **'All zones'**
+  String get allZones;
+
+  /// No description provided for @noZoneMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching time zone'**
+  String get noZoneMatches;
+
+  /// No description provided for @localTimeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Local time {zone}'**
+  String localTimeIn(String zone);
+
+  /// No description provided for @realDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration {duration}'**
+  String realDuration(String duration);
+
+  /// No description provided for @warnUnknownTimeZone.
+  ///
+  /// In en, this message translates to:
+  /// **'“{entry}”: {field}: unknown time zone “{value}” (expected e.g. “Asia/Colombo”) – ignored'**
+  String warnUnknownTimeZone(String entry, String field, String value);
+
+  /// No description provided for @warnUnknownTripTimeZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip: unknown time zone “{value}” (expected e.g. “Europe/Berlin”) – ignored'**
+  String warnUnknownTripTimeZone(String value);
 }
 
 class _AppLocalizationsDelegate

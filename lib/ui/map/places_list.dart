@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../domain/analysis.dart';
 import '../../domain/map_offline.dart';
 import '../../domain/models.dart';
+import '../../domain/zones.dart';
 import '../common/item_sheet.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
@@ -21,7 +22,7 @@ class PlacesList extends ConsumerWidget {
 
   /// Grouped order with indentation depth.
   static List<(PlanItem, int)> ordered(TripData data) {
-    final chain = stayChain(data.items);
+    final chain = stayChain(data.items, zones: data.zones);
     final stays = [
       ...chain,
       for (final s in data.items)
@@ -47,7 +48,7 @@ class PlacesList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final rows = ordered(data);
-    final chain = stayChain(data.items);
+    final chain = stayChain(data.items, zones: data.zones);
     if (rows.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(24),

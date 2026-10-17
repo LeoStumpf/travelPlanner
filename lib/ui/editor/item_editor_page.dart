@@ -8,10 +8,12 @@ import '../../domain/analysis.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
+import '../../domain/zones.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
+import '../common/zone_picker.dart';
 import 'attachments_section.dart';
 import 'place_search.dart';
 import 'time_fields.dart';
@@ -44,7 +46,7 @@ Future<String?> openItemEditor(
 /// (either may be null), timed by [suggestTransportTimes].
 Future<String?> openTransportEditor(BuildContext context, TripData data, {PlanItem? from, PlanItem? to}) {
   final base = _newItem(data, ItemKind.transport, null, null, null);
-  final times = suggestTransportTimes(from, to);
+  final times = suggestTransportTimes(from, to, zones: data.zones);
   final title = switch ((from, to)) {
     (final f?, final t?) => '${f.title} → ${t.title}',
     (null, final t?) => context.l10n.transportTo(t.title),
@@ -65,7 +67,7 @@ Future<String?> openTransportEditor(BuildContext context, TripData data, {PlanIt
 }
 
 PlanItem _newItem(TripData data, ItemKind kind, int? atDay, String? parentHint, String? title) {
-  final chain = stayChain(data.items);
+  final chain = stayChain(data.items, zones: data.zones);
   final hint = data.item(parentHint);
   // Stay the new thing relates to: the selected one, else the last one.
   final stay = hint?.kind == ItemKind.stay
@@ -212,6 +214,11 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
 
   void _update(PlanItem Function(PlanItem) f) => setState(() => _i = f(_i));
 
+  /// Zones of the trip with the item as currently edited (its links and
+  /// zone fields may differ from the stored one).
+  TripZones _zonesWith(TripData data, PlanItem item) =>
+      TripZones.of(data.trip, [for (final i in data.items) if (i.id != item.id) i, item]);
+
   @override
   Widget build(BuildContext context) {
     final data = ref.watch(tripDataProvider(widget.tripId)).value;
@@ -304,6 +311,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             ),
             const Divider(),
             ..._relationFields(stays),
+            ..._zoneFields(data),
             if (_i.kind == ItemKind.transport) ..._detailFields(),
             if (_i.kind != ItemKind.transport) _placeTile(),
             const Divider(),
@@ -314,7 +322,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
               value: _scheduled,
               onChanged: (v) => setState(() => _scheduled = v),
             ),
-            if (_scheduled) ..._timeFields(start),
+            if (_scheduled) ..._timeFields(start, _zonesWith(data, _i)),
             const Divider(),
             TextField(
               controller: _notes,
@@ -380,6 +388,56 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     }
   }
 
+  /// Time zone of a stay, or departure / arrival zone of a transport. The
+  /// transport's zones show only once the trip uses zones at all; they
+  /// default to the zones of the linked stays.
+  List<Widget> _zoneFields(TripData data) {
+    final l = context.l10n;
+    final home = data.trip.homeZone;
+    final zones = _zonesWith(data, _i);
+    switch (_i.kind) {
+      case ItemKind.stay:
+        return [
+          ZoneTile(
+            key: const ValueKey('field-tz'),
+            label: l.timeZoneLabel,
+            zone: _i.tz,
+            noneLabel: home == null ? l.zoneNone : l.zoneNoneHome(home),
+            subtitle: l.stayZoneHint,
+            suggestions: data.usedZones,
+            onChanged: (z) => _update((i) => i.copyWith(tz: z)),
+          ),
+        ];
+      case ItemKind.transport:
+        if (!zones.isActive) return const [];
+        String auto(String? z) => z == null ? l.zoneAutomaticNone : l.zoneAutomatic(z);
+        final depAuto = zones.startZone(_i.copyWith(tz: null));
+        final arrAuto = zones.endZone(_i.copyWith(endTz: null));
+        return [
+          ZoneTile(
+            key: const ValueKey('field-tz'),
+            label: l.departureZoneLabel,
+            zone: _i.tz,
+            noneLabel: auto(depAuto),
+            suggestions: data.usedZones,
+            onChanged: (z) => _update((i) => i.copyWith(tz: z)),
+          ),
+          ZoneTile(
+            key: const ValueKey('field-end-tz'),
+            label: l.arrivalZoneLabel,
+            zone: _i.endTz,
+            noneLabel: auto(arrAuto),
+            subtitle: l.transportZoneHint,
+            suggestions: data.usedZones,
+            onChanged: (z) => _update((i) => i.copyWith(endTz: z)),
+          ),
+        ];
+      case ItemKind.accommodation:
+      case ItemKind.activity:
+        return const [];
+    }
+  }
+
   /// Ticket details of a transport; all optional.
   List<Widget> _detailFields() {
     final l = context.l10n;
@@ -434,8 +492,17 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         },
       );
 
-  List<Widget> _timeFields(DateTime? tripStart) {
+  List<Widget> _timeFields(DateTime? tripStart, TripZones zones) {
     final kind = _i.kind;
+    // End must come at least an hour after the start in real time, which
+    // for a transport across zones is not the same as on the clock.
+    int validEnd(int s, int e) {
+      final probe = _i.copyWith(start: s, end: e);
+      return zones.absEnd(probe) < zones.absStart(probe) + 60 ? zones.earliestEnd(probe, 60) : e;
+    }
+    final timed = _i.copyWith(start: _start, end: _end);
+    String? local(String? zone, int minute) =>
+        zone == null ? null : _localLabel(zone, formatUtcOffset(zones.offsetAt(zone, minute)));
     final nights = nightsIn(_start, _end);
     final days = daysTouched(_start, _end);
     final l = context.l10n;
@@ -467,15 +534,21 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           // Keep the duration when moving the start.
           final dur = _end - _start;
           _start = v;
-          _end = v + (dur > 0 ? dur : 60);
+          _end = validEnd(v, v + dur);
         }),
       ),
+      if (zones.isActive) _zoneCaption(local(zones.startZone(timed), _start), const ValueKey('start-zone')),
       MomentField(
         label: endLabel,
         tripStart: tripStart,
         value: _end,
-        onChanged: (v) => setState(() => _end = v <= _start ? _start + 60 : v),
+        onChanged: (v) => setState(() => _end = validEnd(_start, v)),
       ),
+      if (zones.isActive && kind == ItemKind.transport) ...[
+        _zoneCaption(local(zones.endZone(timed), _end), const ValueKey('end-zone')),
+        _zoneCaption(l.realDuration(l.duration(zones.absDuration(timed), withMinutes: true)),
+            const ValueKey('real-duration')),
+      ],
       if (kind == ItemKind.stay || kind == ItemKind.accommodation)
         Row(
           children: [
@@ -494,6 +567,16 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         ),
     ];
   }
+
+  String _localLabel(String zone, String offset) => context.l10n.localTimeIn('$zone ($offset)');
+
+  Widget _zoneCaption(String? text, Key key) => text == null
+      ? const SizedBox.shrink()
+      : Padding(
+          key: key,
+          padding: const EdgeInsets.only(left: 84, bottom: 4),
+          child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+        );
 
   Widget _linksSection() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,15 +652,19 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       );
     }
     if (item.kind == ItemKind.stay || item.kind == ItemKind.transport) item = item.copyWith(parentId: null);
+    // Only stays and transports carry zones of their own (zones.dart).
+    if (item.kind != ItemKind.stay && item.kind != ItemKind.transport) item = item.copyWith(tz: null);
+    if (item.kind != ItemKind.transport) item = item.copyWith(endTz: null);
 
     final old = data.item(item.id);
+    final zones = _zonesWith(data, item);
     ScheduleResult? r;
     if (old == null) {
-      r = Scheduler.insert(data.items, item, mode);
+      r = Scheduler.insert(data.items, item, mode, zones: zones);
     } else if (item.isScheduled && old.isScheduled && (old.start != item.start || old.end != item.end)) {
       // Other fields first, then let the scheduler move it (and what follows).
       final others = [for (final i in data.items) i.id == item.id ? item.copyWith(start: old.start, end: old.end) : i];
-      r = Scheduler.reschedule(others, item.id, item.start!, item.end!, mode);
+      r = Scheduler.reschedule(others, item.id, item.start!, item.end!, mode, zones: zones);
     }
 
     final changed = r == null ? [item] : [item, ...r.changed.where((c) => c.id != item.id)];

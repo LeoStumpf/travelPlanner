@@ -1392,5 +1392,73 @@
   "seatLabel": "Seat / platform",
   "bookingRefLabel": "Booking reference",
   "copyBookingRef": "Copy booking reference",
-  "bookingRefCopied": "Booking reference copied"
+  "bookingRefCopied": "Booking reference copied",
+  "timeZoneLabel": "Time zone",
+  "homeZoneLabel": "Home time zone",
+  "homeZoneHint": "Applies to places and times without a zone of their own. Leave empty to plan without time zones.",
+  "zoneNone": "None",
+  "zoneNoneHome": "None – trip's zone ({zone})",
+  "@zoneNoneHome": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneAutomatic": "Automatic ({zone})",
+  "@zoneAutomatic": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneAutomaticNone": "Automatic (no zone)",
+  "departureZoneLabel": "Departure time zone",
+  "arrivalZoneLabel": "Arrival time zone",
+  "transportZoneHint": "Automatic uses the zone of the place you leave or reach.",
+  "stayZoneHint": "Times of this place, its accommodation and activities are local times there.",
+  "pickTimeZone": "Choose time zone",
+  "searchTimeZone": "Search city, zone or UTC offset",
+  "zonesInTrip": "Used in this trip",
+  "allZones": "All zones",
+  "noZoneMatches": "No matching time zone",
+  "localTimeIn": "Local time {zone}",
+  "@localTimeIn": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "realDuration": "Duration {duration}",
+  "@realDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownTimeZone": "“{entry}”: {field}: unknown time zone “{value}” (expected e.g. “Asia/Colombo”) – ignored",
+  "@warnUnknownTimeZone": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownTripTimeZone": "Trip: unknown time zone “{value}” (expected e.g. “Europe/Berlin”) – ignored",
+  "@warnUnknownTripTimeZone": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

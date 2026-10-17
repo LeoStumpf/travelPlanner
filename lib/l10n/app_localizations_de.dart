@@ -1689,4 +1689,79 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get bookingRefCopied => 'Buchungsnummer kopiert';
+
+  @override
+  String get timeZoneLabel => 'Zeitzone';
+
+  @override
+  String get homeZoneLabel => 'Heimat-Zeitzone';
+
+  @override
+  String get homeZoneHint =>
+      'Gilt für Orte und Zeiten ohne eigene Zone. Leer lassen, um ohne Zeitzonen zu planen.';
+
+  @override
+  String get zoneNone => 'Keine';
+
+  @override
+  String zoneNoneHome(String zone) {
+    return 'Keine – Zone der Reise ($zone)';
+  }
+
+  @override
+  String zoneAutomatic(String zone) {
+    return 'Automatisch ($zone)';
+  }
+
+  @override
+  String get zoneAutomaticNone => 'Automatisch (keine Zone)';
+
+  @override
+  String get departureZoneLabel => 'Zeitzone Abfahrt';
+
+  @override
+  String get arrivalZoneLabel => 'Zeitzone Ankunft';
+
+  @override
+  String get transportZoneHint =>
+      'Automatisch nimmt die Zone des Orts, den man verlässt bzw. erreicht.';
+
+  @override
+  String get stayZoneHint =>
+      'Zeiten dieses Orts, seiner Unterkünfte und Aktivitäten gelten in dieser Ortszeit.';
+
+  @override
+  String get pickTimeZone => 'Zeitzone wählen';
+
+  @override
+  String get searchTimeZone => 'Stadt, Zone oder UTC-Versatz suchen';
+
+  @override
+  String get zonesInTrip => 'In dieser Reise';
+
+  @override
+  String get allZones => 'Alle Zonen';
+
+  @override
+  String get noZoneMatches => 'Keine passende Zeitzone';
+
+  @override
+  String localTimeIn(String zone) {
+    return 'Ortszeit $zone';
+  }
+
+  @override
+  String realDuration(String duration) {
+    return 'Dauer $duration';
+  }
+
+  @override
+  String warnUnknownTimeZone(String entry, String field, String value) {
+    return '„$entry“: $field: unbekannte Zeitzone „$value“ (erwartet z. B. „Asia/Colombo“) – ignoriert';
+  }
+
+  @override
+  String warnUnknownTripTimeZone(String value) {
+    return 'Reise: unbekannte Zeitzone „$value“ (erwartet z. B. „Europe/Berlin“) – ignoriert';
+  }
 }

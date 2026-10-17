@@ -8,10 +8,13 @@
 // * children  – items anchored to another item (lodging/activities via
 //               parentId, transports via their destination). They always
 //               travel with their anchor unless they are fixed.
-import 'dart:math' as math;
-
+//
+// Items move by local minutes (a day later is a day later in any zone), but
+// order and overlaps are judged on absolute time (zones.dart), so a flight
+// that lands "earlier" in local time still comes after its departure.
 import 'models.dart';
 import 'time.dart';
+import 'zones.dart';
 
 enum ShiftMode {
   /// Everything after the changed item moves by the same amount.
@@ -38,9 +41,11 @@ class Scheduler {
   final List<PlanItem> _original;
   final Map<String, PlanItem> _updated = {};
   final Set<String> _added = {};
+  final TripZones _zones;
 
-  Scheduler._(List<PlanItem> items)
+  Scheduler._(List<PlanItem> items, TripZones? zones)
       : _original = items,
+        _zones = zones ?? TripZones.none,
         _byId = {for (final i in items) i.id: i} {
     for (final i in items) {
       final a = i.anchorId;
@@ -51,8 +56,8 @@ class Scheduler {
   }
 
   /// Moves item [id] by [delta] minutes.
-  static ScheduleResult move(List<PlanItem> items, String id, int delta, ShiftMode mode) {
-    final s = Scheduler._(items);
+  static ScheduleResult move(List<PlanItem> items, String id, int delta, ShiftMode mode, {TripZones? zones}) {
+    final s = Scheduler._(items, zones);
     final target = s._byId[id];
     if (target == null || !target.isScheduled || delta == 0) return s._result();
 
@@ -65,7 +70,7 @@ class Scheduler {
             if (!f.fixed) s._moveWithChildren(f, delta);
           }
         case ShiftMode.push:
-          if (delta > 0) s._pushFrom(target.end! + delta, followers);
+          if (delta > 0) s._pushFrom(s._absEnd(s._current(target.id)), followers);
         case ShiftMode.single:
           break;
       }
@@ -74,12 +79,12 @@ class Scheduler {
   }
 
   /// Moves the end of item [id] by [delta] minutes (longer / shorter stay).
-  static ScheduleResult resizeEnd(List<PlanItem> items, String id, int delta, ShiftMode mode) {
-    final s = Scheduler._(items);
+  static ScheduleResult resizeEnd(List<PlanItem> items, String id, int delta, ShiftMode mode, {TripZones? zones}) {
+    final s = Scheduler._(items, zones);
     final target = s._byId[id];
     if (target == null || !target.isScheduled || delta == 0) return s._result();
 
-    final newEnd = (target.end! + delta).clamp(target.start! + 60, 1 << 40);
+    final newEnd = (target.end! + delta).clamp(s._zones.earliestEnd(target, 60), 1 << 40);
     final effective = newEnd - target.end!;
     if (effective == 0) return s._result();
     s._set(target.copyWith(end: newEnd));
@@ -92,7 +97,7 @@ class Scheduler {
             if (!f.fixed) s._moveWithChildren(f, effective);
           }
         case ShiftMode.push:
-          if (effective > 0) s._pushFrom(newEnd, followers);
+          if (effective > 0) s._pushFrom(s._absEnd(s._current(target.id)), followers);
         case ShiftMode.single:
           break;
       }
@@ -102,11 +107,12 @@ class Scheduler {
 
   /// Moves the start of item [id] by [delta] minutes (arrive earlier/later).
   /// Only the item changes; overlaps show up as conflicts.
-  static ScheduleResult resizeStart(List<PlanItem> items, String id, int delta) {
-    final s = Scheduler._(items);
+  static ScheduleResult resizeStart(List<PlanItem> items, String id, int delta, {TripZones? zones}) {
+    final s = Scheduler._(items, zones);
     final target = s._byId[id];
     if (target == null || !target.isScheduled || delta == 0) return s._result();
-    final newStart = math.min(target.start! + delta, target.end! - 60);
+    final latest = s._zones.latestStart(target, 60);
+    final newStart = target.start! + delta < latest ? target.start! + delta : latest;
     if (newStart != target.start) s._set(target.copyWith(start: newStart));
     return s._result();
   }
@@ -117,23 +123,24 @@ class Scheduler {
     String id,
     int newStart,
     int newEnd,
-    ShiftMode mode,
-  ) {
+    ShiftMode mode, {
+    TripZones? zones,
+  }) {
     final item = items.where((i) => i.id == id).firstOrNull;
     if (item == null) return ScheduleResult(items, const {});
     if (!item.isScheduled) {
       final placed = item.copyWith(start: newStart, end: newEnd);
-      return insert([for (final i in items) if (i.id != id) i], placed, mode);
+      return insert([for (final i in items) if (i.id != id) i], placed, mode, zones: zones);
     }
-    final moved = move(items, id, newStart - item.start!, mode);
+    final moved = move(items, id, newStart - item.start!, mode, zones: zones);
     final afterMove = moved.items.firstWhere((i) => i.id == id);
-    final resized = resizeEnd(moved.items, id, newEnd - afterMove.end!, mode);
+    final resized = resizeEnd(moved.items, id, newEnd - afterMove.end!, mode, zones: zones);
     return ScheduleResult(resized.items, {...moved.changedIds, ...resized.changedIds});
   }
 
   /// Adds [newItem] and makes room for it after its start.
-  static ScheduleResult insert(List<PlanItem> items, PlanItem newItem, ShiftMode mode) {
-    final s = Scheduler._([...items, newItem]);
+  static ScheduleResult insert(List<PlanItem> items, PlanItem newItem, ShiftMode mode, {TripZones? zones}) {
+    final s = Scheduler._([...items, newItem], zones);
     s._added.add(newItem.id);
     if (!newItem.isScheduled || !s._isRoot(newItem)) return s._result();
 
@@ -142,7 +149,7 @@ class Scheduler {
       case ShiftMode.following:
         final first = followers.where((f) => !f.fixed).firstOrNull;
         if (first != null) {
-          final overlap = newItem.end! - first.start!;
+          final overlap = s._absEnd(newItem) - s._absStart(first);
           if (overlap > 0) {
             final shift = _ceilDays(overlap);
             for (final f in followers) {
@@ -151,7 +158,7 @@ class Scheduler {
           }
         }
       case ShiftMode.push:
-        s._pushFrom(newItem.end!, followers);
+        s._pushFrom(s._absEnd(newItem), followers);
       case ShiftMode.single:
         break;
     }
@@ -164,6 +171,9 @@ class Scheduler {
 
   void _set(PlanItem item) => _updated[item.id] = item;
 
+  int _absStart(PlanItem i) => _zones.absStart(i);
+  int _absEnd(PlanItem i) => _zones.absEnd(i);
+
   bool _isRoot(PlanItem item) {
     final a = item.anchorId;
     return item.isScheduled && !item.isOption && (a == null || !_byId.containsKey(a));
@@ -173,13 +183,11 @@ class Scheduler {
   /// With [inclusive], items starting at the same moment count as well
   /// (used when inserting in front of them).
   List<PlanItem> _followersOf(PlanItem target, {bool inclusive = false}) {
+    final t = _absStart(target);
     final list = [
       for (final i in _original)
-        if (i.id != target.id &&
-            _isRoot(i) &&
-            (i.start! > target.start! || (inclusive && i.start! == target.start!)))
-          i,
-    ]..sort((a, b) => a.start!.compareTo(b.start!));
+        if (i.id != target.id && _isRoot(i) && (_absStart(i) > t || (inclusive && _absStart(i) == t))) i,
+    ]..sort((a, b) => _absStart(a).compareTo(_absStart(b)));
     return list;
   }
 
@@ -198,21 +206,21 @@ class Scheduler {
     visit(item.id, isTarget);
   }
 
-  /// Pushes followers that would overlap the region ending at [cursorEnd],
-  /// in whole days so their time of day stays the same.
+  /// Pushes followers that would overlap the region ending at absolute
+  /// minute [cursorEnd], in whole days so their time of day stays the same.
   void _pushFrom(int cursorEnd, List<PlanItem> followers) {
     var cursor = cursorEnd;
     for (final f in followers) {
       final cur = _current(f.id);
       if (cur.fixed) {
-        if (cur.end! > cursor) cursor = cur.end!;
+        if (_absEnd(cur) > cursor) cursor = _absEnd(cur);
         continue;
       }
-      final overlap = cursor - cur.start!;
+      final overlap = cursor - _absStart(cur);
       if (overlap <= 0) break;
       final shift = _ceilDays(overlap);
       _moveWithChildren(cur, shift);
-      cursor = _current(f.id).end!;
+      cursor = _absEnd(_current(f.id));
     }
   }
 

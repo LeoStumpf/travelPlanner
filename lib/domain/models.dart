@@ -3,7 +3,10 @@
 //
 // Time model: all times are minutes relative to 00:00 of trip day 0.
 // This lets a trip be planned before real dates are known ("Tag 1, Tag 2 …");
-// once a start date is set, days map onto the calendar.
+// once a start date is set, days map onto the calendar. Times are local
+// wall-clock times of the place they belong to; optional IANA time zones
+// (Trip.homeZone, PlanItem.tz / endTz) make them comparable across zones,
+// see zones.dart.
 
 const _keep = Object();
 
@@ -35,6 +38,10 @@ class Trip {
   /// Planned length in days, used to show empty days at the end.
   final int? plannedDays;
   final int color;
+
+  /// IANA zone ("Europe/Berlin") of items that have none of their own.
+  /// Null = times without zone, as before zones existed.
+  final String? homeZone;
   final DateTime createdAt;
 
   const Trip({
@@ -43,6 +50,7 @@ class Trip {
     this.startDate,
     this.plannedDays,
     this.color = 0xFF00876A,
+    this.homeZone,
     required this.createdAt,
   });
 
@@ -51,6 +59,7 @@ class Trip {
     Object? startDate = _keep,
     Object? plannedDays = _keep,
     int? color,
+    Object? homeZone = _keep,
   }) =>
       Trip(
         id: id,
@@ -58,6 +67,7 @@ class Trip {
         startDate: identical(startDate, _keep) ? this.startDate : startDate as DateTime?,
         plannedDays: identical(plannedDays, _keep) ? this.plannedDays : plannedDays as int?,
         color: color ?? this.color,
+        homeZone: identical(homeZone, _keep) ? this.homeZone : homeZone as String?,
         createdAt: createdAt,
       );
 
@@ -67,6 +77,7 @@ class Trip {
         'startDate': startDate?.toIso8601String(),
         'plannedDays': plannedDays,
         'color': color,
+        if (homeZone != null) 'homeZone': homeZone,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -76,6 +87,7 @@ class Trip {
         startDate: j['startDate'] == null ? null : DateTime.parse(j['startDate'] as String),
         plannedDays: j['plannedDays'] as int?,
         color: j['color'] as int? ?? 0xFF00876A,
+        homeZone: j['homeZone'] as String?,
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 }
@@ -121,6 +133,14 @@ class PlanItem {
   /// Booking reference / PNR, shown with a copy button.
   final String? bookingRef;
 
+  /// IANA time zone of the times. For a stay: the zone of the place (its
+  /// accommodation and activities follow it). For a transport: departure
+  /// zone, overriding the origin stay's. Ignored for other kinds.
+  final String? tz;
+
+  /// For transport: arrival zone, overriding the destination stay's.
+  final String? endTz;
+
   /// Position on the canvas; null = auto-placed.
   final double? canvasX;
   final double? canvasY;
@@ -149,6 +169,8 @@ class PlanItem {
     this.transportNumber,
     this.seat,
     this.bookingRef,
+    this.tz,
+    this.endTz,
     this.canvasX,
     this.canvasY,
     required this.createdAt,
@@ -193,6 +215,8 @@ class PlanItem {
     Object? transportNumber = _keep,
     Object? seat = _keep,
     Object? bookingRef = _keep,
+    Object? tz = _keep,
+    Object? endTz = _keep,
     Object? canvasX = _keep,
     Object? canvasY = _keep,
   }) =>
@@ -220,6 +244,8 @@ class PlanItem {
         transportNumber: identical(transportNumber, _keep) ? this.transportNumber : transportNumber as String?,
         seat: identical(seat, _keep) ? this.seat : seat as String?,
         bookingRef: identical(bookingRef, _keep) ? this.bookingRef : bookingRef as String?,
+        tz: identical(tz, _keep) ? this.tz : tz as String?,
+        endTz: identical(endTz, _keep) ? this.endTz : endTz as String?,
         canvasX: identical(canvasX, _keep) ? this.canvasX : canvasX as double?,
         canvasY: identical(canvasY, _keep) ? this.canvasY : canvasY as double?,
         createdAt: createdAt,
@@ -254,6 +280,8 @@ class PlanItem {
         if (transportNumber != null) 'transportNumber': transportNumber,
         if (seat != null) 'seat': seat,
         if (bookingRef != null) 'bookingRef': bookingRef,
+        if (tz != null) 'tz': tz,
+        if (endTz != null) 'endTz': endTz,
         'canvasX': canvasX,
         'canvasY': canvasY,
         'createdAt': createdAt.toIso8601String(),
@@ -282,6 +310,8 @@ class PlanItem {
         transportNumber: j['transportNumber'] as String?,
         seat: j['seat'] as String?,
         bookingRef: j['bookingRef'] as String?,
+        tz: j['tz'] as String?,
+        endTz: j['endTz'] as String?,
         canvasX: (j['canvasX'] as num?)?.toDouble(),
         canvasY: (j['canvasY'] as num?)?.toDouble(),
         createdAt: DateTime.parse(j['createdAt'] as String),

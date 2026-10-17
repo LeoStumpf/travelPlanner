@@ -164,6 +164,7 @@ extension DomainL10n on AppLocalizations {
       PlanWarningType.invalidStartDate => warnInvalidStartDate(v),
       PlanWarningType.dateNeedsStartDate => warnDateNeedsStartDate(e, f),
       PlanWarningType.invalidMoment => warnInvalidMoment(e, f, v, '{"day": 1, "time": "14:00"}'),
+      PlanWarningType.unknownTimeZone => w.entry == null ? warnUnknownTripTimeZone(v) : warnUnknownTimeZone(e, f, v),
     };
   }
 
