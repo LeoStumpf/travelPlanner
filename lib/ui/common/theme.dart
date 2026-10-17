@@ -9,6 +9,7 @@ class Tokens {
   static const surfaceLight = Color(0xFFF1F2F4);
   static const lineLight = Color(0xFFD5D8DE);
   static const mutedLight = Color(0xFF50565F);
+  static const nightLight = Color(0xFFE9ECF0);
 
   static const groundDark = Color(0xFF0B0D12);
   static const surfaceDark = Color(0xFF171A21);
@@ -45,7 +46,7 @@ class AppColors extends ThemeExtension<AppColors> {
         onSignal: Tokens.black,
         line: Tokens.lineLight,
         muted: Tokens.mutedLight,
-        night: Tokens.surfaceLight,
+        night: Tokens.nightLight,
       );
 
   @override
@@ -125,7 +126,9 @@ ThemeData buildTheme(Brightness b) {
         onSignal: Tokens.black,
         line: line,
         muted: muted,
-        night: dark ? const Color(0xFF12151B) : const Color(0xFFF1F2F4),
+        // Visible against the ground in both themes; text never sits on it
+        // directly except in ink colours (>= 15:1).
+        night: dark ? const Color(0xFF151921) : Tokens.nightLight,
       ),
     ],
     appBarTheme: AppBarTheme(

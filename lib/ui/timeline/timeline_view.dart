@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,7 +13,9 @@ import '../../domain/time.dart';
 import '../../domain/timeline.dart';
 import '../../state/hints.dart';
 import '../../state/providers.dart';
+import '../common/a11y.dart';
 import '../common/conflict_tile.dart';
+import '../common/dashed_border.dart';
 import '../common/dialogs.dart';
 import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
@@ -209,8 +212,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
   /// A night without a bed: offer the options covering it first, else
   /// (or on request) create a new accommodation.
   void _onMissingNight(TripData data, int night, PlanItem? stay) {
-    void create() =>
-        openItemEditor(context, data, newKind: ItemKind.accommodation, atDay: night, parentHint: stay?.id);
+    void create() => openItemEditor(context, data, newKind: ItemKind.accommodation, atDay: night, parentHint: stay?.id);
     final options = optionsForNight(data.items, night);
     if (options.isEmpty) {
       create();
@@ -222,8 +224,10 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (c) => _NightOptionsSheet(
-        title: context.l10n
-            .nightTitle(context.l10n.day(data.trip.startDate, night), context.l10n.day(data.trip.startDate, night + 1)),
+        title: context.l10n.nightTitle(
+          context.l10n.day(data.trip.startDate, night),
+          context.l10n.day(data.trip.startDate, night + 1),
+        ),
         options: options,
         tripStart: data.trip.startDate,
         onChoose: (o) {
@@ -263,11 +267,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     final conflicts = findConflicts(r.items, zones: data.zones).length;
     showSnack(
       context,
-      [
-        label,
-        if (others > 0) l.othersMovedAlong(others),
-        if (conflicts > 0) l.conflictsCount(conflicts),
-      ].join(' · '),
+      [label, if (others > 0) l.othersMovedAlong(others), if (conflicts > 0) l.conflictsCount(conflicts)].join(' · '),
       action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(data.trip.id)),
     );
   }
@@ -351,6 +351,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
           if (g.firstDay < firstDay) continue;
           children.add(
             Positioned(
+              key: ValueKey('free-days-${g.firstDay}'),
               left: x(at(g.firstDay, 0)) + 3,
               width: g.days * _dayWidth - 6,
               top: _lanePad,
@@ -365,7 +366,10 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       }
       if (lane.kind == ItemKind.accommodation) {
         for (final n in missingNights) {
-          final stay = stayChain(items, zones: data.zones).where((s) => dayOf(s.start!) <= n && n < lastDayOf(s.end!)).firstOrNull;
+          final stay = stayChain(
+            items,
+            zones: data.zones,
+          ).where((s) => dayOf(s.start!) <= n && n < lastDayOf(s.end!)).firstOrNull;
           children.add(
             Positioned(
               left: x(at(n, 19 * 60)),
@@ -373,6 +377,11 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               top: _lanePad + (lane.rowCount - 1) * rowH,
               height: rowH - 6,
               child: _MissingNight(
+                key: ValueKey('missing-night-$n'),
+                night: context.l10n.nightTitle(
+                  context.l10n.day(data.trip.startDate, n),
+                  context.l10n.day(data.trip.startDate, n + 1),
+                ),
                 options: optionsForNight(items, n).length,
                 onTap: () => _onMissingNight(data, n, stay),
               ),
@@ -444,6 +453,8 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               selected: ui.selectedId == i.id,
               conflict: conflictIds.contains(i.id),
               moving: changed.contains(i.id),
+              // Screen readers move items with these instead of dragging.
+              semanticActions: _dragId == null ? itemShiftActions(context, ref, data, i) : const {},
               onTap: () => showItemSheet(context, ref, data.trip.id, i.id),
               onLongPressStart: () {
                 if (!draggable) {
@@ -627,6 +638,9 @@ class _Block extends StatelessWidget {
   final ValueChanged<double> onLongPressMove;
   final VoidCallback onLongPressEnd;
 
+  /// Custom screen-reader actions ("1 Tag später/früher").
+  final Map<CustomSemanticsAction, VoidCallback> semanticActions;
+
   /// Pushes the title right when the block starts left of the viewport.
   final double titleInset;
 
@@ -647,6 +661,7 @@ class _Block extends StatelessWidget {
     required this.onLongPressStart,
     required this.onLongPressMove,
     required this.onLongPressEnd,
+    this.semanticActions = const {},
     this.titleInset = 0,
     this.titleWidth,
     this.titleOutside = false,
@@ -655,15 +670,20 @@ class _Block extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
     final base = kindColor(item.kind);
-    final option = item.isOption || item.status == ItemStatus.idea;
-    final bg = option ? base.withValues(alpha: 0.22) : base;
-    final fg = option ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : base) : Colors.white;
+    // Options and ideas: opaque tint, dashed outline and status icon, so
+    // they stand out by shape too, and their text keeps 4.5:1 contrast.
+    final option = isTentative(item);
+    final bg = option ? tentativeFill(base, brightness) : base;
+    final fg = option ? tentativeInk(base, brightness) : Colors.white;
     final borderColor = conflict
         ? scheme.error
         : selected
         ? scheme.onSurface
-        : (option ? base : Colors.transparent);
+        : Colors.transparent;
+    final dashed = option && !conflict && !selected;
+    final radius = item.kind == ItemKind.accommodation ? 18.0 : 8.0;
     final nights = item.kind == ItemKind.stay || item.kind == ItemKind.accommodation
         ? nightsIn(item.start!, item.end!)
         : null;
@@ -671,7 +691,10 @@ class _Block extends StatelessWidget {
     final rail = item.kind == ItemKind.stay;
     final ink = scheme.onSurface;
 
-    return GestureDetector(
+    final block = GestureDetector(
+      // Semantics come from the wrapper below (label, tap, custom actions);
+      // a semantic long press would only start a drag that never moves.
+      excludeFromSemantics: true,
       onTap: onTap,
       onLongPressStart: (_) => onLongPressStart(),
       onLongPressMoveUpdate: (d) => onLongPressMove(d.offsetFromOrigin.dx),
@@ -688,23 +711,37 @@ class _Block extends StatelessWidget {
               )
             : BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(item.kind == ItemKind.accommodation ? 18 : 8),
+                borderRadius: BorderRadius.circular(radius),
                 border: Border.all(color: borderColor, width: conflict || selected ? 2 : 1),
                 boxShadow: moving ? [BoxShadow(color: base.withValues(alpha: 0.5), blurRadius: 8)] : null,
               ),
-        child: LayoutBuilder(
-          builder: (context, c) => rail
-              ? _rail(context, c.maxWidth, base, option, ink, nights)
-              : _box(context, c.maxWidth, fg, nights),
+        child: CustomPaint(
+          foregroundPainter: dashed && !rail ? DashedBorderPainter(fg, radius: radius, strokeWidth: 1.5) : null,
+          child: LayoutBuilder(
+            builder: (context, c) =>
+                rail ? _rail(context, c.maxWidth, base, option, ink, nights) : _box(context, c.maxWidth, fg, nights),
+          ),
         ),
       ),
+    );
+    return Semantics(
+      key: ValueKey('block-semantics-${item.id}'),
+      container: true,
+      button: true,
+      selected: selected,
+      label: itemSemanticsLabel(context.l10n, item, tripStart: tripStart, conflict: conflict),
+      onTapHint: context.l10n.a11yHintDetails,
+      onTap: onTap,
+      customSemanticsActions: semanticActions.isEmpty ? null : semanticActions,
+      excludeSemantics: true,
+      child: block,
     );
   }
 
   /// A stay: name above a thick line with a station at each end; the
   /// number of nights sits on the line itself.
   Widget _rail(BuildContext context, double w, Color base, bool option, Color ink, int? nights) {
-    final line = option ? base.withValues(alpha: 0.45) : base;
+    final line = option ? base.withValues(alpha: 0.7) : base;
     final station = Container(
       width: 16,
       height: 16,
@@ -751,9 +788,12 @@ class _Block extends StatelessWidget {
           right: 8,
           bottom: 8,
           height: 8,
-          child: DecoratedBox(
-            decoration: BoxDecoration(color: line, borderRadius: BorderRadius.circular(4)),
-          ),
+          // A tentative place is a dashed line, like a planned route.
+          child: option
+              ? CustomPaint(painter: DashedLinePainter(line))
+              : DecoratedBox(
+                  decoration: BoxDecoration(color: line, borderRadius: BorderRadius.circular(4)),
+                ),
         ),
         Positioned(left: 0, bottom: 4, child: station),
         Positioned(right: 0, bottom: 4, child: station),
@@ -767,8 +807,9 @@ class _Block extends StatelessWidget {
               child: _NightsBadge(
                 key: ValueKey('nights-${item.id}'),
                 nights: nights,
-                color: line,
-                textColor: option ? ink : Colors.white,
+                // Solid even for options, so white text keeps its contrast.
+                color: base,
+                textColor: Colors.white,
               ),
             ),
           ),
@@ -780,7 +821,7 @@ class _Block extends StatelessWidget {
   /// title whenever it still fits a few letters, else only the icon (the
   /// title then runs next to the block, see [titleOutside]).
   Widget _box(BuildContext context, double w, Color fg, int? nights) {
-    final icon = Icon(itemIcon(item), size: 15, color: fg);
+    final icon = Icon(isTentative(item) ? statusIcon(item.status) : itemIcon(item), size: 15, color: fg);
     final title = Text(
       item.title,
       maxLines: 1,
@@ -816,7 +857,8 @@ class _Block extends StatelessWidget {
               child: _NightsBadge(
                 key: ValueKey('nights-${item.id}'),
                 nights: nights,
-                color: fg.withValues(alpha: 0.2),
+                // Darkens filled blocks (white text stays >= 4.5:1).
+                color: isTentative(item) ? fg.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.2),
                 textColor: fg,
               ),
             ),
@@ -856,8 +898,10 @@ class _SpillLabel extends StatelessWidget {
   const _SpillLabel({required this.item, required this.onTap});
 
   @override
+  // The block itself carries the title for screen readers.
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
+    excludeFromSemantics: true,
     behavior: HitTestBehavior.translucent,
     child: Align(
       alignment: Alignment.centerLeft,
@@ -960,7 +1004,9 @@ class _ResizeHandleState extends State<_ResizeHandle> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // Screen readers use the block's "1 Tag später/früher" actions instead.
     return GestureDetector(
+      excludeFromSemantics: true,
       behavior: HitTestBehavior.opaque,
       onHorizontalDragStart: (d) {
         _startX = d.globalPosition.dx;
@@ -1004,9 +1050,10 @@ class _GapBox extends StatelessWidget {
     final c = Theme.of(context).colorScheme.outline;
     final box = InkWell(
       onTap: onTap,
+      excludeFromSemantics: true,
       borderRadius: BorderRadius.circular(8),
       child: CustomPaint(
-        painter: _DashedRectPainter(c),
+        painter: DashedBorderPainter(c.withValues(alpha: 0.7), dash: 5, gap: 4),
         child: Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -1024,7 +1071,15 @@ class _GapBox extends StatelessWidget {
         ),
       ),
     );
-    return tooltip == null ? box : Tooltip(message: tooltip!, child: box);
+    return Semantics(
+      container: true,
+      button: true,
+      label: tooltip ?? label,
+      onTapHint: context.l10n.a11yHintAdd,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: tooltip == null ? box : Tooltip(message: tooltip!, excludeFromSemantics: true, child: box),
+    );
   }
 }
 
@@ -1085,32 +1140,46 @@ class _NightOptionsSheet extends StatelessWidget {
 }
 
 class _MissingNight extends StatelessWidget {
+  /// "Night Wed → Thu", spoken before the tooltip text.
+  final String night;
+
   /// Number of accommodation options covering this night.
   final int options;
   final VoidCallback onTap;
-  const _MissingNight({required this.options, required this.onTap});
+  const _MissingNight({super.key, required this.night, required this.options, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Tooltip(
-      message: context.l10n.noAccommodationOptions(options),
-      child: Material(
-        color: colors.signal,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
+    final message = context.l10n.noAccommodationOptions(options);
+    return Semantics(
+      container: true,
+      button: true,
+      label: '$night: $message',
+      onTap: onTap,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: message,
+        excludeFromSemantics: true,
+        child: Material(
+          color: colors.signal,
           borderRadius: BorderRadius.circular(8),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.bed_outlined, size: 15, color: colors.onSignal),
-                  Text(options == 0 ? '!' : ' $options?',
-                      style: TextStyle(color: colors.onSignal, fontWeight: FontWeight.w900, fontSize: 14)),
-                ],
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bed_outlined, size: 15, color: colors.onSignal),
+                    Text(
+                      options == 0 ? '!' : ' $options?',
+                      style: TextStyle(color: colors.onSignal, fontWeight: FontWeight.w900, fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1118,31 +1187,6 @@ class _MissingNight extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedRectPainter extends CustomPainter {
-  final Color color;
-  final double radius = 8;
-  _DashedRectPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final path = Path()..addRRect(RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)));
-    for (final m in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < m.length) {
-        canvas.drawPath(m.extractPath(d, d + 5), paint);
-        d += 9;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedRectPainter old) => old.color != color;
 }
 
 class _DayHeader extends StatelessWidget {
@@ -1178,25 +1222,33 @@ class _DayHeader extends StatelessWidget {
       child: Row(
         children: [
           for (var d = firstDay; d <= lastDay; d++)
-            GestureDetector(
+            Semantics(
+              container: true,
+              label: context.l10n.day(tripStart, d, withDayNumber: tripStart != null),
+              onLongPressHint: context.l10n.a11yHintAddOnDay,
               onLongPress: () => onLongPress(d),
-              child: SizedBox(
-                width: dayWidth,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 4, top: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
-                      if (tripStart != null && dayWidth > 44)
-                        Text(
-                          context.l10n.day(tripStart, d),
-                          style: style,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
+              excludeSemantics: true,
+              child: GestureDetector(
+                excludeFromSemantics: true,
+                onLongPress: () => onLongPress(d),
+                child: SizedBox(
+                  width: dayWidth,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4, top: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
+                        if (tripStart != null && dayWidth > 44)
+                          Text(
+                            context.l10n.day(tripStart, d),
+                            style: style,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

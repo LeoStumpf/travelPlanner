@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../data/link_preview.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../common/a11y.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
@@ -186,16 +187,16 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
               ),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 8,
               children: [
                 for (final c in noteColors)
-                  GestureDetector(
+                  ColorSwatchButton(
+                    key: ValueKey('note-color-$c'),
+                    color: c,
+                    fill: c == 0 ? Theme.of(context).colorScheme.surfaceContainerHighest : Color(c),
+                    // Pastels in light mode; the default is dark in dark mode.
+                    checkColor: c == 0 ? Theme.of(context).colorScheme.onSurface : Colors.black87,
+                    selected: c == _c.color,
                     onTap: () => setState(() => _c = _c.copyWith(color: c)),
-                    child: CircleAvatar(
-                      radius: 15,
-                      backgroundColor: c == 0 ? Theme.of(context).colorScheme.surfaceContainerHighest : Color(c),
-                      child: c == _c.color ? const Icon(Icons.check, size: 16, color: Colors.black54) : null,
-                    ),
                   ),
               ],
             ),

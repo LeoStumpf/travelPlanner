@@ -5,7 +5,9 @@ import '../../domain/models.dart';
 /// Colours per planning layer; shared by timeline, map and canvas so the
 /// same thing looks the same everywhere.
 Color kindColor(ItemKind k) => switch (k) {
-      ItemKind.stay => const Color(0xFF00876A),
+      // Slightly darker than the trip line green so white text on it
+      // reaches 4.5:1 (WCAG AA).
+      ItemKind.stay => const Color(0xFF00806A),
       ItemKind.transport => const Color(0xFF1F5FD1),
       ItemKind.accommodation => const Color(0xFF8B3FBF),
       ItemKind.activity => const Color(0xFFC2410C),
@@ -32,6 +34,20 @@ IconData modeIcon(TransportMode? m) => switch (m) {
     };
 
 IconData itemIcon(PlanItem i) => i.kind == ItemKind.transport ? modeIcon(i.mode) : kindIcon(i.kind);
+
+/// Options and ideas are only tentative; they are drawn with a dashed
+/// outline and their status icon, not just paler (see [tentativeFill]).
+bool isTentative(PlanItem i) => i.isOption || i.status == ItemStatus.idea;
+
+/// Opaque light tint of [base] for tentative blocks/nodes, so text contrast
+/// does not depend on what lies behind (e.g. night shading).
+Color tentativeFill(Color base, Brightness b) =>
+    Color.alphaBlend(base.withValues(alpha: b == Brightness.dark ? 0.3 : 0.16), b == Brightness.dark ? const Color(0xFF0B0D12) : Colors.white);
+
+/// Text/icon colour on [tentativeFill]: white in dark mode, a darkened
+/// [base] in light mode (>= 4.5:1 for every layer colour).
+Color tentativeInk(Color base, Brightness b) =>
+    b == Brightness.dark ? Colors.white : Color.lerp(base, Colors.black, 0.3)!;
 
 IconData statusIcon(ItemStatus s) => switch (s) {
       ItemStatus.idea => Icons.lightbulb_outline,

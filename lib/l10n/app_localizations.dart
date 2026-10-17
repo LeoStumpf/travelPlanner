@@ -3360,6 +3360,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trip: exchange rate for {field} “{value}” is not a positive number – ignored'**
   String warnInvalidRate(String field, String value);
+
+  /// No description provided for @a11yDayLater.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day later'**
+  String get a11yDayLater;
+
+  /// No description provided for @a11yDayEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day earlier'**
+  String get a11yDayEarlier;
+
+  /// No description provided for @a11yConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict'**
+  String get a11yConflict;
+
+  /// No description provided for @a11ySelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get a11ySelected;
+
+  /// No description provided for @a11yHintAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'add'**
+  String get a11yHintAdd;
+
+  /// No description provided for @a11yHintDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'show details'**
+  String get a11yHintDetails;
+
+  /// No description provided for @a11yHintAddOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'add something on this day'**
+  String get a11yHintAddOnDay;
+
+  /// No description provided for @a11yMap.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Map, no places} =1{Map with 1 place} other{Map with {count} places}}'**
+  String a11yMap(int count);
+
+  /// No description provided for @a11yPlacesList.
+  ///
+  /// In en, this message translates to:
+  /// **'Places as a list'**
+  String get a11yPlacesList;
+
+  /// No description provided for @a11yColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour: {name}'**
+  String a11yColor(String name);
+
+  /// No description provided for @colorDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get colorDefault;
+
+  /// No description provided for @colorYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get colorYellow;
+
+  /// No description provided for @colorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get colorOrange;
+
+  /// No description provided for @colorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get colorGreen;
+
+  /// No description provided for @colorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get colorBlue;
+
+  /// No description provided for @colorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get colorPurple;
+
+  /// No description provided for @colorPink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get colorPink;
+
+  /// No description provided for @colorBrown.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get colorBrown;
+
+  /// No description provided for @colorTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get colorTeal;
+
+  /// No description provided for @colorGrey.
+  ///
+  /// In en, this message translates to:
+  /// **'Grey'**
+  String get colorGrey;
 }
 
 class _AppLocalizationsDelegate

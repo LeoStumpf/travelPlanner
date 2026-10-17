@@ -1796,5 +1796,39 @@
         "type": "String"
       }
     }
-  }
+  },
+  "a11yDayLater": "1 day later",
+  "a11yDayEarlier": "1 day earlier",
+  "a11yConflict": "Conflict",
+  "a11ySelected": "Selected",
+  "a11yHintAdd": "add",
+  "a11yHintDetails": "show details",
+  "a11yHintAddOnDay": "add something on this day",
+  "a11yMap": "{count, plural, =0{Map, no places} =1{Map with 1 place} other{Map with {count} places}}",
+  "@a11yMap": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "a11yPlacesList": "Places as a list",
+  "a11yColor": "Colour: {name}",
+  "@a11yColor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "colorDefault": "Default",
+  "colorYellow": "Yellow",
+  "colorOrange": "Orange",
+  "colorGreen": "Green",
+  "colorBlue": "Blue",
+  "colorPurple": "Purple",
+  "colorPink": "Pink",
+  "colorBrown": "Brown",
+  "colorTeal": "Teal",
+  "colorGrey": "Grey"
 }

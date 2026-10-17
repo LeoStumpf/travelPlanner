@@ -194,8 +194,9 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
         LineOptions(
           geometry: _arc(LatLng(a.lat!, a.lng!), LatLng(b.lat!, b.lng!)),
           lineColor: kindHex(ItemKind.transport),
-          lineWidth: t.id == ui.selectedId ? 5 : 3,
-          lineOpacity: t.isOption ? 0.4 : 0.9,
+          // MapLibre lines can't be dashed here: options are thinner too.
+          lineWidth: t.id == ui.selectedId ? 5 : (isTentative(t) ? 1.5 : 3),
+          lineOpacity: isTentative(t) ? 0.6 : 0.9,
         ),
         {'id': t.id},
       );
@@ -209,7 +210,10 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
         final p = _drawn[i.id];
         if (p == null) continue;
         final selected = i.id == ui.selectedId;
-        final faded = i.isOption || i.status == ItemStatus.idea || !i.isScheduled;
+        // Options and ideas are hollow rings (shape, not only opacity);
+        // unscheduled items are paler.
+        final tentative = isTentative(i);
+        final faded = !tentative && !i.isScheduled;
         // Taps next to a circle count too (see [_onMapClick]).
         final radius = switch (kind) {
           ItemKind.stay => 12.0,
@@ -220,10 +224,10 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
           CircleOptions(
             geometry: p,
             circleRadius: selected ? radius + 4 : radius,
-            circleColor: kindHex(kind),
+            circleColor: tentative ? '#ffffff' : kindHex(kind),
             circleOpacity: faded ? 0.45 : 1,
-            circleStrokeWidth: selected ? 3 : 1.5,
-            circleStrokeColor: '#ffffff',
+            circleStrokeWidth: tentative ? (selected ? 5 : 3.5) : (selected ? 3 : 1.5),
+            circleStrokeColor: tentative ? kindHex(kind) : '#ffffff',
           ),
           {'id': i.id},
         );
@@ -459,46 +463,53 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
     );
     final covered = offline.covers(placesBox(data));
     final l = context.l10n;
+    final placed = data.items.where((i) => i.kind != ItemKind.transport).length - unplaced.length;
 
     return Stack(
       children: [
-        if (!ref.watch(nativeMapProvider))
-          const ColoredBox(key: ValueKey('map-surface'), color: Color(0xFF202020), child: SizedBox.expand())
-        else
-          MapLibreMap(
-            key: ValueKey('map-$_generation'),
-            styleString: mapStyleUrl,
-            initialCameraPosition: const CameraPosition(target: LatLng(30, 10), zoom: 2),
-            compassEnabled: true,
-            rotateGesturesEnabled: false,
-            tiltGesturesEnabled: false,
-            trackCameraPosition: true,
-            onMapCreated: (c) {
-              _map = c;
-              c.onCircleTapped.add((circle) => _onTap(circle.data?['id'] as String?));
-              c.onLineTapped.add((line) => _onTap(line.data?['id'] as String?));
-              c.onSymbolTapped.add((symbol) => _onTap(symbol.data?['id'] as String?));
-            },
-            onMapClick: (point, _) => _onMapClick(point),
-            onCameraIdle: _onCameraIdle,
-            onStyleLoadedCallback: () async {
-              _styleReady = true;
-              _styleTimer?.cancel();
-              if (mounted) setState(() => _styleLoaded = true);
-              _scheduleRedraw();
-              await _drawing;
-              if (!_fitted) {
-                _fitted = true;
-                final sel = ref.read(tripUiProvider).selectedId;
-                if (sel != null && data.item(sel) != null) {
-                  await _focusSelection(initial: true);
-                } else {
-                  await _fitAll();
-                }
-              }
-            },
-            onMapLongClick: (_, latLng) => _addHere(latLng),
-          ),
+        // The native map is opaque to screen readers: it is announced as a
+        // whole, and "Places as a list" offers the same content.
+        Semantics(
+          key: const ValueKey('map-semantics'),
+          container: true,
+          label: l.a11yMap(placed),
+          child: !ref.watch(nativeMapProvider)
+              ? const ColoredBox(key: ValueKey('map-surface'), color: Color(0xFF202020), child: SizedBox.expand())
+              : MapLibreMap(
+                  key: ValueKey('map-$_generation'),
+                  styleString: mapStyleUrl,
+                  initialCameraPosition: const CameraPosition(target: LatLng(30, 10), zoom: 2),
+                  compassEnabled: true,
+                  rotateGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  trackCameraPosition: true,
+                  onMapCreated: (c) {
+                    _map = c;
+                    c.onCircleTapped.add((circle) => _onTap(circle.data?['id'] as String?));
+                    c.onLineTapped.add((line) => _onTap(line.data?['id'] as String?));
+                    c.onSymbolTapped.add((symbol) => _onTap(symbol.data?['id'] as String?));
+                  },
+                  onMapClick: (point, _) => _onMapClick(point),
+                  onCameraIdle: _onCameraIdle,
+                  onStyleLoadedCallback: () async {
+                    _styleReady = true;
+                    _styleTimer?.cancel();
+                    if (mounted) setState(() => _styleLoaded = true);
+                    _scheduleRedraw();
+                    await _drawing;
+                    if (!_fitted) {
+                      _fitted = true;
+                      final sel = ref.read(tripUiProvider).selectedId;
+                      if (sel != null && data.item(sel) != null) {
+                        await _focusSelection(initial: true);
+                      } else {
+                        await _fitAll();
+                      }
+                    }
+                  },
+                  onMapLongClick: (_, latLng) => _addHere(latLng),
+                ),
+        ),
         Positioned(
           right: 12,
           top: 12,
@@ -521,6 +532,14 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
                       child: CircularProgressIndicator(strokeWidth: 2.5, value: offline.progress),
                     )
                   : Icon(offline.saved ? Icons.offline_pin : Icons.download_for_offline_outlined),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton.small(
+              key: const ValueKey('places-list-button'),
+              heroTag: 'places-list',
+              tooltip: l.a11yPlacesList,
+              onPressed: _showPlaces,
+              child: const Icon(Icons.format_list_bulleted),
             ),
             const SizedBox(height: 8),
             FloatingActionButton.small(

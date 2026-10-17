@@ -2159,4 +2159,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String warnInvalidRate(String field, String value) {
     return 'Trip: exchange rate for $field “$value” is not a positive number – ignored';
   }
+
+  @override
+  String get a11yDayLater => '1 day later';
+
+  @override
+  String get a11yDayEarlier => '1 day earlier';
+
+  @override
+  String get a11yConflict => 'Conflict';
+
+  @override
+  String get a11ySelected => 'Selected';
+
+  @override
+  String get a11yHintAdd => 'add';
+
+  @override
+  String get a11yHintDetails => 'show details';
+
+  @override
+  String get a11yHintAddOnDay => 'add something on this day';
+
+  @override
+  String a11yMap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Map with $count places',
+      one: 'Map with 1 place',
+      zero: 'Map, no places',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get a11yPlacesList => 'Places as a list';
+
+  @override
+  String a11yColor(String name) {
+    return 'Colour: $name';
+  }
+
+  @override
+  String get colorDefault => 'Default';
+
+  @override
+  String get colorYellow => 'Yellow';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorGreen => 'Green';
+
+  @override
+  String get colorBlue => 'Blue';
+
+  @override
+  String get colorPurple => 'Purple';
+
+  @override
+  String get colorPink => 'Pink';
+
+  @override
+  String get colorBrown => 'Brown';
+
+  @override
+  String get colorTeal => 'Teal';
+
+  @override
+  String get colorGrey => 'Grey';
 }

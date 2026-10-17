@@ -31,8 +31,15 @@ class AttachmentsSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Text(l.attachmentsTitle, style: Theme.of(context).textTheme.titleSmall),
-            const Spacer(),
+            // Shrinks first, so the three 48 dp buttons always fit.
+            Expanded(
+              child: Text(
+                l.attachmentsTitle,
+                style: Theme.of(context).textTheme.titleSmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             IconButton(
               tooltip: l.takePhoto,
               icon: const Icon(Icons.photo_camera_outlined),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/budget.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../common/a11y.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
 import '../common/zone_picker.dart';
@@ -135,16 +136,16 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
             Text(l.tripCurrencyHint, style: const TextStyle(fontSize: 12)),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 8,
               children: [
                 for (final c in tripColors)
-                  GestureDetector(
+                  ColorSwatchButton(
+                    key: ValueKey('trip-color-$c'),
+                    color: c,
+                    fill: Color(c),
+                    radius: 14,
+                    checkColor: Colors.white,
+                    selected: c == _color,
                     onTap: () => setState(() => _color = c),
-                    child: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: Color(c),
-                      child: c == _color ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
-                    ),
                   ),
               ],
             ),

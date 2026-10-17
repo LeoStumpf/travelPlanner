@@ -11,6 +11,8 @@ import '../../domain/models.dart';
 import '../../domain/zones.dart';
 import '../../state/hints.dart';
 import '../../state/providers.dart';
+import '../common/a11y.dart';
+import '../common/dashed_border.dart';
 import '../common/dialogs.dart';
 import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
@@ -93,8 +95,10 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
   Map<String, Offset> _positions() {
     final auto = autoLayout(data);
     return {
-      for (final i in data.items) i.id: _dragPos[i.id] ?? (i.canvasX != null ? Offset(i.canvasX!, i.canvasY!) : auto[i.id]!),
-      for (final c in data.cards) c.id: _dragPos[c.id] ?? (c.canvasX != null ? Offset(c.canvasX!, c.canvasY!) : auto[c.id]!),
+      for (final i in data.items)
+        i.id: _dragPos[i.id] ?? (i.canvasX != null ? Offset(i.canvasX!, i.canvasY!) : auto[i.id]!),
+      for (final c in data.cards)
+        c.id: _dragPos[c.id] ?? (c.canvasX != null ? Offset(c.canvasX!, c.canvasY!) : auto[c.id]!),
     };
   }
 
@@ -187,8 +191,11 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
         });
         if (mounted) showSnack(context, l.stepConnectionRemoved);
       } else {
-        await actions.record(data.trip.id, l.stepConnectionCreated,
-            (repo) => repo.saveEdge(Edge(id: newId(), tripId: data.trip.id, fromId: a, toId: id)));
+        await actions.record(
+          data.trip.id,
+          l.stepConnectionCreated,
+          (repo) => repo.saveEdge(Edge(id: newId(), tripId: data.trip.id, fromId: a, toId: id)),
+        );
       }
       return;
     }
@@ -211,7 +218,8 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
         final p = _positions()[next.$1];
         if (p != null) {
           WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _centerOn(p + Offset((_sizes[next.$1]?.width ?? _itemW) / 2, 40)));
+            (_) => _centerOn(p + Offset((_sizes[next.$1]?.width ?? _itemW) / 2, 40)),
+          );
         }
       }
     });
@@ -239,8 +247,13 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
       if (!viaTransport) links.add(_Link(a, b, _LinkStyle.sequence));
     }
 
+    final conflictIds = {
+      for (final c in findConflicts(data.items, zones: data.zones)) ...[c.itemId, ?c.otherId],
+    };
+
     Widget node(String id, Widget child, double width) {
       final p = pos[id]!;
+      final item = data.item(id);
       return Positioned(
         key: ValueKey(id),
         left: p.dx + _half,
@@ -252,22 +265,42 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
           },
           // A plain swipe pans the canvas (InteractiveViewer); nodes only
           // move after a long press, like blocks on the timeline.
-          child: GestureDetector(
+          // Items speak as one sentence with "1 Tag später/früher" actions;
+          // cards read their own text. Long-press moving has no semantic
+          // equivalent, a node's place on the canvas carries no meaning.
+          child: Semantics(
+            container: true,
+            button: true,
+            label: item == null
+                ? null
+                : itemSemanticsLabel(
+                    context.l10n,
+                    item,
+                    tripStart: data.trip.startDate,
+                    conflict: conflictIds.contains(id),
+                  ),
+            selected: ui.selectedId == id || _connectFrom == id,
             onTap: () => _tapNode(id),
-            onLongPressStart: (_) {
-              HapticFeedback.mediumImpact();
-              _dragOrigin[id] = pos[id]!;
-              setState(() => _dragPos[id] = pos[id]!);
-            },
-            onLongPressMoveUpdate: (d) {
-              final origin = _dragOrigin[id];
-              if (origin == null) return;
-              final scale = _tc.value.getMaxScaleOnAxis();
-              setState(() => _dragPos[id] = origin + d.offsetFromOrigin / scale);
-            },
-            onLongPressEnd: (_) => _endDrag(id),
-            onLongPressCancel: () => _endDrag(id),
-            child: child,
+            customSemanticsActions: item == null ? null : itemShiftActions(context, ref, data, item),
+            excludeSemantics: item != null,
+            child: GestureDetector(
+              excludeFromSemantics: true,
+              onTap: () => _tapNode(id),
+              onLongPressStart: (_) {
+                HapticFeedback.mediumImpact();
+                _dragOrigin[id] = pos[id]!;
+                setState(() => _dragPos[id] = pos[id]!);
+              },
+              onLongPressMoveUpdate: (d) {
+                final origin = _dragOrigin[id];
+                if (origin == null) return;
+                final scale = _tc.value.getMaxScaleOnAxis();
+                setState(() => _dragPos[id] = origin + d.offsetFromOrigin / scale);
+              },
+              onLongPressEnd: (_) => _endDrag(id),
+              onLongPressCancel: () => _endDrag(id),
+              child: child,
+            ),
           ),
         ),
       );
@@ -352,12 +385,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
         ),
         // The connect instructions take this spot while connecting.
         if (!_connectMode)
-          const Positioned(
-            left: 12,
-            right: 72,
-            top: 12,
-            child: HintBanner(hint: Hint.canvas, floating: true),
-          ),
+          const Positioned(left: 12, right: 72, top: 12, child: HintBanner(hint: Hint.canvas, floating: true)),
         if (_connectMode)
           Positioned(
             left: 12,
@@ -386,49 +414,70 @@ class _ItemNode extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = kindColor(item.kind);
     final theme = Theme.of(context);
-    final faded = item.isOption || item.status == ItemStatus.idea;
-    return Material(
+    // Options and ideas: dashed outline, tinted header and status icon
+    // instead of lower opacity (which also lowered the text contrast).
+    final faded = isTentative(item);
+    final ink = tentativeInk(c, theme.brightness);
+    final dashed = faded && !selected;
+    final node = Material(
       elevation: selected ? 6 : 2,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: selected ? theme.colorScheme.onSurface : c, width: selected ? 2.5 : 1.5),
+        side: dashed
+            ? BorderSide.none
+            : BorderSide(color: selected ? theme.colorScheme.onSurface : c, width: selected ? 2.5 : 1.5),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Opacity(
-        opacity: faded ? 0.7 : 1,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              color: faded ? c.withValues(alpha: 0.3) : c,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Row(children: [
-                Icon(itemIcon(item), size: 16, color: faded ? c : Colors.white),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            color: faded ? tentativeFill(c, theme.brightness) : c,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              children: [
+                Icon(itemIcon(item), size: 16, color: faded ? ink : Colors.white),
+                if (faded)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Icon(statusIcon(item.status), size: 14, color: ink),
+                  ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: faded ? null : Colors.white, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: faded ? ink : Colors.white, fontWeight: FontWeight.w600),
+                  ),
                 ),
-                if (item.fixed) Icon(Icons.lock, size: 14, color: faded ? c : Colors.white),
-              ]),
+                if (item.fixed) Icon(Icons.lock, size: 14, color: faded ? ink : Colors.white),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(timeSummary(context.l10n, item, tripStart, zones: zones), style: theme.textTheme.bodySmall, maxLines: 2),
-                  Text(context.l10n.status(item.status), style: theme.textTheme.labelSmall),
-                ],
-              ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  timeSummary(context.l10n, item, tripStart, zones: zones),
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 2,
+                ),
+                Text(context.l10n.status(item.status), style: theme.textTheme.labelSmall),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+    if (!dashed) return node;
+    return CustomPaint(
+      foregroundPainter: DashedBorderPainter(c, radius: 12, strokeWidth: 2, dash: 7, gap: 5),
+      child: node,
     );
   }
 }
@@ -533,9 +582,9 @@ class _LinkPainter extends CustomPainter {
 
   static List<Offset>? _grid;
   static List<Offset> _gridPoints(Size size) => _grid ??= [
-        for (double x = 0; x < size.width; x += 80)
-          for (double y = 0; y < size.height; y += 80) Offset(x, y),
-      ];
+    for (double x = 0; x < size.width; x += 80)
+      for (double y = 0; y < size.height; y += 80) Offset(x, y),
+  ];
 
   @override
   bool shouldRepaint(_LinkPainter old) => true;

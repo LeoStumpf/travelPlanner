@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/time.dart';
+import '../common/a11y.dart';
 import '../common/l10n.dart';
 
 /// Day + time of day in the trip-relative minute model. The day is shown as
@@ -29,8 +30,10 @@ class MomentField extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(width: 84, child: Text(label)),
+          // Full 48 dp targets (no compact density) with a spoken name.
           IconButton(
-            visualDensity: VisualDensity.compact,
+            tooltip: l.a11yDayEarlier,
+            constraints: const BoxConstraints(minWidth: minTapTarget, minHeight: minTapTarget),
             onPressed: () => onChanged(value - minutesPerDay),
             icon: const Icon(Icons.chevron_left),
           ),
@@ -41,7 +44,8 @@ class MomentField extends StatelessWidget {
             ),
           ),
           IconButton(
-            visualDensity: VisualDensity.compact,
+            tooltip: l.a11yDayLater,
+            constraints: const BoxConstraints(minWidth: minTapTarget, minHeight: minTapTarget),
             onPressed: () => onChanged(value + minutesPerDay),
             icon: const Icon(Icons.chevron_right),
           ),
