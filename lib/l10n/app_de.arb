@@ -603,7 +603,7 @@
   "remindersSetStartDate": "Startdatum festlegen",
   "remindersNotificationsOff": "Benachrichtigungen sind für Tripboard ausgeschaltet, Erinnerungen können nicht erscheinen.",
   "remindersAllow": "Erlauben",
-  "remindersInexact": "Ohne die Berechtigung für Wecker und Erinnerungen kommen Benachrichtigungen evtl. ein paar Minuten zu spät.",
+  "remindersInexact": "Ohne die Berechtigung für Wecker und Erinnerungen können Benachrichtigungen verspätet kommen, bei weit entfernten Terminen auch um Stunden.",
   "remindersAllowExact": "Genaue Zeiten erlauben",
   "remindersWhen": "Wann",
   "remindersLead": "{duration} vorher",

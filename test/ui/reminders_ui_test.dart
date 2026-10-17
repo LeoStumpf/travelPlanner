@@ -218,6 +218,25 @@ void main() {
       expect(fake.syncs.last, isEmpty);
     });
 
+    testWidgets('coming back to the app schedules the same reminders again', (tester) async {
+      await tester.runAsync(() => repo.putTripData(sample()));
+      container.read(reminderSettingsProvider.notifier).set('trip', const ReminderSettings(enabled: true));
+      await pumpApp(tester, const Scaffold(body: Text('home')));
+      final count = fake.syncs.length;
+      expect(fake.syncs.last, hasLength(3));
+
+      // E.g. back from granting exact alarms: same reminders, new mode.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await settle(tester);
+      expect(fake.syncs.length, count + 1);
+      expect(fake.syncs.last, hasLength(3));
+    });
+
     testWidgets('trashed trips and trips without a start date schedule nothing', (tester) async {
       final d = sample();
       await tester.runAsync(() => repo.putTripData(TripData(trip: d.trip.copyWith(startDate: null), items: d.items)));
@@ -351,6 +370,31 @@ void main() {
       await tester.tap(tile);
       await settle(tester);
       expect(find.byType(ReminderSheet), findsOneWidget);
+    });
+
+    testWidgets('from the trip settings the sheet does not set the start date itself', (tester) async {
+      // The dialog's own start date would overwrite it on saving.
+      final d = sample();
+      final trip = d.trip.copyWith(startDate: null);
+      await tester.runAsync(() => repo.putTripData(TripData(trip: trip, items: d.items)));
+      container.read(reminderSettingsProvider.notifier).set('trip', const ReminderSettings(enabled: true));
+      await pumpApp(
+        tester,
+        Scaffold(
+          body: Builder(
+            builder: (context) =>
+                TextButton(onPressed: () => showTripSettingsDialog(context, trip), child: const Text('edit')),
+          ),
+        ),
+      );
+      await tester.tap(find.text('edit'));
+      await settle(tester);
+      final tile = find.byKey(const ValueKey('trip-reminders'));
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await settle(tester);
+      expect(find.byKey(const ValueKey('reminders-no-date')), findsOneWidget);
+      expect(find.text('Startdatum festlegen'), findsNothing);
     });
   });
 }

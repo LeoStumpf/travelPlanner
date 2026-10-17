@@ -3724,7 +3724,7 @@ abstract class AppLocalizations {
   /// No description provided for @remindersInexact.
   ///
   /// In en, this message translates to:
-  /// **'Without the permission for alarms & reminders, notifications may arrive a few minutes late.'**
+  /// **'Without the permission for alarms & reminders, notifications may arrive late, for reminders far ahead even by hours.'**
   String get remindersInexact;
 
   /// No description provided for @remindersAllowExact.

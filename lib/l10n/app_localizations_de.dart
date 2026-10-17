@@ -2379,7 +2379,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get remindersInexact =>
-      'Ohne die Berechtigung für Wecker und Erinnerungen kommen Benachrichtigungen evtl. ein paar Minuten zu spät.';
+      'Ohne die Berechtigung für Wecker und Erinnerungen können Benachrichtigungen verspätet kommen, bei weit entfernten Terminen auch um Stunden.';
 
   @override
   String get remindersAllowExact => 'Genaue Zeiten erlauben';

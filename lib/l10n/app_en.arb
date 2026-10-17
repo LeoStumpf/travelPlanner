@@ -1956,7 +1956,7 @@
   "remindersSetStartDate": "Set start date",
   "remindersNotificationsOff": "Notifications are turned off for Tripboard, so reminders cannot appear.",
   "remindersAllow": "Allow",
-  "remindersInexact": "Without the permission for alarms & reminders, notifications may arrive a few minutes late.",
+  "remindersInexact": "Without the permission for alarms & reminders, notifications may arrive late, for reminders far ahead even by hours.",
   "remindersAllowExact": "Allow exact times",
   "remindersWhen": "When",
   "remindersLead": "{duration} before",

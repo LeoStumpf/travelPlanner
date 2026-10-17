@@ -2380,7 +2380,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get remindersInexact =>
-      'Without the permission for alarms & reminders, notifications may arrive a few minutes late.';
+      'Without the permission for alarms & reminders, notifications may arrive late, for reminders far ahead even by hours.';
 
   @override
   String get remindersAllowExact => 'Allow exact times';

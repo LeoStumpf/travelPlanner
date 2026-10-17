@@ -22,7 +22,8 @@ class ReminderPermissions {
   final bool notifications;
 
   /// Alarms fire on the minute (Android 12+: "Alarms & reminders" allowed).
-  /// Without it they are inexact and may come a few minutes late.
+  /// Without it they are inexact: Android may defer them, the further ahead
+  /// they are scheduled the longer (up to hours).
   final bool exactAlarms;
 
   const ReminderPermissions({this.notifications = true, this.exactAlarms = true});

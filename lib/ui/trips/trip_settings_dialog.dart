@@ -163,7 +163,7 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                   title: Text(l.reminders),
                   subtitle: Text(l.reminderSummary(ref.watch(tripReminderSettingsProvider(widget.trip!.id)))),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => showReminderSheet(context, widget.trip!.id),
+                  onTap: () => showReminderSheet(context, widget.trip!.id, canSetStartDate: false),
                 ),
               ),
           ],

@@ -41,6 +41,10 @@ class _ReminderListenerState extends ConsumerState<ReminderListener> {
     _inputs = ref.listenManual(reminderInputsProvider, (_, _) => _schedule(), fireImmediately: true);
     _lifecycle = AppLifecycleListener(onResume: () {
       ref.invalidate(reminderPermissionsProvider);
+      // Always schedule anew here: the user may just have granted (or
+      // revoked, which cancels the app's exact alarms) the exact alarm
+      // permission, and the same reminders must then be scheduled again.
+      _last = null;
       _schedule();
     });
     _taps = scheduler.taps.listen(_open);

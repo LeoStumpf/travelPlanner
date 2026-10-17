@@ -10,12 +10,15 @@ import 'reminder_texts.dart';
 
 /// ⋮ → Reminders (also reachable from the trip settings): switch reminders
 /// on for trip [tripId], pick the lead times and what to be reminded of,
-/// and see the next reminders. Changes apply at once.
-Future<void> showReminderSheet(BuildContext context, String tripId) => showModalBottomSheet<void>(
+/// and see the next reminders. Changes apply at once. Opened from the trip
+/// settings, [canSetStartDate] is false: the dialog has its own start date
+/// field and would overwrite a date set here when saved.
+Future<void> showReminderSheet(BuildContext context, String tripId, {bool canSetStartDate = true}) =>
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => ReminderSheet(tripId: tripId),
+      builder: (_) => ReminderSheet(tripId: tripId, canSetStartDate: canSetStartDate),
     );
 
 /// How many upcoming reminders the sheet lists.
@@ -23,7 +26,8 @@ const _previewCount = 5;
 
 class ReminderSheet extends ConsumerWidget {
   final String tripId;
-  const ReminderSheet({super.key, required this.tripId});
+  final bool canSetStartDate;
+  const ReminderSheet({super.key, required this.tripId, this.canSetStartDate = true});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,7 +77,7 @@ class ReminderSheet extends ConsumerWidget {
                   key: const ValueKey('reminders-no-date'),
                   icon: Icons.event_busy,
                   text: l.remindersNeedStartDate,
-                  action: l.remindersSetStartDate,
+                  action: canSetStartDate ? l.remindersSetStartDate : null,
                   onAction: () => _setStartDate(context, ref, data),
                 ),
               if (perms != null && !perms.notifications)
@@ -188,11 +192,11 @@ class ReminderSheet extends ConsumerWidget {
   }
 }
 
-/// A hint with one action, e.g. the missing start date.
+/// A hint with (usually) one action, e.g. the missing start date.
 class _Notice extends StatelessWidget {
   final IconData icon;
   final String text;
-  final String action;
+  final String? action;
   final VoidCallback onAction;
   const _Notice({super.key, required this.icon, required this.text, required this.action, required this.onAction});
 
@@ -210,10 +214,13 @@ class _Notice extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: Text(text, style: TextStyle(color: scheme.onSecondaryContainer))),
           ]),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(onPressed: onAction, child: Text(action)),
-          ),
+          if (action != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(onPressed: onAction, child: Text(action!)),
+            )
+          else
+            const SizedBox(height: 4),
         ]),
       ),
     );
