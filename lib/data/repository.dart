@@ -242,6 +242,22 @@ class Repository {
         }
       });
 
+  /// Replaces a trip completely with [d] in one transaction (restoring a
+  /// backup), which also takes it out of the trash. The attachment files of
+  /// [d] must already be written; files of the old state that [d] no longer
+  /// uses are deleted afterwards. If writing fails, the old state stays.
+  Future<void> replaceTripData(TripData d) async {
+    final old = await loadTrip(d.trip.id);
+    await db.transaction(() async {
+      await (db.delete(db.docs)..where((r) => r.tripId.equals(d.trip.id))).go();
+      await putTripData(d);
+    });
+    final keep = {for (final a in d.attachments) a.relPath};
+    for (final a in old?.attachments ?? const <Attachment>[]) {
+      if (!keep.contains(a.relPath)) await files.deletePermanently(a);
+    }
+  }
+
   Future<bool> tripExists(String id) async {
     final row = await (db.select(db.docs)..where((d) => d.id.equals(id))).getSingleOrNull();
     return row != null;

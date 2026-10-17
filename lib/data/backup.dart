@@ -117,7 +117,6 @@ class Backup {
     final tripFile = archive.findFile('${dir}trip.json')!;
     final original = fromJson((jsonDecode(utf8.decode(tripFile.content)) as Map).cast<String, Object?>());
     final exists = await repo.tripExists(original.trip.id);
-    if (exists && replace) await repo.deleteTrip(original.trip.id);
     final data = exists && !replace ? withFreshIds(original, titleSuffix: ' (Kopie)') : original;
 
     // withFreshIds keeps the order, so index k maps back to the ZIP entry.
@@ -135,13 +134,20 @@ class Backup {
         createdAt: a.createdAt,
       ));
     }
-    await repo.putTripData(TripData(
+    final result = TripData(
       trip: data.trip,
       items: data.items,
       cards: data.cards,
       edges: data.edges,
       attachments: atts,
-    ));
+    );
+    // Replacing swaps old and new state in one transaction, so a failure
+    // halfway never leaves the trip deleted.
+    if (exists && replace) {
+      await repo.replaceTripData(result);
+    } else {
+      await repo.putTripData(result);
+    }
     return data.trip.id;
   }
 

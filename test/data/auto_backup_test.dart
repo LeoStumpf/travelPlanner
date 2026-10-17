@@ -103,6 +103,32 @@ void main() {
       expect(await repo.watchTrips().first, hasLength(2));
     });
 
+    test('restore removes files the restored state no longer uses', () async {
+      final zip = await Backup.exportAll(repo);
+      final later = await attach(interrail, [4, 5, 6]);
+      final file = repo.files.fileFor(later);
+      expect(await file.exists(), isTrue);
+
+      await Backup.importAny(repo, zip, replace: true);
+      expect((await repo.loadTrip(interrail.trip.id))!.attachments, isEmpty);
+      expect(await file.exists(), isFalse);
+    });
+
+    test('a failing restore keeps the current trip', () async {
+      final att = await attach(interrail, [1, 2, 3]);
+      final zip = await Backup.exportAll(repo);
+      final first = interrail.items.first;
+      await repo.saveItem(first.copyWith(title: 'Geändert'));
+      // The attachment file cannot be written: a folder sits in its place.
+      final f = repo.files.fileFor(att);
+      await f.delete();
+      await Directory(f.path).create();
+
+      await expectLater(Backup.importAny(repo, zip, replace: true), throwsA(isA<FileSystemException>()));
+      final kept = (await repo.loadTrip(interrail.trip.id))!;
+      expect(kept.item(first.id)!.title, 'Geändert');
+    });
+
     test('importAny also accepts a single-trip ZIP', () async {
       final zip = await Backup.exportTrip(repo, interrail.trip.id);
       final ids = await Backup.importAny(repo, zip);
@@ -164,6 +190,13 @@ void main() {
       await repo.trashTrip(sriLanka.trip.id);
       expect(await auto.runIfDue(now: t0), isNull);
       expect(await auto.list(), isEmpty);
+    });
+
+    test('a second backup within the same second gets its own file', () async {
+      final a = (await auto.createNow(now: t0))!;
+      final b = (await auto.createNow(now: t0))!;
+      expect(b.file.path, isNot(a.file.path));
+      expect(await auto.list(), hasLength(2));
     });
 
     test('concurrent triggers write one backup', () async {

@@ -103,19 +103,23 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
       ? '${(bytes / 1024).toStringAsFixed(0)} KB'
       : '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
 
-  Future<void> _guard(Future<void> Function() job) async {
+  /// Runs [job] with the progress bar. [job] gets the provider container,
+  /// which stays usable when the user leaves the page while it runs (`ref`
+  /// would throw then and abort a restore halfway).
+  Future<void> _guard(Future<void> Function(ProviderContainer c) job) async {
+    final c = ProviderScope.containerOf(context, listen: false);
     setState(() => _busy = true);
     try {
-      await job();
+      await job(c);
     } finally {
       if (mounted) setState(() => _busy = false);
-      ref.invalidate(backupsProvider);
+      c.invalidate(backupsProvider);
     }
   }
 
-  Future<void> _backupNow() => _guard(() async {
+  Future<void> _backupNow() => _guard((c) async {
         try {
-          await ref.read(autoBackupProvider)!.createNow();
+          await c.read(autoBackupProvider)!.createNow();
           if (mounted) showSnack(context, 'Backup erstellt');
         } catch (e) {
           if (mounted) showSnack(context, 'Backup fehlgeschlagen: $e');
@@ -132,15 +136,15 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
       'Wiederherstellen',
     );
     if (!ok || !mounted) return;
-    await _guard(() async {
+    await _guard((c) async {
       try {
         // Read first: the safety backup may rotate this file away.
         final bytes = await b.file.readAsBytes();
-        final repo = ref.read(repositoryProvider);
-        if ((await repo.watchTrips().first).isNotEmpty) await ref.read(autoBackupProvider)?.createNow();
+        final repo = c.read(repositoryProvider);
+        if ((await repo.watchTrips().first).isNotEmpty) await c.read(autoBackupProvider)?.createNow();
         final ids = await Backup.importAny(repo, bytes, replace: true);
         // Undo snapshots belong to the replaced state.
-        final undo = ref.read(undoProvider.notifier);
+        final undo = c.read(undoProvider.notifier);
         for (final id in ids) {
           undo.forget(id);
         }

@@ -143,4 +143,30 @@ void main() {
     // The state before restoring was saved as well.
     expect(await tester.runAsync(auto.list), hasLength(2));
   });
+
+  testWidgets('a restore finishes when the page is left while it runs', (tester) async {
+    await tester.runAsync(() async {
+      await repo.putTripData(demo);
+      await auto.createNow(now: DateTime(2026, 10, 1, 8));
+    });
+    final paris = demo.items.firstWhere((i) => i.title == 'Paris');
+    await tester.runAsync(() => repo.saveItem(paris.copyWith(title: 'Lyon')));
+    await pump(tester, Builder(
+      builder: (context) => TextButton(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BackupsPage())),
+        child: const Text('open'),
+      ),
+    ));
+    await tapAndSettle(tester, find.text('open'));
+    await tapAndSettle(tester, find.byTooltip('Wiederherstellen'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Wiederherstellen'));
+    await tester.pump();
+    // Back right away, before the restore is done.
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await settle(tester);
+    expect(find.byType(BackupsPage), findsNothing);
+    expect(tester.takeException(), isNull);
+    final restored = await tester.runAsync(() => repo.loadTrip(demo.trip.id));
+    expect(restored!.item(paris.id)!.title, 'Paris');
+  });
 }

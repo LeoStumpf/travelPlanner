@@ -65,14 +65,20 @@ class AutoBackup {
   Future<BackupFile?> _create(DateTime now) async {
     await dir.create(recursive: true);
     final bytes = await Backup.exportAll(repo);
-    final target = File(p.join(dir.path, fileName(now)));
+    // Never overwrite an existing backup (two backups within one second,
+    // e.g. "Jetzt sichern" right before restoring): take the next free second.
+    var at = now;
+    while (await File(p.join(dir.path, fileName(at))).exists()) {
+      at = at.add(const Duration(seconds: 1));
+    }
+    final target = File(p.join(dir.path, fileName(at)));
     // Written next to the target and renamed, so a process killed in the
     // background never leaves a broken ZIP that looks like a backup.
     final tmp = File('${target.path}.tmp');
     await tmp.writeAsBytes(bytes, flush: true);
     await tmp.rename(target.path);
     await _prune();
-    return BackupFile(target, now);
+    return BackupFile(target, at);
   }
 
   Future<void> _prune() async {
