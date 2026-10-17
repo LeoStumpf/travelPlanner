@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_planner/data/attachment_store.dart';
 import 'package:travel_planner/data/db.dart';
 import 'package:travel_planner/data/repository.dart';
+import 'package:travel_planner/domain/budget.dart';
 import 'package:travel_planner/domain/models.dart';
 import 'package:travel_planner/domain/time.dart';
 import 'package:travel_planner/state/providers.dart';
@@ -136,6 +137,29 @@ void main() {
       await settle(tester);
       expect((await stored(tester)).item('Train')!.cost, isNull);
     });
+  });
+
+  testWidgets('a blank currency is stored as the guessed home currency', (tester) async {
+    // No trip currency: the budget shows the most used one (LKR here).
+    final data = sample(currency: null);
+    await openWith(tester, data, (c, ref, d) => openItemEditor(c, d, item: d.item('Kandy')));
+    await tester.enterText(find.byKey(const ValueKey('field-cost-amount')), '5000');
+    await tester.tap(find.text(de.save));
+    await settle(tester);
+    final cost = (await stored(tester)).item('Kandy')!.cost!;
+    expect([cost.amount, cost.currency], [5000, budgetCurrency(data.trip, data.items)]);
+  });
+
+  testWidgets('changing the home currency in trip settings rebases the rates', (tester) async {
+    Trip? result;
+    await openWith(tester, sample(rates: {'LKR': 330, 'USD': 1.1}),
+        (c, ref, d) async => result = await showTripSettingsDialog(c, d.trip));
+    await tester.enterText(find.byKey(const ValueKey('trip-currency')), 'USD');
+    await tester.tap(find.text(de.save));
+    await tester.pumpAndSettle();
+    expect(result?.currency, 'USD');
+    expect(result?.rates['LKR'], closeTo(300, 1e-9));
+    expect(result?.rates.containsKey('EUR'), isTrue);
   });
 
   testWidgets('trip settings take the home currency and travellers', (tester) async {

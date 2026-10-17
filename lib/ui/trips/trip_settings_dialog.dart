@@ -179,14 +179,16 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                       travellers: travellers,
                       createdAt: DateTime.now(),
                     )
-                  : t.copyWith(
-                      title: title,
-                      startDate: _start,
-                      plannedDays: days,
-                      color: _color,
-                      homeZone: _homeZone,
-                      currency: currency,
-                      travellers: travellers,
+                  : setHomeCurrency(
+                      t.copyWith(
+                        title: title,
+                        startDate: _start,
+                        plannedDays: days,
+                        color: _color,
+                        homeZone: _homeZone,
+                        travellers: travellers,
+                      ),
+                      currency,
                     ),
             );
           },

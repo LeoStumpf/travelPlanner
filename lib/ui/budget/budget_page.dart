@@ -169,7 +169,7 @@ class BudgetPage extends ConsumerWidget {
   Future<void> _editSettings(BuildContext context, WidgetRef ref, TripData data) async {
     final l = context.l10n;
     final t = await showTripSettingsDialog(context, data.trip, usedZones: data.usedZones);
-    if (t != null) await ref.read(planActionsProvider).record(t.id, l.stepTripEdited, (r) => r.saveTrip(t));
+    if (t != null && context.mounted) await ref.read(planActionsProvider).record(t.id, l.stepTripEdited, (r) => r.saveTrip(t));
   }
 
   /// Enter, change or remove the rate for [currency] (null: ask for it).
@@ -181,7 +181,7 @@ class BudgetPage extends ConsumerWidget {
       context: context,
       builder: (_) => _RateDialog(home: home, currency: currency, rate: data.trip.rates[currency]),
     );
-    if (r == null) return;
+    if (r == null || !context.mounted) return;
     final (code, rate) = r;
     // Rates are relative to the shown currency; a guessed one becomes the trip's.
     final trip = setRate(data.trip.currency == null ? data.trip.copyWith(currency: home) : data.trip, code, rate);

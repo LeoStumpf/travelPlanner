@@ -578,7 +578,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
 
   /// The edited cost: null without an amount; false when the input is
   /// invalid (the fields then show why).
-  Object? _editedCost() {
+  Object? _editedCost(TripData data) {
     final amountText = _costAmount.text.trim();
     final currencyText = _costCurrency.text.trim();
     final amount = parseAmount(amountText);
@@ -593,7 +593,11 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       return false;
     }
     if (amount == null) return null;
-    return Cost(amount: amount, currency: currency, perPerson: _costPerPerson, paid: _costPaid);
+    // Blank means the home currency. While the trip has none, that is only
+    // the guessed one shown as hint, which may change as costs are added –
+    // so it is stored explicitly.
+    final cur = currency ?? (data.trip.currency == null ? budgetCurrency(data.trip, data.items) : null);
+    return Cost(amount: amount, currency: cur, perPerson: _costPerPerson, paid: _costPaid);
   }
 
   Widget _placeTile() => ListTile(
@@ -740,7 +744,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
 
   Future<void> _save(TripData data) async {
     if (_leaving || _busy) return;
-    final cost = _editedCost();
+    final cost = _editedCost(data);
     if (cost == false) return;
     _busy = true;
     try {

@@ -492,8 +492,16 @@ void main() {
       expect(imp.trip.rates, {'USD': 1.1});
       expect(imp.items.where((i) => i.id == paris.id), isEmpty);
       expect(imp.items.firstWhere((i) => i.title == 'A').cost, isNull);
-      // The amount still counts, in the home currency.
-      expect(imp.items.firstWhere((i) => i.title == 'B').cost, const Cost(amount: 10));
+      // An unknown currency drops the cost rather than counting it as EUR.
+      expect(imp.items.firstWhere((i) => i.title == 'B').cost, isNull);
+    });
+
+    test('a new trip currency rebases the existing rates', () {
+      final d = withCosts();
+      final imp = _apply(_plan(const [], trip: {'currency': 'CHF', 'rates': {'GBP': 0.8}}), into: d);
+      expect(imp.trip.currency, 'CHF');
+      expect(imp.trip.rates['EUR'], closeTo(1 / 0.95, 1e-9));
+      expect(imp.trip.rates['GBP'], 0.8);
     });
 
     test('travellers are clamped to at least one; null resets', () {

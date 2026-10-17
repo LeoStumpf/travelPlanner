@@ -374,7 +374,7 @@ class PlanExchange {
       if (startDate != null) tr = tr.copyWith(startDate: startDate.value);
       if (days != null) tr = tr.copyWith(plannedDays: days.value);
       if (homeZone != null) tr = tr.copyWith(homeZone: homeZone.value);
-      if (currency != null) tr = tr.copyWith(currency: currency.value);
+      if (currency != null) tr = setHomeCurrency(tr, currency.value);
       if (travellerCount != null) tr = tr.copyWith(travellers: travellerCount);
       if (t.containsKey('rates')) tr = tr.copyWith(rates: _applyRates(tr.rates, t['rates'], warnings));
       tripChanged = jsonEncode(tr.toJson()) != jsonEncode(into.trip.toJson());
@@ -721,8 +721,11 @@ class PlanExchange {
         var c = old ?? const Cost(amount: 0);
         if (amount is num) c = c.copyWith(amount: amount.toDouble());
         if (v.containsKey('currency')) {
+          // An unknown currency would silently count the amount as home
+          // currency (5000 "Rupees" as 5000 EUR), so the cost is skipped.
           final cur = _parseCurrency(v['currency'], 'cost.currency', entry, warnings);
-          if (cur != null) c = c.copyWith(currency: cur.value);
+          if (cur == null) return null;
+          c = c.copyWith(currency: cur.value);
         }
         if (v.containsKey('perPerson')) c = c.copyWith(perPerson: v['perPerson'] == true);
         if (v.containsKey('paid')) c = c.copyWith(paid: v['paid'] == true);

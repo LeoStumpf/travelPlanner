@@ -173,5 +173,23 @@ void main() {
       expect(convertAmount(5, 'EUR', 'EUR', const {}), 5);
       expect(convertAmount(5, 'USD', 'EUR', const {}), isNull);
     });
+
+    test('changing the home currency rebases the rates', () {
+      final t = _data(const [], rates: {'LKR': 330, 'USD': 1.1}).trip;
+      final usd = setHomeCurrency(t, 'USD');
+      expect(usd.currency, 'USD');
+      expect(usd.rates.keys, unorderedEquals(['LKR', 'EUR']));
+      expect(usd.rates['LKR'], closeTo(300, 1e-9));
+      expect(usd.rates['EUR'], closeTo(1 / 1.1, 1e-9));
+      // 330 LKR are still 1 EUR, now 1.10 USD.
+      expect(convertAmount(330, 'LKR', 'USD', usd.rates), closeTo(1.1, 1e-9));
+      // Without the new currency's rate the old ones would be wrong: dropped.
+      final chf = setHomeCurrency(t, 'CHF');
+      expect([chf.currency, chf.rates], ['CHF', isEmpty]);
+      // Same currency, first currency or cleared: rates stay.
+      expect(setHomeCurrency(t, 'EUR'), same(t));
+      expect(setHomeCurrency(t.copyWith(currency: null), 'USD').rates, t.rates);
+      expect(setHomeCurrency(t, null).rates, t.rates);
+    });
   });
 }

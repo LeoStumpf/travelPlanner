@@ -72,7 +72,7 @@ Every item has a `ref` (unique string; for new items use short slugs like `"kand
 "cost": { "amount": 45, "currency": "LKR", "perPerson": true, "paid": false }
 ```
 
-- `amount` (number, required for a new cost) in `currency`, an ISO 4217 code like `"EUR"`, `"LKR"`, `"USD"`. Without `currency` the trip's home currency is meant. Use the currency you would actually pay in (usually the local one) and a realistic, rounded estimate.
+- `amount` (number, required for a new cost) in `currency`, an ISO 4217 code like `"EUR"`, `"LKR"`, `"USD"`. Without `currency` the trip's home currency is meant. Use the currency you would actually pay in (usually the local one) and a realistic, rounded estimate. A cost with a currency that is not a valid code is ignored.
 - `perPerson: true` for prices per traveller (tickets, entry fees, tours, dorm beds); leave it out for totals (a double room per night × nights, a taxi, a rental car). The app multiplies per-person prices by `trip.travellers`.
 - `paid: true` only if the user said it is paid. Leave it out otherwise.
 - Ask for (or keep) the user's home currency in `trip.currency` and the number of travellers in `trip.travellers`. For every foreign currency you use, add a current approximate rate to `trip.rates` as units per 1 home currency (`{"LKR": 330}` = 1 EUR buys 330 LKR); the app converts offline with these. Keep rates the user already has unless asked.

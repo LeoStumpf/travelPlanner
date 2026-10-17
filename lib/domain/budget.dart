@@ -209,3 +209,21 @@ Trip setRate(Trip trip, String currency, double? rate) {
   if (rate != null && rate > 0) rates[currency] = rate;
   return trip.copyWith(rates: rates);
 }
+
+/// [trip] with the home currency set to [currency]. Rates are relative to
+/// the home currency, so when it changes they are rebased through the new
+/// currency's rate (the old home currency gets the inverse); without that
+/// rate they could only be wrong and are dropped (the budget then asks for
+/// them again).
+Trip setHomeCurrency(Trip trip, String? currency) {
+  final old = trip.currency;
+  if (currency == old) return trip;
+  if (old == null || currency == null || trip.rates.isEmpty) return trip.copyWith(currency: currency);
+  final via = trip.rates[currency];
+  if (via == null || via <= 0) return trip.copyWith(currency: currency, rates: const {});
+  return trip.copyWith(currency: currency, rates: {
+    for (final e in trip.rates.entries)
+      if (e.key != currency) e.key: e.value / via,
+    old: 1 / via,
+  });
+}
