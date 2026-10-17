@@ -181,6 +181,41 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     }
   }
 
+  /// A night without a bed: offer the options covering it first, else
+  /// (or on request) create a new accommodation.
+  void _onMissingNight(TripData data, int night, PlanItem? stay) {
+    void create() =>
+        openItemEditor(context, data, newKind: ItemKind.accommodation, atDay: night, parentHint: stay?.id);
+    final options = optionsForNight(data.items, night);
+    if (options.isEmpty) {
+      create();
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (c) => _NightOptionsSheet(
+        title: 'Nacht ${formatDay(data.trip.startDate, night)} → ${formatDay(data.trip.startDate, night + 1)}',
+        options: options,
+        tripStart: data.trip.startDate,
+        onChoose: (o) {
+          Navigator.pop(c);
+          chooseAccommodation(context, ref, data, o);
+        },
+        onDetails: (o) {
+          Navigator.pop(c);
+          showItemSheet(context, ref, data.trip.id, o.id);
+        },
+        onCreate: () {
+          Navigator.pop(c);
+          create();
+        },
+      ),
+    );
+  }
+
   Future<void> _commitDrag(ShiftMode mode) async {
     final r = _preview(mode);
     final item = data.item(_dragId);
@@ -300,8 +335,8 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               top: _lanePad + (lane.rowCount - 1) * rowH,
               height: rowH - 6,
               child: _MissingNight(
-                onTap: () =>
-                    openItemEditor(context, data, newKind: ItemKind.accommodation, atDay: n, parentHint: stay?.id),
+                options: optionsForNight(items, n).length,
+                onTap: () => _onMissingNight(data, n, stay),
               ),
             ),
           );
@@ -753,15 +788,76 @@ class _GapBox extends StatelessWidget {
   }
 }
 
+/// Lists the accommodation options for one night plus "Neue Unterkunft".
+class _NightOptionsSheet extends StatelessWidget {
+  final String title;
+  final List<PlanItem> options;
+  final DateTime? tripStart;
+  final ValueChanged<PlanItem> onChoose;
+  final ValueChanged<PlanItem> onDetails;
+  final VoidCallback onCreate;
+  const _NightOptionsSheet({
+    required this.title,
+    required this.options,
+    required this.tripStart,
+    required this.onChoose,
+    required this.onDetails,
+    required this.onCreate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          const Text('Noch keine Unterkunft für diese Nacht'),
+          Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 4),
+            child: Text('Option wählen', style: theme.textTheme.titleSmall),
+          ),
+          for (final o in options)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(itemIcon(o), color: kindColor(o.kind).withValues(alpha: 0.5)),
+              title: Text(o.title, style: const TextStyle(fontStyle: FontStyle.italic)),
+              subtitle: Text(timeSummary(o, tripStart)),
+              onTap: () => onDetails(o),
+              trailing: TextButton(onPressed: () => onChoose(o), child: const Text('Wählen')),
+            ),
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.add),
+            title: const Text('Neue Unterkunft'),
+            onTap: onCreate,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MissingNight extends StatelessWidget {
+  /// Number of accommodation options covering this night.
+  final int options;
   final VoidCallback onTap;
-  const _MissingNight({required this.onTap});
+  const _MissingNight({required this.options, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Tooltip(
-      message: 'Noch keine Unterkunft für diese Nacht',
+      message: switch (options) {
+        0 => 'Noch keine Unterkunft für diese Nacht',
+        1 => 'Noch keine Unterkunft – 1 Option',
+        _ => 'Noch keine Unterkunft – $options Optionen',
+      },
       child: Material(
         color: colors.signal,
         borderRadius: BorderRadius.circular(8),
@@ -775,7 +871,8 @@ class _MissingNight extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.bed_outlined, size: 15, color: colors.onSignal),
-                  Text('!', style: TextStyle(color: colors.onSignal, fontWeight: FontWeight.w900, fontSize: 14)),
+                  Text(options == 0 ? '!' : ' $options?',
+                      style: TextStyle(color: colors.onSignal, fontWeight: FontWeight.w900, fontSize: 14)),
                 ],
               ),
             ),

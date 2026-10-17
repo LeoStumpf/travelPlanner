@@ -209,6 +209,47 @@ List<int> uncoveredNights(List<PlanItem> items) {
   return out.toList()..sort();
 }
 
+/// Accommodation options (scheduled, status option) that would cover night
+/// [n], earliest check-in first. Offered on a missing-night marker.
+List<PlanItem> optionsForNight(List<PlanItem> items, int n) => [
+      for (final i in items)
+        if (i.kind == ItemKind.accommodation &&
+            i.isOption &&
+            i.isScheduled &&
+            dayOf(i.start!) <= n &&
+            n < lastDayOf(i.end!))
+          i,
+    ]..sort((a, b) => a.start!.compareTo(b.start!));
+
+/// Whether two accommodations compete for the same bed: they share a night,
+/// or – while one has no dates yet – they belong to the same stay.
+bool _competes(PlanItem a, PlanItem b) {
+  if (a.isScheduled && b.isScheduled) {
+    return dayOf(a.start!) < lastDayOf(b.end!) && dayOf(b.start!) < lastDayOf(a.end!);
+  }
+  return a.parentId != null && a.parentId == b.parentId;
+}
+
+/// The changes that make accommodation [id] the chosen one: it becomes
+/// planned (or booked with [book]); competing planned accommodations fall
+/// back to options. Booked ones and ideas are never touched.
+/// Returns only changed items.
+List<PlanItem> chooseOption(List<PlanItem> items, String id, {bool book = false}) {
+  final chosen = items.where((i) => i.id == id).firstOrNull;
+  if (chosen == null) return const [];
+  final status = book || chosen.status == ItemStatus.booked ? ItemStatus.booked : ItemStatus.planned;
+  return [
+    if (chosen.status != status) chosen.copyWith(status: status),
+    if (chosen.kind == ItemKind.accommodation)
+      for (final o in items)
+        if (o.id != id &&
+            o.kind == ItemKind.accommodation &&
+            o.status == ItemStatus.planned &&
+            _competes(chosen, o))
+          o.copyWith(status: ItemStatus.option),
+  ];
+}
+
 /// First and last day to show on the timeline.
 (int, int) dayRange(List<PlanItem> items, {int? plannedDays}) {
   var first = 0;

@@ -10,6 +10,7 @@ import '../../state/providers.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
 import 'conflict_tile.dart';
+import 'dialogs.dart';
 import 'style.dart';
 
 String timeSummary(PlanItem i, DateTime? tripStart) {
@@ -22,6 +23,23 @@ String timeSummary(PlanItem i, DateTime? tripStart) {
     _ => '',
   };
   return '$s → $e$extra';
+}
+
+/// Makes accommodation [item] the chosen one for its nights (see
+/// [chooseOption]) as one undoable step. With [undoSnack] it offers
+/// "Rückgängig" – not from inside the item sheet, which would hide the
+/// snackbar; the sheet shows the new status itself.
+Future<void> chooseAccommodation(BuildContext context, WidgetRef ref, TripData data, PlanItem item,
+    {bool book = false, bool undoSnack = true}) async {
+  final changed = chooseOption(data.items, item.id, book: book);
+  if (changed.isEmpty) return;
+  final messenger = ScaffoldMessenger.of(context);
+  final actions = ref.read(planActionsProvider);
+  final label = book ? '„${item.title}“ als gebucht markiert' : '„${item.title}“ gewählt';
+  await actions.saveItems(data, changed, label);
+  if (!undoSnack) return;
+  final step = actions.lastStep(data.trip.id);
+  showUndoSnack(messenger, label, () => actions.undoStep(data.trip.id, step));
 }
 
 /// Selects [id] and shows its details with links to the other views.
@@ -133,6 +151,22 @@ class _ItemSheet extends ConsumerWidget {
             OutlinedButton.icon(onPressed: () => goto(TripView.map), icon: const Icon(Icons.map), label: const Text('Karte')),
           OutlinedButton.icon(onPressed: () => goto(TripView.canvas), icon: const Icon(Icons.dashboard), label: const Text('Canvas')),
         ]),
+        if (item.kind == ItemKind.accommodation && item.status != ItemStatus.booked) ...[
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            if (item.status != ItemStatus.planned)
+              FilledButton.tonalIcon(
+                onPressed: () => chooseAccommodation(context, ref, data, item, undoSnack: false),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Diese Option wählen'),
+              ),
+            FilledButton.tonalIcon(
+              onPressed: () => chooseAccommodation(context, ref, data, item, book: true, undoSnack: false),
+              icon: Icon(statusIcon(ItemStatus.booked)),
+              label: const Text('Als gebucht markieren'),
+            ),
+          ]),
+        ],
         if (item.notes.trim().isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(item.notes),
@@ -208,15 +242,7 @@ class _ItemSheet extends ConsumerWidget {
       subtitle: Text('${i.status.label} · ${timeSummary(i, data.trip.startDate)}'),
       trailing: canChoose
           ? TextButton(
-              onPressed: () {
-                final changed = [
-                  i.copyWith(status: ItemStatus.planned),
-                  for (final o in options)
-                    if (o.id != i.id && !o.isOption && o.status != ItemStatus.booked)
-                      o.copyWith(status: ItemStatus.option),
-                ];
-                ref.read(planActionsProvider).saveItems(data, changed, '„${i.title}“ gewählt');
-              },
+              onPressed: () => chooseAccommodation(context, ref, data, i, undoSnack: false),
               child: const Text('Wählen'),
             )
           : null,
