@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -107,10 +109,51 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   late int _start = _i.start ?? at(0, defaultStayArrival);
   late int _end = _i.end ?? at(2, defaultStayDeparture);
   bool _saved = false;
+  // Set once the user chose to leave (saved, discarded or deleted).
+  bool _leaving = false;
+  late final String _initialSnapshot;
 
   @override
-  void dispose() {
+  void initState() {
+    super.initState();
+    _initialSnapshot = _snapshot();
+  }
+
+  /// Everything the user can change, in a comparable form.
+  String _snapshot() => jsonEncode({
+        'item': _i.toJson(),
+        'title': _title.text.trim(),
+        'notes': _notes.text,
+        'scheduled': _scheduled,
+        if (_scheduled) 'start': _start,
+        if (_scheduled) 'end': _end,
+      });
+
+  bool _isDirty(TripData data) =>
+      _snapshot() != _initialSnapshot ||
+      // Attachments of an existing item are stored right away; those of a new one are lost unless it is saved.
+      (widget.isNew && data.attachmentsOf(_i.id).isNotEmpty);
+
+  /// Back gesture / app bar back: leave directly when nothing changed, else ask.
+  Future<void> _onPopBlocked(TripData data) async {
+    if (_leaving) return;
+    if (!_isDirty(data)) return _leave();
+    final choice = await askLeave(context);
+    if (!mounted) return;
+    switch (choice) {
+      case LeaveChoice.save:
+        await _save(data);
+      case LeaveChoice.discard:
+        _leave();
+      case LeaveChoice.keepEditing:
+        break;
+    }
+  }
+
+  void _leave([String? result]) {
+    _leaving = true;
     // A new item that was never saved must not leave attachments behind.
+    // Done here and not in dispose(), where ref must not be used any more.
     if (widget.isNew && !_saved) {
       final data = ref.read(tripDataProvider(widget.tripId)).value;
       final repo = ref.read(repositoryProvider);
@@ -118,6 +161,11 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         repo.deleteAttachment(a);
       }
     }
+    Navigator.pop(context, result);
+  }
+
+  @override
+  void dispose() {
     _title.dispose();
     _notes.dispose();
     super.dispose();
@@ -135,99 +183,105 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         if (s.kind == ItemKind.stay && s.id != _i.id) s,
     ]..sort((a, b) => (a.start ?? 1 << 40).compareTo(b.start ?? 1 << 40));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isNew ? 'Neu: ${_i.kind.label}' : _i.kind.label),
-        actions: [
-          if (!widget.isNew)
-            IconButton(
-              tooltip: 'Löschen',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                if (await confirm(context, '„${_i.title}“ löschen?')) {
-                  await ref.read(planActionsProvider).deleteItem(data, _i.id);
-                  ref.read(tripUiProvider.notifier).select(null);
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
+    return PopScope<String>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onPopBlocked(data);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.isNew ? 'Neu: ${_i.kind.label}' : _i.kind.label),
+          actions: [
+            if (!widget.isNew)
+              IconButton(
+                tooltip: 'Löschen',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () async {
+                  if (await confirm(context, '„${_i.title}“ löschen?')) {
+                    await ref.read(planActionsProvider).deleteItem(data, _i.id);
+                    ref.read(tripUiProvider.notifier).select(null);
+                    if (context.mounted) _leave();
+                  }
+                },
+              ),
+            TextButton(onPressed: () => _save(data), child: const Text('Speichern')),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          children: [
+            if (widget.isNew)
+              SegmentedButton<ItemKind>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final k in ItemKind.values)
+                    ButtonSegment(value: k, icon: Icon(kindIcon(k), size: 18), tooltip: k.label),
+                ],
+                selected: {_i.kind},
+                onSelectionChanged: (s) => _update((i) => i.copyWith(kind: s.first)),
+              ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _title,
+              autofocus: widget.isNew && _i.title.isEmpty,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: 'Titel',
+                hintText: switch (_i.kind) {
+                  ItemKind.stay => 'z. B. Kandy',
+                  ItemKind.transport => 'z. B. Zug Kandy → Ella',
+                  ItemKind.accommodation => 'z. B. Tree House Ella',
+                  ItemKind.activity => 'z. B. Safari im Yala NP',
+                },
+                prefixIcon: Icon(itemIcon(_i), color: kindColor(_i.kind)),
+              ),
             ),
-          TextButton(onPressed: () => _save(data), child: const Text('Speichern')),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        children: [
-          if (widget.isNew)
-            SegmentedButton<ItemKind>(
-              showSelectedIcon: false,
+            const SizedBox(height: 16),
+            Text('Status', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 6),
+            SegmentedButton<ItemStatus>(
               segments: [
-                for (final k in ItemKind.values)
-                  ButtonSegment(value: k, icon: Icon(kindIcon(k), size: 18), tooltip: k.label),
+                for (final s in ItemStatus.values)
+                  ButtonSegment(value: s, label: Text(s.label, style: const TextStyle(fontSize: 12))),
               ],
-              selected: {_i.kind},
-              onSelectionChanged: (s) => _update((i) => i.copyWith(kind: s.first)),
+              selected: {_i.status},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) => _update((i) => i.copyWith(status: s.first)),
             ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _title,
-            autofocus: widget.isNew && _i.title.isEmpty,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: 'Titel',
-              hintText: switch (_i.kind) {
-                ItemKind.stay => 'z. B. Kandy',
-                ItemKind.transport => 'z. B. Zug Kandy → Ella',
-                ItemKind.accommodation => 'z. B. Tree House Ella',
-                ItemKind.activity => 'z. B. Safari im Yala NP',
-              },
-              prefixIcon: Icon(itemIcon(_i), color: kindColor(_i.kind)),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: Icon(_i.fixed ? Icons.lock : Icons.lock_open),
+              title: const Text('Fixer Termin'),
+              subtitle: const Text('Bewegt sich nicht, wenn davor etwas verschoben wird (z. B. gebuchte Tour, Rückflug)'),
+              value: _i.fixed,
+              onChanged: (v) => _update((i) => i.copyWith(fixed: v)),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text('Status', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 6),
-          SegmentedButton<ItemStatus>(
-            segments: [
-              for (final s in ItemStatus.values)
-                ButtonSegment(value: s, label: Text(s.label, style: const TextStyle(fontSize: 12))),
-            ],
-            selected: {_i.status},
-            showSelectedIcon: false,
-            onSelectionChanged: (s) => _update((i) => i.copyWith(status: s.first)),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: Icon(_i.fixed ? Icons.lock : Icons.lock_open),
-            title: const Text('Fixer Termin'),
-            subtitle: const Text('Bewegt sich nicht, wenn davor etwas verschoben wird (z. B. gebuchte Tour, Rückflug)'),
-            value: _i.fixed,
-            onChanged: (v) => _update((i) => i.copyWith(fixed: v)),
-          ),
-          const Divider(),
-          ..._relationFields(stays),
-          if (_i.kind != ItemKind.transport) _placeTile(),
-          const Divider(),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Im Zeitplan'),
-            subtitle: Text(_scheduled ? 'Hat Tage/Uhrzeiten' : 'Nur gesammelt – noch ohne Termin'),
-            value: _scheduled,
-            onChanged: (v) => setState(() => _scheduled = v),
-          ),
-          if (_scheduled) ..._timeFields(start),
-          const Divider(),
-          TextField(
-            controller: _notes,
-            minLines: 3,
-            maxLines: 12,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Notizen', alignLabelWithHint: true, border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          _linksSection(),
-          const SizedBox(height: 12),
-          AttachmentsSection(tripId: widget.tripId, ownerId: _i.id, attachments: data.attachmentsOf(_i.id)),
-        ],
+            const Divider(),
+            ..._relationFields(stays),
+            if (_i.kind != ItemKind.transport) _placeTile(),
+            const Divider(),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Im Zeitplan'),
+              subtitle: Text(_scheduled ? 'Hat Tage/Uhrzeiten' : 'Nur gesammelt – noch ohne Termin'),
+              value: _scheduled,
+              onChanged: (v) => setState(() => _scheduled = v),
+            ),
+            if (_scheduled) ..._timeFields(start),
+            const Divider(),
+            TextField(
+              controller: _notes,
+              minLines: 3,
+              maxLines: 12,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Notizen', alignLabelWithHint: true, border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            _linksSection(),
+            const SizedBox(height: 12),
+            AttachmentsSection(tripId: widget.tripId, ownerId: _i.id, attachments: data.attachmentsOf(_i.id)),
+          ],
+        ),
       ),
     );
   }
@@ -428,6 +482,6 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(widget.tripId)),
       );
     }
-    Navigator.pop(context, item.id);
+    _leave(item.id);
   }
 }

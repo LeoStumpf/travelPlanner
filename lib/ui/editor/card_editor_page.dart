@@ -28,7 +28,8 @@ Future<void> openCardEditor(BuildContext context, TripData data, {NoteCard? card
       ),
     ));
 
-/// Keep-style editor: changes are saved when leaving the page.
+/// Keep-style editor: changes are saved when leaving the page, and also when
+/// the app goes to the background, so they survive the app being killed there.
 class CardEditorPage extends ConsumerStatefulWidget {
   final String tripId;
   final NoteCard initial;
@@ -39,7 +40,7 @@ class CardEditorPage extends ConsumerStatefulWidget {
   ConsumerState<CardEditorPage> createState() => _CardEditorPageState();
 }
 
-class _CardEditorPageState extends ConsumerState<CardEditorPage> {
+class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBindingObserver {
   late NoteCard _c = widget.initial;
   late final _title = TextEditingController(text: _c.title);
   late final _text = TextEditingController(text: _c.text);
@@ -47,12 +48,28 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> {
   final Map<String, TextEditingController> _entryCtrls = {};
   bool _deleted = false;
   bool _loadingPreview = false;
+  // What is in the database for this card (json), null while a new card is not stored yet.
+  late String? _storedJson = widget.isNew ? null : jsonEncode(widget.initial.toJson());
+  // Saves run one after another so a background save and the save on leaving never overlap.
+  Future<void> _saving = Future.value();
 
   TextEditingController _entryCtrl(ChecklistEntry e) =>
       _entryCtrls.putIfAbsent(e.id, () => TextEditingController(text: e.text));
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) _persist();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _title.dispose();
     _text.dispose();
     _url.dispose();
@@ -73,26 +90,39 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> {
 
   static String _normalizeUrl(String u) => u.startsWith('http') ? u : 'https://$u';
 
-  Future<void> _persist() async {
-    if (_deleted) return;
+  /// Stores the current state as one undo step, if it differs from what is stored.
+  /// Everything is read synchronously, so it also works while the page is being popped.
+  Future<void> _persist() {
+    if (_deleted) return _saving;
     final c = _collect();
     final data = ref.read(tripDataProvider(widget.tripId)).value;
+    final actions = ref.read(planActionsProvider);
     final hasAttachments = data?.attachmentsOf(c.id).isNotEmpty ?? false;
     final empty = c.title.isEmpty &&
         c.text.trim().isEmpty &&
         c.url == null &&
         c.checklist.every((e) => e.text.trim().isEmpty) &&
         !hasAttachments;
-    if (widget.isNew && empty) return;
     final cleaned = c.copyWith(
       checklist: [for (final e in c.checklist) if (e.text.trim().isNotEmpty) e],
     );
-    // Leaving without changes must not add an undo step.
-    if (!widget.isNew && jsonEncode(cleaned.toJson()) == jsonEncode(widget.initial.toJson())) return;
+    final json = jsonEncode(cleaned.toJson());
+    final stored = _storedJson;
     final name = cleaned.title.isEmpty ? 'Notiz' : '„${cleaned.title}“';
-    await ref
-        .read(planActionsProvider)
-        .record(widget.tripId, widget.isNew ? '$name angelegt' : '$name geändert', (r) => r.saveCard(cleaned));
+    Future<void> Function()? step;
+    if (stored == null) {
+      // A new card is only created once it has content.
+      if (!empty) step = () => actions.record(widget.tripId, '$name angelegt', (r) => r.saveCard(cleaned));
+    } else if (widget.isNew && empty && data != null) {
+      // A new card that was saved in the background and then emptied again goes away.
+      step = () => actions.record(widget.tripId, 'Notiz verworfen', (r) => r.deleteCard(data, cleaned.id));
+    } else if (json != stored) {
+      // Leaving without changes must not add an undo step.
+      step = () => actions.record(widget.tripId, '$name geändert', (r) => r.saveCard(cleaned));
+    }
+    if (step == null) return _saving;
+    _storedJson = widget.isNew && empty ? null : json;
+    return _saving = _saving.then((_) => step!()).catchError((Object e) => debugPrint('Saving card failed: $e'));
   }
 
   @override
@@ -291,13 +321,14 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> {
   Future<void> _menu(String v, TripData data) async {
     switch (v) {
       case 'delete':
-        if (widget.isNew) {
+        if (widget.isNew && _storedJson == null) {
           _deleted = true;
           for (final a in data.attachmentsOf(_c.id)) {
             await ref.read(repositoryProvider).deleteAttachment(a);
           }
         } else if (await confirm(context, 'Notiz löschen?')) {
           _deleted = true;
+          await _saving;
           await ref
               .read(planActionsProvider)
               .record(widget.tripId, 'Notiz gelöscht', (r) => r.deleteCard(data, _c.id));

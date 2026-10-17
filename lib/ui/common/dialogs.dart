@@ -42,3 +42,23 @@ Future<String?> promptText(BuildContext context, String title,
     ),
   );
 }
+
+enum LeaveChoice { save, discard, keepEditing }
+
+/// Asks what to do with unsaved changes when leaving an editor.
+/// Dismissing the dialog counts as [LeaveChoice.keepEditing].
+Future<LeaveChoice> askLeave(BuildContext context) async {
+  final r = await showDialog<LeaveChoice>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: const Text('Ungespeicherte Änderungen'),
+      content: const Text('Sollen die Änderungen gespeichert werden?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, LeaveChoice.keepEditing), child: const Text('Weiter bearbeiten')),
+        TextButton(onPressed: () => Navigator.pop(c, LeaveChoice.discard), child: const Text('Verwerfen')),
+        FilledButton(onPressed: () => Navigator.pop(c, LeaveChoice.save), child: const Text('Speichern')),
+      ],
+    ),
+  );
+  return r ?? LeaveChoice.keepEditing;
+}
