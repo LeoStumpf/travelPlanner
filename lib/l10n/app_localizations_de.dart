@@ -2352,4 +2352,95 @@ class AppLocalizationsDe extends AppLocalizations {
   String sharePdfPage(String page, String pages) {
     return 'Seite $page von $pages';
   }
+
+  @override
+  String get reminders => 'Erinnerungen';
+
+  @override
+  String get remindersSwitch => 'An diese Reise erinnern';
+
+  @override
+  String get remindersSwitchHint =>
+      'Benachrichtigungen vor Abfahrten, Check-in und Check-out';
+
+  @override
+  String get remindersNeedStartDate =>
+      'Erinnerungen brauchen echte Daten. Lege das Datum von Tag 1 fest, damit sie geplant werden.';
+
+  @override
+  String get remindersSetStartDate => 'Startdatum festlegen';
+
+  @override
+  String get remindersNotificationsOff =>
+      'Benachrichtigungen sind für Tripboard ausgeschaltet, Erinnerungen können nicht erscheinen.';
+
+  @override
+  String get remindersAllow => 'Erlauben';
+
+  @override
+  String get remindersInexact =>
+      'Ohne die Berechtigung für Wecker und Erinnerungen kommen Benachrichtigungen evtl. ein paar Minuten zu spät.';
+
+  @override
+  String get remindersAllowExact => 'Genaue Zeiten erlauben';
+
+  @override
+  String get remindersWhen => 'Wann';
+
+  @override
+  String remindersLead(String duration) {
+    return '$duration vorher';
+  }
+
+  @override
+  String get remindersFor => 'Wofür';
+
+  @override
+  String get remindersDepartures => 'Abfahrten';
+
+  @override
+  String get remindersCheckIn => 'Check-in';
+
+  @override
+  String get remindersCheckOut => 'Check-out';
+
+  @override
+  String get remindersUpcoming => 'Nächste Erinnerungen';
+
+  @override
+  String get remindersNone =>
+      'Keine anstehenden Erinnerungen: Es steht keine geplante oder gebuchte Abfahrt, kein Check-in und kein Check-out bevor.';
+
+  @override
+  String remindersMore(int count) {
+    return '+$count weitere';
+  }
+
+  @override
+  String get remindersOff => 'Aus';
+
+  @override
+  String remindersFiresAt(String when) {
+    return 'Benachrichtigung $when';
+  }
+
+  @override
+  String reminderDepartureTitle(String time, String title) {
+    return 'Abfahrt $time: $title';
+  }
+
+  @override
+  String reminderCheckInTitle(String time, String title) {
+    return 'Check-in $time: $title';
+  }
+
+  @override
+  String reminderCheckOutTitle(String time, String title) {
+    return 'Check-out $time: $title';
+  }
+
+  @override
+  String reminderIn(String duration) {
+    return 'in $duration';
+  }
 }

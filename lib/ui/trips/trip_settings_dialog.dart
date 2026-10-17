@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/budget.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../state/reminders.dart';
 import '../common/a11y.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
 import '../common/zone_picker.dart';
+import '../reminders/reminder_sheet.dart';
+import '../reminders/reminder_texts.dart';
 
 /// Create ([trip] == null) or edit a trip's title, start date, length, home
-/// time zone, home currency and number of travellers. [usedZones] are offered first in the zone picker.
+/// time zone, home currency and number of travellers; an existing trip
+/// also links to its reminders (saved at once, see reminder_sheet.dart). [usedZones] are offered first in the zone picker.
 Future<Trip?> showTripSettingsDialog(BuildContext context, Trip? trip, {List<String> usedZones = const []}) =>
     showDialog<Trip>(context: context, builder: (_) => _TripSettingsDialog(trip: trip, usedZones: usedZones));
 
@@ -149,6 +154,18 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                   ),
               ],
             ),
+            if (widget.trip != null)
+              Consumer(
+                builder: (context, ref, _) => ListTile(
+                  key: const ValueKey('trip-reminders'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: Text(l.reminders),
+                  subtitle: Text(l.reminderSummary(ref.watch(tripReminderSettingsProvider(widget.trip!.id)))),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showReminderSheet(context, widget.trip!.id),
+                ),
+              ),
           ],
         ),
       ),

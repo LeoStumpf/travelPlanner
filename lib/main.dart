@@ -9,13 +9,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/attachment_store.dart';
 import 'data/auto_backup.dart';
 import 'data/db.dart';
+import 'data/reminder_scheduler.dart';
 import 'data/repository.dart';
 import 'state/hints.dart';
 import 'state/providers.dart';
+import 'state/reminders.dart';
 import 'ui/backup/auto_backup_listener.dart';
 import 'ui/common/l10n.dart';
 import 'ui/common/theme.dart';
 import 'ui/exchange/clipboard_plan_listener.dart';
+import 'ui/reminders/reminder_listener.dart';
 import 'ui/share/share_listener.dart';
 import 'ui/trips/trips_page.dart';
 
@@ -49,6 +52,7 @@ Future<void> main() async {
       repositoryProvider.overrideWithValue(repo),
       autoBackupProvider.overrideWithValue(autoBackup),
       hintPrefsProvider.overrideWithValue(prefs),
+      reminderSchedulerProvider.overrideWithValue(LocalReminderScheduler()),
     ],
     child: const TravelPlannerApp(),
   ));
@@ -82,8 +86,8 @@ class TravelPlannerApp extends StatelessWidget {
         supportedLocales: appLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         navigatorKey: navigatorKey,
-        builder: (context, child) =>
-            ShareListener(child: AutoBackupListener(child: ClipboardPlanListener(child: child!))),
+        builder: (context, child) => ShareListener(
+            child: AutoBackupListener(child: ReminderListener(child: ClipboardPlanListener(child: child!)))),
         home: const TripsPage(),
       );
 }

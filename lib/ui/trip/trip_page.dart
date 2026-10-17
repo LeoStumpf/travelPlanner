@@ -16,6 +16,7 @@ import '../editor/item_editor_page.dart';
 import '../exchange/plan_exchange_ui.dart';
 import '../keep/notes_view.dart';
 import '../map/map_view.dart';
+import '../reminders/reminder_sheet.dart';
 import '../share/share_trip.dart';
 import '../timeline/timeline_view.dart';
 import '../trips/trip_settings_dialog.dart';
@@ -66,6 +67,8 @@ class _TripPageState extends ConsumerState<TripPage> {
                     }
                   } else if (v == 'export') {
                     if (context.mounted) await exportTrip(context, ref, data.trip);
+                  } else if (v == 'reminders') {
+                    if (context.mounted) await showReminderSheet(context, data.trip.id);
                   } else if (v == 'budget') {
                     if (context.mounted) await openBudget(context, data.trip.id);
                   } else if (v == 'share') {
@@ -78,6 +81,7 @@ class _TripPageState extends ConsumerState<TripPage> {
                   PopupMenuItem(value: 'share', child: Text(l.shareMenu)),
                   PopupMenuItem(value: 'claude', child: Text(l.planWithClaude)),
                   PopupMenuItem(value: 'budget', child: Text(l.budget)),
+                  PopupMenuItem(value: 'reminders', child: Text(l.reminders)),
                   PopupMenuItem(value: 'settings', child: Text(l.editTrip)),
                   PopupMenuItem(value: 'export', child: Text(l.exportBackup)),
                 ],

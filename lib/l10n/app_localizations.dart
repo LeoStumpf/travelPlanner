@@ -3678,6 +3678,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Page {page} of {pages}'**
   String sharePdfPage(String page, String pages);
+
+  /// No description provided for @reminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get reminders;
+
+  /// No description provided for @remindersSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me of this trip'**
+  String get remindersSwitch;
+
+  /// No description provided for @remindersSwitchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications before departures, check-in and check-out'**
+  String get remindersSwitchHint;
+
+  /// No description provided for @remindersNeedStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders need real dates. Set the date of day 1 to schedule them.'**
+  String get remindersNeedStartDate;
+
+  /// No description provided for @remindersSetStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Set start date'**
+  String get remindersSetStartDate;
+
+  /// No description provided for @remindersNotificationsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are turned off for Tripboard, so reminders cannot appear.'**
+  String get remindersNotificationsOff;
+
+  /// No description provided for @remindersAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get remindersAllow;
+
+  /// No description provided for @remindersInexact.
+  ///
+  /// In en, this message translates to:
+  /// **'Without the permission for alarms & reminders, notifications may arrive a few minutes late.'**
+  String get remindersInexact;
+
+  /// No description provided for @remindersAllowExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow exact times'**
+  String get remindersAllowExact;
+
+  /// No description provided for @remindersWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get remindersWhen;
+
+  /// No description provided for @remindersLead.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} before'**
+  String remindersLead(String duration);
+
+  /// No description provided for @remindersFor.
+  ///
+  /// In en, this message translates to:
+  /// **'For'**
+  String get remindersFor;
+
+  /// No description provided for @remindersDepartures.
+  ///
+  /// In en, this message translates to:
+  /// **'Departures'**
+  String get remindersDepartures;
+
+  /// No description provided for @remindersCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in'**
+  String get remindersCheckIn;
+
+  /// No description provided for @remindersCheckOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-out'**
+  String get remindersCheckOut;
+
+  /// No description provided for @remindersUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Next reminders'**
+  String get remindersUpcoming;
+
+  /// No description provided for @remindersNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming reminders: no planned or booked departure, check-in or check-out lies ahead.'**
+  String get remindersNone;
+
+  /// No description provided for @remindersMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String remindersMore(int count);
+
+  /// No description provided for @remindersOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get remindersOff;
+
+  /// No description provided for @remindersFiresAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification {when}'**
+  String remindersFiresAt(String when);
+
+  /// No description provided for @reminderDepartureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure {time}: {title}'**
+  String reminderDepartureTitle(String time, String title);
+
+  /// No description provided for @reminderCheckInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in {time}: {title}'**
+  String reminderCheckInTitle(String time, String title);
+
+  /// No description provided for @reminderCheckOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-out {time}: {title}'**
+  String reminderCheckOutTitle(String time, String title);
+
+  /// No description provided for @reminderIn.
+  ///
+  /// In en, this message translates to:
+  /// **'in {duration}'**
+  String reminderIn(String duration);
 }
 
 class _AppLocalizationsDelegate

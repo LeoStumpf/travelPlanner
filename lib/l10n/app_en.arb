@@ -1948,5 +1948,87 @@
         "type": "String"
       }
     }
+  },
+  "reminders": "Reminders",
+  "remindersSwitch": "Remind me of this trip",
+  "remindersSwitchHint": "Notifications before departures, check-in and check-out",
+  "remindersNeedStartDate": "Reminders need real dates. Set the date of day 1 to schedule them.",
+  "remindersSetStartDate": "Set start date",
+  "remindersNotificationsOff": "Notifications are turned off for Tripboard, so reminders cannot appear.",
+  "remindersAllow": "Allow",
+  "remindersInexact": "Without the permission for alarms & reminders, notifications may arrive a few minutes late.",
+  "remindersAllowExact": "Allow exact times",
+  "remindersWhen": "When",
+  "remindersLead": "{duration} before",
+  "@remindersLead": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersFor": "For",
+  "remindersDepartures": "Departures",
+  "remindersCheckIn": "Check-in",
+  "remindersCheckOut": "Check-out",
+  "remindersUpcoming": "Next reminders",
+  "remindersNone": "No upcoming reminders: no planned or booked departure, check-in or check-out lies ahead.",
+  "remindersMore": "+{count} more",
+  "@remindersMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindersOff": "Off",
+  "remindersFiresAt": "Notification {when}",
+  "@remindersFiresAt": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderDepartureTitle": "Departure {time}: {title}",
+  "@reminderDepartureTitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderCheckInTitle": "Check-in {time}: {title}",
+  "@reminderCheckInTitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderCheckOutTitle": "Check-out {time}: {title}",
+  "@reminderCheckOutTitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderIn": "in {duration}",
+  "@reminderIn": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
   }
 }

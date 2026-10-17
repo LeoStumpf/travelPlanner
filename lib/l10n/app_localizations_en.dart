@@ -2353,4 +2353,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String sharePdfPage(String page, String pages) {
     return 'Page $page of $pages';
   }
+
+  @override
+  String get reminders => 'Reminders';
+
+  @override
+  String get remindersSwitch => 'Remind me of this trip';
+
+  @override
+  String get remindersSwitchHint =>
+      'Notifications before departures, check-in and check-out';
+
+  @override
+  String get remindersNeedStartDate =>
+      'Reminders need real dates. Set the date of day 1 to schedule them.';
+
+  @override
+  String get remindersSetStartDate => 'Set start date';
+
+  @override
+  String get remindersNotificationsOff =>
+      'Notifications are turned off for Tripboard, so reminders cannot appear.';
+
+  @override
+  String get remindersAllow => 'Allow';
+
+  @override
+  String get remindersInexact =>
+      'Without the permission for alarms & reminders, notifications may arrive a few minutes late.';
+
+  @override
+  String get remindersAllowExact => 'Allow exact times';
+
+  @override
+  String get remindersWhen => 'When';
+
+  @override
+  String remindersLead(String duration) {
+    return '$duration before';
+  }
+
+  @override
+  String get remindersFor => 'For';
+
+  @override
+  String get remindersDepartures => 'Departures';
+
+  @override
+  String get remindersCheckIn => 'Check-in';
+
+  @override
+  String get remindersCheckOut => 'Check-out';
+
+  @override
+  String get remindersUpcoming => 'Next reminders';
+
+  @override
+  String get remindersNone =>
+      'No upcoming reminders: no planned or booked departure, check-in or check-out lies ahead.';
+
+  @override
+  String remindersMore(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get remindersOff => 'Off';
+
+  @override
+  String remindersFiresAt(String when) {
+    return 'Notification $when';
+  }
+
+  @override
+  String reminderDepartureTitle(String time, String title) {
+    return 'Departure $time: $title';
+  }
+
+  @override
+  String reminderCheckInTitle(String time, String title) {
+    return 'Check-in $time: $title';
+  }
+
+  @override
+  String reminderCheckOutTitle(String time, String title) {
+    return 'Check-out $time: $title';
+  }
+
+  @override
+  String reminderIn(String duration) {
+    return 'in $duration';
+  }
 }
