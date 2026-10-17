@@ -112,6 +112,17 @@ void main() {
       expect(undoLabels(), ['„Paris Nord“ geändert']);
     });
 
+    testWidgets('a double tap on save stores once and leaves only the editor', (tester) async {
+      await openParis(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Paris'), 'Paris Nord');
+      final save = find.widgetWithText(TextButton, 'Speichern');
+      await tester.tap(save);
+      await tester.tap(save);
+      await settle(tester);
+      expect(find.text('open'), findsOneWidget, reason: 'the host page must not be popped too');
+      expect(undoLabels(), ['„Paris Nord“ geändert']);
+    });
+
     testWidgets('changing a non-text field also counts as a change', (tester) async {
       await openParis(tester);
       await tester.tap(find.text('Fixer Termin'));

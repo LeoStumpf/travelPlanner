@@ -111,6 +111,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   bool _saved = false;
   // Set once the user chose to leave (saved, discarded or deleted).
   bool _leaving = false;
+  // True while a save runs, so a second tap or back press cannot save or pop twice.
+  bool _busy = false;
   late final String _initialSnapshot;
 
   @override
@@ -136,7 +138,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
 
   /// Back gesture / app bar back: leave directly when nothing changed, else ask.
   Future<void> _onPopBlocked(TripData data) async {
-    if (_leaving) return;
+    if (_leaving || _busy) return;
     if (!_isDirty(data)) return _leave();
     final choice = await askLeave(context);
     if (!mounted) return;
@@ -446,6 +448,16 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       );
 
   Future<void> _save(TripData data) async {
+    if (_leaving || _busy) return;
+    _busy = true;
+    try {
+      await _store(data);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  Future<void> _store(TripData data) async {
     final mode = ref.read(tripUiProvider).shiftMode;
     final actions = ref.read(planActionsProvider);
     var item = _i.copyWith(
