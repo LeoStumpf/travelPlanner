@@ -8,6 +8,7 @@ import '../../state/providers.dart';
 import '../agenda/agenda_view.dart';
 import '../budget/budget_page.dart';
 import '../canvas/canvas_view.dart';
+import '../common/conflict_tile.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
@@ -55,6 +56,7 @@ class _TripPageState extends ConsumerState<TripPage> {
           appBar: AppBar(
             title: Text(data.trip.title),
             actions: [
+              ConflictBadgeButton(data: data),
               IconButton(
                 tooltip: l.search,
                 onPressed: () => openSearch(context, tripId: widget.tripId),

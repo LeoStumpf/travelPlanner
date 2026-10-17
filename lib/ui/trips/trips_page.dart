@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/backup.dart';
+import '../../domain/analysis.dart';
 import '../../domain/demo.dart';
 import '../../domain/models.dart';
 import '../../domain/time.dart';
+import '../../domain/zones.dart';
 import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../backup/backups_page.dart';
@@ -184,6 +186,7 @@ class _TripTile extends ConsumerWidget {
         [];
     stays.sort((a, b) => a.start!.compareTo(b.start!));
     final days = trip.plannedDays ?? (stays.isEmpty ? null : lastDayOf(stays.last.end!) + 1);
+    final conflicts = data == null ? 0 : findConflicts(data.items, zones: data.zones).length;
     final theme = Theme.of(context);
     final l = context.l10n;
 
@@ -202,6 +205,10 @@ class _TripTile extends ConsumerWidget {
                   Expanded(
                     child: Text(trip.title, style: theme.textTheme.titleLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
                   ),
+                  if (conflicts > 0) ...[
+                    _ConflictPill(conflicts),
+                    const SizedBox(width: 6),
+                  ],
                   if (days != null) SignalPill(l.days(days)),
                   PopupMenuButton<String>(
                     onSelected: (v) => _menu(context, ref, v),
@@ -334,4 +341,36 @@ class _Empty extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Warning sign with the number of conflicts on a trip card; the trip's app
+/// bar has the list.
+class _ConflictPill extends StatelessWidget {
+  final int count;
+  const _ConflictPill(this.count);
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final label = context.l10n.conflictsCount(count);
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        excludeSemantics: true,
+        child: Container(
+          key: const ValueKey('trip-conflicts'),
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(color: scheme.errorContainer, borderRadius: BorderRadius.circular(14)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.warning_amber, size: 16, color: scheme.onErrorContainer),
+            const SizedBox(width: 4),
+            Text('$count',
+                style: TextStyle(color: scheme.onErrorContainer, fontSize: 13, fontWeight: FontWeight.w800)),
+          ]),
+        ),
+      ),
+    );
+  }
 }

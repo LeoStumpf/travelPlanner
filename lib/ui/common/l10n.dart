@@ -181,6 +181,16 @@ extension DomainL10n on AppLocalizations {
         ConflictType.daysBeforeDeparture => conflictDaysBeforeDeparture(c.amount, c.otherTitle, c.itemTitle),
         ConflictType.stayStartsBeforeArrival => conflictStayStartsBeforeArrival(c.otherTitle, c.itemTitle),
         ConflictType.daysAfterArrival => conflictDaysAfterArrival(c.amount, c.itemTitle, c.otherTitle),
+        ConflictType.lodgingsOverlap => conflictLodgingsOverlap(c.itemTitle, c.otherTitle, c.amount),
+        ConflictType.activityDuringTransport => conflictActivityDuringTransport(c.itemTitle, c.otherTitle),
+        ConflictType.transportsOverlap => conflictTransportsOverlap(c.itemTitle, c.otherTitle),
+      };
+
+  /// Why [c] has no one-tap fix and what to do instead.
+  String conflictNoFix(Conflict c) => switch (c.noFix) {
+        NoFixReason.fixed => noFixFixed(c.noFixSubject),
+        NoFixReason.bothBooked => noFixBothBooked,
+        NoFixReason.manual => noFixManual,
       };
 
   String conflictFix(ConflictFix f) => switch (f.type) {
@@ -191,6 +201,9 @@ extension DomainL10n on AppLocalizations {
         ConflictFixType.extendToDeparture => fixExtendToDeparture(f.subject),
         ConflictFixType.startLaterAtArrival => fixStartLaterAtArrival(f.subject),
         ConflictFixType.startEarlierAtArrival => fixStartEarlierAtArrival(f.subject),
+        ConflictFixType.makeOption => fixMakeOption(f.subject),
+        ConflictFixType.moveBeforeTransport => fixMoveBeforeTransport(f.subject),
+        ConflictFixType.moveAfterTransport => fixMoveAfterTransport(f.subject),
       };
 
   String planField(PlanField f) => switch (f) {

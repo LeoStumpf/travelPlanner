@@ -659,5 +659,18 @@
   "searchFieldText": "Text",
   "searchFieldAttachment": "Anhang",
   "searchFieldLinks": "Link",
-  "searchOpenTrip": "Reise öffnen"
+  "searchOpenTrip": "Reise öffnen",
+  "conflictLodgingsOverlap": "„{item}“ und „{other}“ sind beide für {count, plural, =1{1 Nacht} other{{count} Nächte}} fest eingeplant",
+  "conflictActivityDuringTransport": "„{item}“ liegt in der Fahrzeit von „{transport}“",
+  "conflictTransportsOverlap": "„{item}“ fährt ab, bevor „{other}“ ankommt",
+  "fixMakeOption": "„{title}“ zur Option machen",
+  "fixMoveBeforeTransport": "Vor „{title}“ legen",
+  "fixMoveAfterTransport": "Nach „{title}“ legen",
+  "noFixFixed": "Keine automatische Lösung: „{title}“ ist fix. Von Hand ändern oder „Fix“ lösen.",
+  "noFixBothBooked": "Keine automatische Lösung: Beide sind gebucht. Eines stornieren oder verschieben.",
+  "noFixManual": "Keine automatische Lösung. Elemente öffnen und Zeiten anpassen.",
+  "openItemTitled": "„{title}“ öffnen",
+  "showConflicts": "Konflikte anzeigen",
+  "noConflicts": "Keine Konflikte",
+  "demotedToOption": "{count, plural, =1{1 andere Unterkunft ist jetzt Option} other{{count} andere Unterkünfte sind jetzt Optionen}}"
 }

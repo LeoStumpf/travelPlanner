@@ -150,6 +150,13 @@ void main() {
           expect(l.conflict(k), allOf(contains('A'), contains('B')), reason: '$type');
         }
       }
+      for (final reason in NoFixReason.values) {
+        final k = Conflict('a', 'b', ConflictType.staysOverlap,
+            itemTitle: 'A', otherTitle: 'B', noFix: reason, noFixSubject: 'X');
+        for (final l in [de, en]) {
+          expect(l.conflictNoFix(k), reason == NoFixReason.fixed ? contains('X') : isNotEmpty, reason: '$reason');
+        }
+      }
       for (final type in ConflictFixType.values) {
         for (final l in [de, en]) {
           expect(l.conflictFix(ConflictFix(type, 'X', const {})), contains('X'), reason: '$type');

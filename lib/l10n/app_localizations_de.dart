@@ -2588,7 +2588,6 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: '$n Treffer',
       one: '1 Treffer',
-      zero: 'Reisetitel',
     );
     return '$_temp0';
   }
@@ -2610,4 +2609,75 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get searchOpenTrip => 'Reise öffnen';
+
+  @override
+  String conflictLodgingsOverlap(String item, String other, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Nächte',
+      one: '1 Nacht',
+    );
+    return '„$item“ und „$other“ sind beide für $_temp0 fest eingeplant';
+  }
+
+  @override
+  String conflictActivityDuringTransport(String item, String transport) {
+    return '„$item“ liegt in der Fahrzeit von „$transport“';
+  }
+
+  @override
+  String conflictTransportsOverlap(String item, String other) {
+    return '„$item“ fährt ab, bevor „$other“ ankommt';
+  }
+
+  @override
+  String fixMakeOption(String title) {
+    return '„$title“ zur Option machen';
+  }
+
+  @override
+  String fixMoveBeforeTransport(String title) {
+    return 'Vor „$title“ legen';
+  }
+
+  @override
+  String fixMoveAfterTransport(String title) {
+    return 'Nach „$title“ legen';
+  }
+
+  @override
+  String noFixFixed(String title) {
+    return 'Keine automatische Lösung: „$title“ ist fix. Von Hand ändern oder „Fix“ lösen.';
+  }
+
+  @override
+  String get noFixBothBooked =>
+      'Keine automatische Lösung: Beide sind gebucht. Eines stornieren oder verschieben.';
+
+  @override
+  String get noFixManual =>
+      'Keine automatische Lösung. Elemente öffnen und Zeiten anpassen.';
+
+  @override
+  String openItemTitled(String title) {
+    return '„$title“ öffnen';
+  }
+
+  @override
+  String get showConflicts => 'Konflikte anzeigen';
+
+  @override
+  String get noConflicts => 'Keine Konflikte';
+
+  @override
+  String demotedToOption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count andere Unterkünfte sind jetzt Optionen',
+      one: '1 andere Unterkunft ist jetzt Option',
+    );
+    return '$_temp0';
+  }
 }

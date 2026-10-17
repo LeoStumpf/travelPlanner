@@ -1380,7 +1380,7 @@ class _Toolbar extends ConsumerWidget {
                       avatar: Icon(Icons.warning_amber, color: scheme.error, size: 18),
                       label: Text(l.conflictsCount(conflicts.length)),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => _showConflicts(context, ref),
+                      onPressed: () => showConflictsSheet(context, ref, data),
                     ),
                 ],
               ),
@@ -1389,29 +1389,6 @@ class _Toolbar extends ConsumerWidget {
             IconButton(tooltip: l.zoomIn, onPressed: () => onZoom(1.3), icon: const Icon(Icons.zoom_in)),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showConflicts(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (c) => ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          for (final k in conflicts)
-            ConflictTile(
-              conflict: k,
-              data: data,
-              onFixed: () => Navigator.pop(c),
-              onTap: () {
-                Navigator.pop(c);
-                showItemSheet(context, ref, data.trip.id, k.itemId);
-              },
-            ),
-        ],
       ),
     );
   }

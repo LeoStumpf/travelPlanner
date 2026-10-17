@@ -223,7 +223,16 @@ class _ItemSheet extends ConsumerWidget {
             title: Text(title),
             subtitle: Text(subtitle),
           ),
-        for (final c in conflicts) ConflictTile(conflict: c, data: data),
+        for (final c in conflicts)
+          ConflictTile(
+            conflict: c,
+            data: data,
+            currentId: id,
+            onOpen: (other) {
+              Navigator.pop(context);
+              showItemSheet(context, ref, tripId, other);
+            },
+          ),
         const SizedBox(height: 4),
         _QuickActions(data: data, item: item),
         const SizedBox(height: 8),

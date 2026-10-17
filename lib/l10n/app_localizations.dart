@@ -4024,7 +4024,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchHitCount.
   ///
   /// In en, this message translates to:
-  /// **'{n, plural, =0{trip title} =1{1 result} other{{n} results}}'**
+  /// **'{n, plural, =1{1 result} other{{n} results}}'**
   String searchHitCount(int n);
 
   /// No description provided for @searchClear.
@@ -4062,6 +4062,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open trip'**
   String get searchOpenTrip;
+
+  /// No description provided for @conflictLodgingsOverlap.
+  ///
+  /// In en, this message translates to:
+  /// **'“{item}” and “{other}” are both confirmed for {count, plural, =1{1 night} other{{count} nights}}'**
+  String conflictLodgingsOverlap(String item, String other, int count);
+
+  /// No description provided for @conflictActivityDuringTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'“{item}” is planned while “{transport}” is under way'**
+  String conflictActivityDuringTransport(String item, String transport);
+
+  /// No description provided for @conflictTransportsOverlap.
+  ///
+  /// In en, this message translates to:
+  /// **'“{item}” departs before “{other}” arrives'**
+  String conflictTransportsOverlap(String item, String other);
+
+  /// No description provided for @fixMakeOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Make “{title}” an option'**
+  String fixMakeOption(String title);
+
+  /// No description provided for @fixMoveBeforeTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Move before “{title}”'**
+  String fixMoveBeforeTransport(String title);
+
+  /// No description provided for @fixMoveAfterTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Move after “{title}”'**
+  String fixMoveAfterTransport(String title);
+
+  /// No description provided for @noFixFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic fix: “{title}” is fixed. Change it by hand or release “Fixed”.'**
+  String noFixFixed(String title);
+
+  /// No description provided for @noFixBothBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic fix: both are booked. Cancel or move one of them.'**
+  String get noFixBothBooked;
+
+  /// No description provided for @noFixManual.
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic fix. Open the items and adjust the times.'**
+  String get noFixManual;
+
+  /// No description provided for @openItemTitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Open “{title}”'**
+  String openItemTitled(String title);
+
+  /// No description provided for @showConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'Show conflicts'**
+  String get showConflicts;
+
+  /// No description provided for @noConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'No conflicts'**
+  String get noConflicts;
+
+  /// No description provided for @demotedToOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 other accommodation is now an option} other{{count} other accommodations are now options}}'**
+  String demotedToOption(int count);
 }
 
 class _AppLocalizationsDelegate

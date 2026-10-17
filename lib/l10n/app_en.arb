@@ -2122,5 +2122,93 @@
   "searchFieldText": "Text",
   "searchFieldAttachment": "Attachment",
   "searchFieldLinks": "Link",
-  "searchOpenTrip": "Open trip"
+  "searchOpenTrip": "Open trip",
+  "conflictLodgingsOverlap": "“{item}” and “{other}” are both confirmed for {count, plural, =1{1 night} other{{count} nights}}",
+  "@conflictLodgingsOverlap": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictActivityDuringTransport": "“{item}” is planned while “{transport}” is under way",
+  "@conflictActivityDuringTransport": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "transport": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictTransportsOverlap": "“{item}” departs before “{other}” arrives",
+  "@conflictTransportsOverlap": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      }
+    }
+  },
+  "fixMakeOption": "Make “{title}” an option",
+  "@fixMakeOption": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixMoveBeforeTransport": "Move before “{title}”",
+  "@fixMoveBeforeTransport": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixMoveAfterTransport": "Move after “{title}”",
+  "@fixMoveAfterTransport": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "noFixFixed": "No automatic fix: “{title}” is fixed. Change it by hand or release “Fixed”.",
+  "@noFixFixed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "noFixBothBooked": "No automatic fix: both are booked. Cancel or move one of them.",
+  "noFixManual": "No automatic fix. Open the items and adjust the times.",
+  "openItemTitled": "Open “{title}”",
+  "@openItemTitled": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "showConflicts": "Show conflicts",
+  "noConflicts": "No conflicts",
+  "demotedToOption": "{count, plural, =1{1 other accommodation is now an option} other{{count} other accommodations are now options}}",
+  "@demotedToOption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

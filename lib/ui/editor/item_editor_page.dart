@@ -805,15 +805,34 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     final changed = r == null ? [item] : [item, ...r.changed.where((c) => c.id != item.id)];
     final finalItem = r?.items.firstWhere((x) => x.id == item.id) ?? item;
     changed[0] = finalItem;
+    // Making an accommodation planned/booked by hand chooses it like
+    // "Choose this option": planned competitors become options again.
+    final moved = changed.length - 1;
+    var demoted = 0;
+    if (old == null || old.status != finalItem.status) {
+      final after = [for (final i in r?.items ?? data.items) if (i.id != item.id) i, finalItem];
+      final losers = demotedBy(after, finalItem);
+      demoted = losers.length;
+      for (final o in losers) {
+        final k = changed.indexWhere((c) => c.id == o.id);
+        if (k >= 0) {
+          changed[k] = o;
+        } else {
+          changed.add(o);
+        }
+      }
+    }
     await actions.saveItems(data, changed, widget.isNew ? l.stepItemCreated(item.title) : l.stepItemChanged(item.title));
     _saved = true;
     ref.read(tripUiProvider.notifier).select(item.id);
     if (!mounted) return;
-    final moved = changed.length - 1;
-    if (moved > 0) {
+    if (moved > 0 || demoted > 0) {
       showSnack(
         context,
-        l.othersMoved(moved, l.shiftModeShort(mode)),
+        [
+          if (moved > 0) l.othersMoved(moved, l.shiftModeShort(mode)),
+          if (demoted > 0) l.demotedToOption(demoted),
+        ].join(' · '),
         action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(widget.tripId)),
       );
     }

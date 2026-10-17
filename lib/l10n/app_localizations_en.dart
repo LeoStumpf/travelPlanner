@@ -2587,7 +2587,6 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$n results',
       one: '1 result',
-      zero: 'trip title',
     );
     return '$_temp0';
   }
@@ -2609,4 +2608,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchOpenTrip => 'Open trip';
+
+  @override
+  String conflictLodgingsOverlap(String item, String other, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nights',
+      one: '1 night',
+    );
+    return '“$item” and “$other” are both confirmed for $_temp0';
+  }
+
+  @override
+  String conflictActivityDuringTransport(String item, String transport) {
+    return '“$item” is planned while “$transport” is under way';
+  }
+
+  @override
+  String conflictTransportsOverlap(String item, String other) {
+    return '“$item” departs before “$other” arrives';
+  }
+
+  @override
+  String fixMakeOption(String title) {
+    return 'Make “$title” an option';
+  }
+
+  @override
+  String fixMoveBeforeTransport(String title) {
+    return 'Move before “$title”';
+  }
+
+  @override
+  String fixMoveAfterTransport(String title) {
+    return 'Move after “$title”';
+  }
+
+  @override
+  String noFixFixed(String title) {
+    return 'No automatic fix: “$title” is fixed. Change it by hand or release “Fixed”.';
+  }
+
+  @override
+  String get noFixBothBooked =>
+      'No automatic fix: both are booked. Cancel or move one of them.';
+
+  @override
+  String get noFixManual =>
+      'No automatic fix. Open the items and adjust the times.';
+
+  @override
+  String openItemTitled(String title) {
+    return 'Open “$title”';
+  }
+
+  @override
+  String get showConflicts => 'Show conflicts';
+
+  @override
+  String get noConflicts => 'No conflicts';
+
+  @override
+  String demotedToOption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count other accommodations are now options',
+      one: '1 other accommodation is now an option',
+    );
+    return '$_temp0';
+  }
 }
