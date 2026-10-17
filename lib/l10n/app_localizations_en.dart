@@ -1854,7 +1854,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'stay': 'Arrival 14:00, two nights – you can adjust it afterwards.',
       'accommodation': 'Check-in 15:00 until check-out when its place ends.',
       'activity': '10:00–12:00 – you can adjust it afterwards.',
-      'other': 'When its origin place ends, else 10:00–13:00.',
+      'other': 'From the end of its origin place, else 10:00–13:00.',
     });
     return '$_temp0';
   }

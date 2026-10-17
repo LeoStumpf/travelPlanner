@@ -2896,7 +2896,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDefaultsHint.
   ///
   /// In en, this message translates to:
-  /// **'{kind, select, stay{Arrival 14:00, two nights – you can adjust it afterwards.} accommodation{Check-in 15:00 until check-out when its place ends.} activity{10:00–12:00 – you can adjust it afterwards.} other{When its origin place ends, else 10:00–13:00.}}'**
+  /// **'{kind, select, stay{Arrival 14:00, two nights – you can adjust it afterwards.} accommodation{Check-in 15:00 until check-out when its place ends.} activity{10:00–12:00 – you can adjust it afterwards.} other{From the end of its origin place, else 10:00–13:00.}}'**
   String scheduleDefaultsHint(String kind);
 
   /// No description provided for @details.

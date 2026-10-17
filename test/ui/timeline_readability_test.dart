@@ -10,6 +10,7 @@ import 'package:travel_planner/data/repository.dart';
 import 'package:travel_planner/domain/demo.dart';
 import 'package:travel_planner/domain/models.dart';
 import 'package:travel_planner/domain/time.dart';
+import 'package:travel_planner/state/hints.dart';
 import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/common/item_sheet.dart';
 import 'package:travel_planner/ui/editor/item_editor_page.dart';
@@ -44,9 +45,10 @@ void main() {
     TripData trip,
     Widget Function(BuildContext, WidgetRef, TripData) body, {
     double textScale = 1,
+    Size size = const Size(1600, 1000),
   }) async {
     await tester.runAsync(() => repo.putTripData(trip));
-    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(UncontrolledProviderScope(
@@ -68,8 +70,13 @@ void main() {
     await settle(tester);
   }
 
-  Future<void> pumpTimeline(WidgetTester tester, TripData trip, {double textScale = 1}) =>
-      pumpHost(tester, trip, (_, _, data) => TimelineView(data: data), textScale: textScale);
+  Future<void> pumpTimeline(WidgetTester tester, TripData trip, {double textScale = 1, Size? size}) => pumpHost(
+    tester,
+    trip,
+    (_, _, data) => TimelineView(data: data),
+    textScale: textScale,
+    size: size ?? const Size(1600, 1000),
+  );
 
   TripData emptyTrip({List<PlanItem> Function(String tripId)? items}) {
     final trip = Trip(id: 'empty', title: 'Leer', createdAt: DateTime(2026));
@@ -246,5 +253,40 @@ void main() {
       await settle(tester);
       expect(find.byKey(const ValueKey('quick-schedule')), findsNothing);
     });
+  });
+
+  group('on a 360 dp phone', () {
+    const phone = Size(360, 740);
+    PlanItem museum(String id) => PlanItem(
+      id: 'museum',
+      tripId: id,
+      kind: ItemKind.activity,
+      title: 'Museum',
+      start: at(0, 600),
+      end: at(0, 720),
+      createdAt: DateTime(2026),
+    );
+
+    for (final scale in [1.0, 1.3, 2.0]) {
+      testWidgets('nothing overflows at text size $scale', (tester) async {
+        // The (dismissible) first-run hint is not part of this check.
+        container.read(hintsProvider.notifier).dismiss(Hint.timeline);
+        await pumpTimeline(tester, emptyTrip(), size: phone, textScale: scale);
+        expect(tester.takeException(), isNull);
+        await pumpTimeline(tester, emptyTrip(items: (id) => [museum(id)]), size: phone, textScale: scale);
+        expect(find.byKey(const ValueKey('timeline-add-first-stay')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        final demo = demoInterrail();
+        await pumpTimeline(tester, demo, size: phone, textScale: scale);
+        expect(tester.takeException(), isNull);
+        final chip = find.byKey(ValueKey('tray-${byTitle(demo, 'Avignon').id}'));
+        await tester.ensureVisible(chip);
+        await tester.pumpAndSettle();
+        await tester.tap(chip);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('schedule-suggested')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }

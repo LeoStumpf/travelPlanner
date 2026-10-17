@@ -899,11 +899,21 @@ class _EmptyTimeline extends StatelessWidget {
         color: theme.colorScheme.secondaryContainer,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          child: Row(
+          // Wraps the button below the text on narrow screens / big text.
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 4,
             children: [
-              Icon(kindIcon(ItemKind.stay), color: kindColor(ItemKind.stay)),
-              const SizedBox(width: 12),
-              Expanded(child: Text(l.timelineEmptyTitle, style: theme.textTheme.titleSmall)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(kindIcon(ItemKind.stay), color: kindColor(ItemKind.stay)),
+                  const SizedBox(width: 12),
+                  Flexible(child: Text(l.timelineEmptyTitle, style: theme.textTheme.titleSmall)),
+                ],
+              ),
               action,
             ],
           ),
