@@ -90,4 +90,24 @@ void main() {
       expect(chooseOption(items, 'nope'), isEmpty);
     });
   });
+
+  group('setBooked', () {
+    test('booking an option books it and demotes planned rivals', () {
+      final items = [stay('lyon', 0, 2), bed('a', 'lyon', 0, 2, ItemStatus.option), bed('x', 'lyon', 0, 2, ItemStatus.planned)];
+      expect(statuses(setBooked(items, 'a', true)), {'a': ItemStatus.booked, 'x': ItemStatus.option});
+    });
+
+    test('booking a stay only changes its status', () {
+      final items = [stay('lyon', 0, 2), bed('x', 'lyon', 0, 2, ItemStatus.planned)];
+      expect(statuses(setBooked(items, 'lyon', true)), {'lyon': ItemStatus.booked});
+    });
+
+    test('un-booking makes it planned; nothing to do otherwise', () {
+      final items = [stay('lyon', 0, 2), bed('a', 'lyon', 0, 2, ItemStatus.booked), bed('o', 'lyon', 0, 2, ItemStatus.option)];
+      expect(statuses(setBooked(items, 'a', false)), {'a': ItemStatus.planned});
+      expect(setBooked(items, 'o', false), isEmpty);
+      expect(setBooked(items, 'a', true), isEmpty);
+      expect(setBooked(items, 'nope', true), isEmpty);
+    });
+  });
 }

@@ -115,6 +115,8 @@ class _TripPageState extends ConsumerState<TripPage> {
 }
 
 /// Layer filter chips (places / transport / lodging / activities / options).
+/// Plain names – a leading layer number read like a count. Shown layers are
+/// tinted in their colour with a border; hidden ones are grey and outlined.
 class LayerBar extends ConsumerWidget {
   final TripData data;
   const LayerBar({super.key, required this.data});
@@ -132,25 +134,65 @@ class LayerBar extends ConsumerWidget {
           for (final k in ItemKind.values)
             Padding(
               padding: const EdgeInsets.only(right: 6),
-              child: FilterChip(
-                visualDensity: VisualDensity.compact,
-                avatar: Icon(kindIcon(k), size: 16, color: kindColor(k)),
-                label: Text('${k.layer} ${k.label}'),
+              child: layerChip(
+                context,
+                key: ValueKey('layer-${k.name}'),
+                icon: kindIcon(k),
+                color: kindColor(k),
+                label: k.label,
+                tooltip: 'Ebene ${k.layer}: ${k.label}',
                 selected: ui.layers.contains(k),
-                onSelected: (_) => n.toggleLayer(k),
+                onSelected: () => n.toggleLayer(k),
               ),
             ),
-          FilterChip(
-            visualDensity: VisualDensity.compact,
-            avatar: const Icon(Icons.help_outline, size: 16),
-            label: const Text('Optionen'),
+          layerChip(
+            context,
+            key: const ValueKey('layer-options'),
+            icon: Icons.help_outline,
+            color: Theme.of(context).colorScheme.primary,
+            label: 'Optionen',
+            tooltip: 'Unterkunfts-Optionen zeigen',
             selected: ui.showOptions,
-            onSelected: (_) => n.toggleOptions(),
+            onSelected: n.toggleOptions,
           ),
         ],
       ),
     );
   }
+}
+
+/// A filter chip whose on/off state is obvious at a glance: on = tinted with
+/// [color], coloured border and icon, bold label; off = grey, crossed-out
+/// eye instead of the icon.
+Widget layerChip(
+  BuildContext context, {
+  Key? key,
+  required IconData icon,
+  required Color color,
+  required String label,
+  required String tooltip,
+  required bool selected,
+  required VoidCallback onSelected,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  final off = scheme.onSurfaceVariant.withValues(alpha: 0.7);
+  return FilterChip(
+    key: key,
+    visualDensity: VisualDensity.compact,
+    showCheckmark: false,
+    tooltip: tooltip,
+    avatar: Icon(selected ? icon : Icons.visibility_off_outlined, size: 16, color: selected ? color : off),
+    label: Text(label),
+    labelStyle: TextStyle(
+      color: selected ? scheme.onSurface : off,
+      fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+    ),
+    selectedColor: color.withValues(alpha: 0.22),
+    backgroundColor: Colors.transparent,
+    side: BorderSide(color: selected ? color : scheme.outlineVariant, width: selected ? 1.5 : 1),
+    selected: selected,
+    onSelected: (_) => onSelected(),
+  );
 }
 
 Future<void> showAddSheet(BuildContext context, WidgetRef ref, TripData data, {int? atDay}) async {

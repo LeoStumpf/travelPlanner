@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
 import '../common/style.dart';
 import '../editor/card_editor_page.dart';
@@ -343,6 +345,14 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
             ],
           ),
         ),
+        // The connect instructions take this spot while connecting.
+        if (!_connectMode)
+          const Positioned(
+            left: 12,
+            right: 72,
+            top: 12,
+            child: HintBanner(hint: Hint.canvas, text: canvasHint, floating: true),
+          ),
         if (_connectMode)
           Positioned(
             left: 12,

@@ -5,11 +5,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/attachment_store.dart';
 import 'data/auto_backup.dart';
 import 'data/db.dart';
 import 'data/repository.dart';
+import 'state/hints.dart';
 import 'state/providers.dart';
 import 'ui/backup/auto_backup_listener.dart';
 import 'ui/common/theme.dart';
@@ -33,10 +35,19 @@ Future<void> main() async {
 
   final autoBackup = AutoBackup(repo, await _backupDir(docs));
 
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+  } catch (e) {
+    // Without prefs the hints simply show again next start.
+    debugPrint('No shared preferences: $e');
+  }
+
   runApp(ProviderScope(
     overrides: [
       repositoryProvider.overrideWithValue(repo),
       autoBackupProvider.overrideWithValue(autoBackup),
+      hintPrefsProvider.overrideWithValue(prefs),
     ],
     child: const TravelPlannerApp(),
   ));

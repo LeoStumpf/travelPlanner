@@ -6,7 +6,9 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../state/hints.dart';
 import '../../state/providers.dart';
+import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
 import '../common/style.dart';
 import '../editor/item_editor_page.dart';
@@ -242,6 +244,12 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
             onPressed: _fitAll,
             child: const Icon(Icons.zoom_out_map),
           ),
+        ),
+        const Positioned(
+          left: 12,
+          right: 68,
+          top: 12,
+          child: HintBanner(hint: Hint.map, text: mapHint, icon: Icons.add_location_alt_outlined, floating: true),
         ),
         if (unplaced.isNotEmpty)
           Positioned(

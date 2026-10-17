@@ -74,7 +74,6 @@ void main() {
 
     testWidgets('"Diese Option wählen" makes it planned', (tester) async {
       await openSheet(tester, 'Airbnb Croix-Rousse');
-      expect(find.text('Als gebucht markieren'), findsOneWidget);
       await tester.tap(find.text('Diese Option wählen'));
       await settle(tester);
 
@@ -82,12 +81,12 @@ void main() {
       expect(byTitle(after, 'Airbnb Croix-Rousse').status, ItemStatus.planned);
       expect(byTitle(after, 'Auberge Vieux Lyon').status, ItemStatus.option);
       expect(undoLabels(), ['„Airbnb Croix-Rousse“ gewählt']);
-      // Now planned: only booking is left to offer.
+      // Now planned: only booking (the quick "Gebucht" toggle) is left.
       expect(find.text('Diese Option wählen'), findsNothing);
-      expect(find.text('Als gebucht markieren'), findsOneWidget);
+      expect(find.text('Gebucht'), findsOneWidget);
     });
 
-    testWidgets('"Als gebucht markieren" books it and demotes the planned rival', (tester) async {
+    testWidgets('the "Gebucht" toggle books it and demotes the planned rival', (tester) async {
       await tester.runAsync(() async {
         demo = TripData(trip: demo.trip, items: [
           for (final i in demo.items)
@@ -95,13 +94,13 @@ void main() {
         ]);
       });
       await openSheet(tester, 'Airbnb Croix-Rousse');
-      await tester.tap(find.text('Als gebucht markieren'));
+      await tester.tap(find.byKey(const ValueKey('quick-booked')));
       await settle(tester);
 
       final after = await load();
       expect(byTitle(after, 'Airbnb Croix-Rousse').status, ItemStatus.booked);
       expect(byTitle(after, 'Auberge Vieux Lyon').status, ItemStatus.option);
-      expect(find.text('Als gebucht markieren'), findsNothing);
+      expect(tester.widget<FilterChip>(find.byKey(const ValueKey('quick-booked'))).selected, isTrue);
 
       // One undo step reverts both.
       expect(undoLabels(), ['„Airbnb Croix-Rousse“ als gebucht markiert']);
@@ -114,7 +113,6 @@ void main() {
     testWidgets('stays and booked accommodations get no choose actions', (tester) async {
       await openSheet(tester, 'Hôtel du Marais');
       expect(find.text('Diese Option wählen'), findsNothing);
-      expect(find.text('Als gebucht markieren'), findsNothing);
     });
   });
 

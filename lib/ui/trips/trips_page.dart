@@ -6,6 +6,7 @@ import '../../data/backup.dart';
 import '../../domain/demo.dart';
 import '../../domain/models.dart';
 import '../../domain/time.dart';
+import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../backup/backups_page.dart';
 import '../common/dialogs.dart';
@@ -35,6 +36,7 @@ class TripsPage extends ConsumerWidget {
               'claude' => showPlanExchangeSheet(context, ref, null),
               'demo' => _loadDemos(context, ref),
               'trash' => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TrashPage())),
+              'hints' => _resetHints(context, ref),
               _ => null,
             },
             itemBuilder: (_) => [
@@ -82,6 +84,13 @@ class TripsPage extends ConsumerWidget {
                   title: Text('Papierkorb'),
                 ),
               ),
+              const PopupMenuItem(
+                value: 'hints',
+                child: ListTile(
+                  leading: Icon(Icons.lightbulb_outline),
+                  title: Text('Tipps wieder anzeigen'),
+                ),
+              ),
             ],
           ),
         ],
@@ -109,6 +118,11 @@ class TripsPage extends ConsumerWidget {
     if (trip == null) return;
     await ref.read(repositoryProvider).saveTrip(trip);
     if (context.mounted) openTrip(context, ref, trip.id);
+  }
+
+  void _resetHints(BuildContext context, WidgetRef ref) {
+    ref.read(hintsProvider.notifier).resetAll();
+    showSnack(context, 'Tipps werden wieder angezeigt');
   }
 
   Future<void> _loadDemos(BuildContext context, WidgetRef ref) async {

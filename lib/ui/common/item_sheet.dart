@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
 import '../editor/card_editor_page.dart';
@@ -40,6 +41,27 @@ Future<void> chooseAccommodation(BuildContext context, WidgetRef ref, TripData d
   if (!undoSnack) return;
   final step = actions.lastStep(data.trip.id);
   showUndoSnack(messenger, label, () => actions.undoStep(data.trip.id, step));
+}
+
+/// The item sheet's "Gebucht" toggle as one undoable step (see [setBooked]).
+Future<void> toggleBooked(WidgetRef ref, TripData data, PlanItem item) {
+  final booked = item.status != ItemStatus.booked;
+  final label = booked ? '„${item.title}“ als gebucht markiert' : '„${item.title}“ nicht mehr gebucht';
+  return ref.read(planActionsProvider).saveItems(data, setBooked(data.items, item.id, booked), label);
+}
+
+/// Fixes or releases [item] as one undoable step.
+Future<void> toggleFixed(WidgetRef ref, TripData data, PlanItem item) {
+  final label = item.fixed ? '„${item.title}“ nicht mehr fix' : '„${item.title}“ fixiert';
+  return ref.read(planActionsProvider).saveItems(data, [item.copyWith(fixed: !item.fixed)], label);
+}
+
+/// Moves [item] by [days] whole days with the scheduler, rippling like a
+/// drag on the timeline in the current shift mode. One undoable step.
+Future<void> shiftItemDays(WidgetRef ref, TripData data, PlanItem item, int days) {
+  final r = Scheduler.move(data.items, item.id, days * minutesPerDay, ref.read(tripUiProvider).shiftMode);
+  final label = '„${item.title}“ ${days > 0 ? '+' : '−'}${pluralDays(days.abs())}';
+  return ref.read(planActionsProvider).applySchedule(data, r, label);
 }
 
 /// Selects [id] and shows its details with links to the other views.
@@ -81,6 +103,7 @@ class _ItemSheet extends ConsumerWidget {
     final cards = [for (final c in data.cards) if (c.itemId == id) c];
     final atts = data.attachmentsOf(id);
     final ui = ref.read(tripUiProvider.notifier);
+    final view = ref.watch(tripUiProvider.select((u) => u.view));
     final theme = Theme.of(context);
 
     void goto(TripView v) {
@@ -137,6 +160,9 @@ class _ItemSheet extends ConsumerWidget {
           ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.place_outlined), title: Text(item.placeName!)),
         for (final c in conflicts) ConflictTile(conflict: c, data: data),
         const SizedBox(height: 4),
+        _QuickActions(data: data, item: item),
+        const SizedBox(height: 8),
+        // Jumps to the other views; the current one is already showing it.
         Wrap(spacing: 8, runSpacing: 8, children: [
           FilledButton.icon(
             onPressed: () {
@@ -146,26 +172,22 @@ class _ItemSheet extends ConsumerWidget {
             icon: const Icon(Icons.edit),
             label: const Text('Bearbeiten'),
           ),
-          OutlinedButton.icon(onPressed: () => goto(TripView.timeline), icon: const Icon(Icons.view_timeline), label: const Text('Zeitplan')),
-          if (item.hasLocation || item.kind == ItemKind.transport)
+          if (view != TripView.timeline && item.isScheduled)
+            OutlinedButton.icon(onPressed: () => goto(TripView.timeline), icon: const Icon(Icons.view_timeline), label: const Text('Zeitplan')),
+          if (view != TripView.map && (item.hasLocation || item.kind == ItemKind.transport))
             OutlinedButton.icon(onPressed: () => goto(TripView.map), icon: const Icon(Icons.map), label: const Text('Karte')),
-          OutlinedButton.icon(onPressed: () => goto(TripView.canvas), icon: const Icon(Icons.dashboard), label: const Text('Canvas')),
+          if (view != TripView.canvas)
+            OutlinedButton.icon(onPressed: () => goto(TripView.canvas), icon: const Icon(Icons.dashboard), label: const Text('Canvas')),
         ]),
-        if (item.kind == ItemKind.accommodation && item.status != ItemStatus.booked) ...[
+        if (item.kind == ItemKind.accommodation &&
+            item.status != ItemStatus.booked &&
+            item.status != ItemStatus.planned) ...[
           const SizedBox(height: 8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            if (item.status != ItemStatus.planned)
-              FilledButton.tonalIcon(
-                onPressed: () => chooseAccommodation(context, ref, data, item, undoSnack: false),
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Diese Option wählen'),
-              ),
-            FilledButton.tonalIcon(
-              onPressed: () => chooseAccommodation(context, ref, data, item, book: true, undoSnack: false),
-              icon: Icon(statusIcon(ItemStatus.booked)),
-              label: const Text('Als gebucht markieren'),
-            ),
-          ]),
+          FilledButton.tonalIcon(
+            onPressed: () => chooseAccommodation(context, ref, data, item, undoSnack: false),
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Diese Option wählen'),
+          ),
         ],
         if (item.notes.trim().isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -251,5 +273,74 @@ class _ItemSheet extends ConsumerWidget {
         showItemSheet(context, ref, tripId, i.id);
       },
     );
+  }
+}
+
+/// One-tap changes without opening the editor: booked and fixed toggles,
+/// shifting by a day and deleting. Each is one undoable step; the sheet
+/// shows the result directly, the app bar's undo reverts it.
+class _QuickActions extends ConsumerWidget {
+  final TripData data;
+  final PlanItem item;
+  const _QuickActions({required this.data, required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final canShift = item.isScheduled && !item.fixed;
+    return Wrap(spacing: 6, runSpacing: 4, children: [
+      FilterChip(
+        key: const ValueKey('quick-booked'),
+        avatar: Icon(statusIcon(ItemStatus.booked), size: 16),
+        showCheckmark: false,
+        label: const Text('Gebucht'),
+        selected: item.status == ItemStatus.booked,
+        onSelected: (_) => toggleBooked(ref, data, item),
+      ),
+      FilterChip(
+        key: const ValueKey('quick-fixed'),
+        avatar: Icon(item.fixed ? Icons.lock : Icons.lock_open, size: 16),
+        showCheckmark: false,
+        label: const Text('Fix'),
+        tooltip: 'Fixe Termine bleiben beim Verschieben stehen',
+        selected: item.fixed,
+        onSelected: (_) => toggleFixed(ref, data, item),
+      ),
+      if (item.isScheduled) ...[
+        ActionChip(
+          key: const ValueKey('quick-earlier'),
+          label: const Text('−1 Tag'),
+          tooltip: item.fixed ? 'Fixe Termine werden nicht verschoben' : null,
+          onPressed: canShift ? () => shiftItemDays(ref, data, item, -1) : null,
+        ),
+        ActionChip(
+          key: const ValueKey('quick-later'),
+          label: const Text('+1 Tag'),
+          tooltip: item.fixed ? 'Fixe Termine werden nicht verschoben' : null,
+          onPressed: canShift ? () => shiftItemDays(ref, data, item, 1) : null,
+        ),
+      ],
+      ActionChip(
+        key: const ValueKey('quick-delete'),
+        avatar: Icon(Icons.delete_outline, size: 16, color: scheme.error),
+        label: Text('Löschen', style: TextStyle(color: scheme.error)),
+        onPressed: () => _delete(context, ref),
+      ),
+    ]);
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    if (!await confirm(context, '„${item.title}“ löschen?')) return;
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final actions = ref.read(planActionsProvider);
+    final ui = ref.read(tripUiProvider.notifier);
+    final tripId = data.trip.id;
+    // The sheet (and this widget's ref) is gone after the pop.
+    Navigator.pop(context);
+    await actions.deleteItem(data, item.id);
+    final step = actions.lastStep(tripId);
+    ui.select(null);
+    showUndoSnack(messenger, '„${item.title}“ gelöscht', () => actions.undoStep(tripId, step));
   }
 }

@@ -8,9 +8,11 @@ import '../../domain/analysis.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
+import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../common/conflict_tile.dart';
 import '../common/dialogs.dart';
+import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
 import '../common/style.dart';
 import '../common/theme.dart';
@@ -439,6 +441,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
           dragLabel: _dragId != null ? _dragLabel(preview) : null,
           onZoom: (f) => _zoomTo(_dayWidth * f, _hScroll.hasClients ? _hScroll.position.viewportDimension / 2 : 0),
         ),
+        const HintBanner(hint: Hint.timeline, text: timelineHint),
         Expanded(
           child: SingleChildScrollView(
             child: Row(

@@ -250,6 +250,16 @@ List<PlanItem> chooseOption(List<PlanItem> items, String id, {bool book = false}
   ];
 }
 
+/// The changes for the "Gebucht" toggle of item [id]. Booking goes through
+/// [chooseOption], so a booked accommodation also wins its nights; un-booking
+/// makes the item planned. Returns only changed items.
+List<PlanItem> setBooked(List<PlanItem> items, String id, bool booked) {
+  final item = items.where((i) => i.id == id).firstOrNull;
+  if (item == null) return const [];
+  if (booked) return chooseOption(items, id, book: true);
+  return [if (item.status == ItemStatus.booked) item.copyWith(status: ItemStatus.planned)];
+}
+
 /// First and last day to show on the timeline.
 (int, int) dayRange(List<PlanItem> items, {int? plannedDays}) {
   var first = 0;
