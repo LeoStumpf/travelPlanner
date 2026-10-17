@@ -15,6 +15,7 @@ import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
 import '../exchange/plan_exchange_ui.dart';
 import '../keep/notes_view.dart';
+import '../keep/packing_sheet.dart';
 import '../map/map_view.dart';
 import '../reminders/reminder_sheet.dart';
 import '../share/share_trip.dart';
@@ -261,6 +262,7 @@ Future<void> showAddSheet(BuildContext context, WidgetRef ref, TripData data, {i
             Wrap(spacing: 8, runSpacing: 8, children: [
               ActionChip(avatar: const Icon(Icons.notes), label: Text(l.cardNote), onPressed: () => Navigator.pop(c, 'note')),
               ActionChip(avatar: const Icon(Icons.checklist), label: Text(l.cardChecklist), onPressed: () => Navigator.pop(c, 'checklist')),
+              ActionChip(avatar: const Icon(Icons.luggage), label: Text(l.packingList), onPressed: () => Navigator.pop(c, 'packing')),
               ActionChip(avatar: const Icon(Icons.link), label: Text(l.cardLink), onPressed: () => Navigator.pop(c, 'link')),
               ActionChip(avatar: const Icon(Icons.image), label: Text(l.cardImage), onPressed: () => Navigator.pop(c, 'image')),
             ]),
@@ -270,6 +272,12 @@ Future<void> showAddSheet(BuildContext context, WidgetRef ref, TripData data, {i
     ),
   );
   if (choice == null || !context.mounted) return;
+  if (choice == 'packing') {
+    final pick = await showPackingSheet(context, tripId: data.trip.id);
+    if (pick == null || !context.mounted) return;
+    await openCardEditor(context, data, draft: packingCard(data.trip.id, pick));
+    return;
+  }
   final kind = ItemKind.values.where((k) => k.name == choice).firstOrNull;
   if (kind != null) {
     final parent = ref.read(tripUiProvider).selectedId;

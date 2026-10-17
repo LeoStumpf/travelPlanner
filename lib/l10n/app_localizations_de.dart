@@ -2443,4 +2443,94 @@ class AppLocalizationsDe extends AppLocalizations {
   String reminderIn(String duration) {
     return 'in $duration';
   }
+
+  @override
+  String get packingList => 'Packliste';
+
+  @override
+  String get packingTemplates => 'Vorlagen';
+
+  @override
+  String get packingTemplateBasics => 'Basis';
+
+  @override
+  String get packingTemplateBeach => 'Strand';
+
+  @override
+  String get packingTemplateHiking => 'Wandern';
+
+  @override
+  String get packingTemplateCity => 'Stadt';
+
+  @override
+  String get packingTemplateBasicsItems =>
+      'Reisepass / Ausweis|Geldbeutel & Karten|Handy-Ladekabel|Powerbank|Reiseadapter|Medikamente|Reiseapotheke|Zahnbürste & Kulturbeutel|Unterwäsche|Socken|T-Shirts|Hosen|Schlafsachen|Regenjacke|Kopfhörer|Kopien der Dokumente';
+
+  @override
+  String get packingTemplateBeachItems =>
+      'Badesachen|Sonnencreme|Sonnenbrille|Sonnenhut|Strandtuch|Flip-Flops|After-Sun-Lotion|Wasserdichte Handyhülle|Schnorchelausrüstung|Buch';
+
+  @override
+  String get packingTemplateHikingItems =>
+      'Wanderschuhe|Tagesrucksack|Trinkflasche|Regenjacke|Warme Schicht / Fleece|Wandersocken|Blasenpflaster|Stirnlampe|Offline-Karten|Snacks|Taschenmesser|Sonnencreme';
+
+  @override
+  String get packingTemplateCityItems =>
+      'Bequeme Schuhe|Tagestasche|Offline-Karten|Fahrkarte für den Nahverkehr|Regenschirm|Schickes Outfit|Wiederverwendbare Trinkflasche|Museumstickets';
+
+  @override
+  String get packingCreate => 'Liste erstellen';
+
+  @override
+  String get packingAdd => 'Einträge hinzufügen';
+
+  @override
+  String packingEntryCount(int count) {
+    return '$count Einträge';
+  }
+
+  @override
+  String get packingFromOtherTrip => 'Liste aus anderer Reise übernehmen';
+
+  @override
+  String get packingNoOtherLists =>
+      'In anderen Reisen gibt es noch keine Checklisten.';
+
+  @override
+  String packingSource(String trip, int count) {
+    return '$trip · $count Einträge';
+  }
+
+  @override
+  String get packingAddFrom => 'Aus Vorlage oder Reise ergänzen …';
+
+  @override
+  String packingEntriesAdded(int count) {
+    return '$count Einträge hinzugefügt';
+  }
+
+  @override
+  String get packingNothingNew => 'Alle Einträge stehen schon auf der Liste';
+
+  @override
+  String stepEntryTicked(String entry) {
+    return '„$entry“ abgehakt';
+  }
+
+  @override
+  String stepEntryUnticked(String entry) {
+    return '„$entry“ wieder offen';
+  }
+
+  @override
+  String get entryMoveUp => 'Nach oben';
+
+  @override
+  String get entryMoveDown => 'Nach unten';
+
+  @override
+  String get entryDragHandle => 'Ziehen zum Sortieren';
+
+  @override
+  String get entryDelete => 'Eintrag löschen';
 }

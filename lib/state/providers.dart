@@ -7,6 +7,7 @@ import '../data/geocoding.dart';
 import '../data/repository.dart';
 import '../data/sharing.dart';
 import '../domain/models.dart';
+import '../domain/packing.dart';
 import '../domain/places.dart';
 import '../domain/scheduler.dart';
 
@@ -35,6 +36,11 @@ final geocoderProvider = Provider<Geocoder>((ref) => Geocoder());
 /// Located items of all trips, for the place search's recently used places.
 final placeUsesProvider = FutureProvider.autoDispose<List<PlaceUse>>(
   (ref) => ref.watch(repositoryProvider).loadPlaceUses(),
+);
+
+/// Checklists of all trips, for "copy list from another trip".
+final checklistSourcesProvider = FutureProvider.autoDispose<List<ChecklistSource>>(
+  (ref) => ref.watch(repositoryProvider).loadChecklists(),
 );
 
 /// The system share sheet; overridden in tests.

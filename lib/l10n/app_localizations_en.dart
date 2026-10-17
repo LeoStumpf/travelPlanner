@@ -2444,4 +2444,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String reminderIn(String duration) {
     return 'in $duration';
   }
+
+  @override
+  String get packingList => 'Packing list';
+
+  @override
+  String get packingTemplates => 'Templates';
+
+  @override
+  String get packingTemplateBasics => 'Basics';
+
+  @override
+  String get packingTemplateBeach => 'Beach';
+
+  @override
+  String get packingTemplateHiking => 'Hiking';
+
+  @override
+  String get packingTemplateCity => 'City';
+
+  @override
+  String get packingTemplateBasicsItems =>
+      'Passport / ID|Wallet & cards|Phone charger|Power bank|Travel adapter|Medication|First-aid kit|Toothbrush & toiletries|Underwear|Socks|T-shirts|Trousers|Sleepwear|Rain jacket|Headphones|Copies of documents';
+
+  @override
+  String get packingTemplateBeachItems =>
+      'Swimwear|Sunscreen|Sunglasses|Sun hat|Beach towel|Flip-flops|After-sun lotion|Waterproof phone pouch|Snorkel gear|Book';
+
+  @override
+  String get packingTemplateHikingItems =>
+      'Hiking boots|Daypack|Water bottle|Rain jacket|Warm layer / fleece|Hiking socks|Blister plasters|Headlamp|Offline maps|Snacks|Pocket knife|Sunscreen';
+
+  @override
+  String get packingTemplateCityItems =>
+      'Comfortable shoes|Day bag|Offline maps|Public transport ticket|Umbrella|Smart outfit|Reusable water bottle|Museum tickets';
+
+  @override
+  String get packingCreate => 'Create list';
+
+  @override
+  String get packingAdd => 'Add entries';
+
+  @override
+  String packingEntryCount(int count) {
+    return '$count entries';
+  }
+
+  @override
+  String get packingFromOtherTrip => 'Copy list from another trip';
+
+  @override
+  String get packingNoOtherLists =>
+      'There are no checklists in other trips yet.';
+
+  @override
+  String packingSource(String trip, int count) {
+    return '$trip · $count entries';
+  }
+
+  @override
+  String get packingAddFrom => 'Add from template or trip …';
+
+  @override
+  String packingEntriesAdded(int count) {
+    return '$count entries added';
+  }
+
+  @override
+  String get packingNothingNew => 'All entries are already on the list';
+
+  @override
+  String stepEntryTicked(String entry) {
+    return '“$entry” ticked off';
+  }
+
+  @override
+  String stepEntryUnticked(String entry) {
+    return '“$entry” unticked';
+  }
+
+  @override
+  String get entryMoveUp => 'Move up';
+
+  @override
+  String get entryMoveDown => 'Move down';
+
+  @override
+  String get entryDragHandle => 'Drag to reorder';
+
+  @override
+  String get entryDelete => 'Delete entry';
 }

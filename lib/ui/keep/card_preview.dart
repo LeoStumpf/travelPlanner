@@ -2,19 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models.dart';
+import '../../domain/packing.dart';
 import '../../state/providers.dart';
+import '../common/dialogs.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
 
 /// Compact rendering of a note/checklist/link/image card, used in the Keep
-/// grid and on the canvas.
+/// grid and on the canvas. With [tickable], open checklist entries can be
+/// ticked off right in the preview (one undoable step each).
 class CardPreview extends ConsumerWidget {
   final NoteCard card;
   final TripData data;
   final bool selected;
   final int maxLines;
+  final bool tickable;
 
-  const CardPreview({super.key, required this.card, required this.data, this.selected = false, this.maxLines = 10});
+  const CardPreview({
+    super.key,
+    required this.card,
+    required this.data,
+    this.selected = false,
+    this.maxLines = 10,
+    this.tickable = false,
+  });
+
+  Future<void> _tick(BuildContext context, WidgetRef ref, ChecklistEntry e) async {
+    final label = context.l10n.stepEntryTicked(e.text);
+    final messenger = ScaffoldMessenger.of(context);
+    final actions = ref.read(planActionsProvider);
+    await actions.record(card.tripId, label, (r) => r.saveCard(setEntryDone(card, e.id, true)));
+    final step = actions.lastStep(card.tripId);
+    // The entry leaves the preview, so a mistap needs a quick way back.
+    showUndoSnack(messenger, label, () => actions.undoStep(card.tripId, step));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,11 +87,29 @@ class CardPreview extends ConsumerWidget {
                 if (card.type == CardType.checklist) ...[
                   const SizedBox(height: 4),
                   for (final e in card.checklist.where((e) => !e.done).take(maxLines))
-                    Row(children: [
-                      const Icon(Icons.check_box_outline_blank, size: 16),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(e.text, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    ]),
+                    if (tickable)
+                      Semantics(
+                        key: ValueKey('tick-${e.id}'),
+                        checked: false,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () => _tick(context, ref, e),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 36),
+                            child: Row(children: [
+                              const Icon(Icons.check_box_outline_blank, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(e.text, maxLines: 2, overflow: TextOverflow.ellipsis)),
+                            ]),
+                          ),
+                        ),
+                      )
+                    else
+                      Row(children: [
+                        const Icon(Icons.check_box_outline_blank, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(e.text, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      ]),
                   if (card.checklist.any((e) => e.done))
                     Text(context.l10n.checklistMoreDone(card.checklist.where((e) => e.done).length),
                         style: theme.textTheme.bodySmall),

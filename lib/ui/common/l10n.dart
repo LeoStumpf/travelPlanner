@@ -9,6 +9,7 @@ import '../../data/doc_migrations.dart';
 import '../../domain/analysis.dart';
 import '../../domain/demo.dart';
 import '../../domain/models.dart';
+import '../../domain/packing.dart';
 import '../../domain/plan_exchange.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
@@ -73,6 +74,22 @@ extension DomainL10n on AppLocalizations {
         DayPart.evening => dayPartEvening,
         DayPart.night => dayPartNight,
       };
+
+  String packingTemplate(PackingTemplate t) => switch (t) {
+        PackingTemplate.basics => packingTemplateBasics,
+        PackingTemplate.beach => packingTemplateBeach,
+        PackingTemplate.hiking => packingTemplateHiking,
+        PackingTemplate.city => packingTemplateCity,
+      };
+
+  /// The entries of template [t] in the active language.
+  List<String> packingTemplateEntries(PackingTemplate t) => switch (t) {
+        PackingTemplate.basics => packingTemplateBasicsItems,
+        PackingTemplate.beach => packingTemplateBeachItems,
+        PackingTemplate.hiking => packingTemplateHikingItems,
+        PackingTemplate.city => packingTemplateCityItems,
+      }
+          .split('|');
 
   String view(TripView v) => switch (v) {
         TripView.canvas => viewCanvas,

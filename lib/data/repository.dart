@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 
 import '../domain/models.dart';
+import '../domain/packing.dart';
 import '../domain/places.dart';
 import 'attachment_store.dart';
 import 'db.dart';
@@ -123,6 +124,23 @@ class Repository {
       if (item.hasLocation) uses.add(PlaceUse(item, title, DateTime.fromMillisecondsSinceEpoch(r.updatedAt)));
     }
     return uses;
+  }
+
+  /// The checklist cards of all trips outside the trash, with their trip's
+  /// title: the sources for "copy list from another trip".
+  Future<List<ChecklistSource>> loadChecklists() async {
+    final rows = await (db.select(db.docs)..where((d) => d.type.isIn(['trip', 'card', _trashType]))).get();
+    final trashed = {for (final r in rows) if (r.type == _trashType) r.tripId};
+    final titles = {
+      for (final r in rows)
+        if (r.type == 'trip' && !trashed.contains(r.tripId)) r.tripId: Trip.fromJson(_decode(r.json)).title,
+    };
+    return [
+      for (final r in rows)
+        if (r.type == 'card' && titles[r.tripId] != null)
+          if (NoteCard.fromJson(_decode(r.json)) case final c when c.type == CardType.checklist)
+            ChecklistSource(titles[r.tripId]!, c),
+    ];
   }
 
   static Map<String, Object?> _decode(String s) => (jsonDecode(s) as Map).cast<String, Object?>();

@@ -1,24 +1,29 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/link_preview.dart';
 import '../../domain/models.dart';
+import '../../domain/packing.dart';
 import '../../state/providers.dart';
 import '../common/a11y.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
+import '../keep/packing_sheet.dart';
 import 'attachments_section.dart';
 import 'item_editor_page.dart';
 
-Future<void> openCardEditor(BuildContext context, TripData data, {NoteCard? card, CardType? newType}) =>
+/// Opens [card], or a new card: [draft] (not stored yet) or an empty one of [newType].
+Future<void> openCardEditor(BuildContext context, TripData data, {NoteCard? card, NoteCard? draft, CardType? newType}) =>
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => CardEditorPage(
         tripId: data.trip.id,
         initial: card ??
+            draft ??
             NoteCard(
               id: newId(),
               tripId: data.trip.id,
@@ -29,6 +34,16 @@ Future<void> openCardEditor(BuildContext context, TripData data, {NoteCard? card
         isNew: card == null,
       ),
     ));
+
+/// A new, not yet stored checklist card for trip [tripId] filled from [pick].
+NoteCard packingCard(String tripId, PackingPick pick) => NoteCard(
+      id: newId(),
+      tripId: tripId,
+      type: CardType.checklist,
+      title: pick.title,
+      checklist: [for (final t in pick.entries) ChecklistEntry(id: newId(), text: t)],
+      createdAt: DateTime.now(),
+    );
 
 /// Keep-style editor: changes are saved when leaving the page, and also when
 /// the app goes to the background, so they survive the app being killed there.
@@ -157,6 +172,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
               onSelected: (v) => _menu(v, data),
               itemBuilder: (_) => [
                 PopupMenuItem(value: 'plan', child: Text(l.addToPlan)),
+                if (_c.type == CardType.checklist) PopupMenuItem(value: 'packing', child: Text(l.packingAddFrom)),
                 PopupMenuItem(
                   value: 'toggle',
                   child: Text(_c.type == CardType.checklist ? l.convertToNote : l.convertToChecklist),
@@ -282,12 +298,34 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
     }
   }
 
+  void _moveOpen(int oldIndex, int newIndex) =>
+      setState(() => _c = _c.copyWith(checklist: moveOpenEntry(_c.checklist, oldIndex, newIndex)));
+
   List<Widget> _checklistFields() {
+    final l = context.l10n;
     final open = [for (final e in _c.checklist) if (!e.done) e];
     final done = [for (final e in _c.checklist) if (e.done) e];
-    Widget row(ChecklistEntry e) => Row(
+    Widget row(ChecklistEntry e, {int? index}) => Row(
           key: ValueKey(e.id),
           children: [
+            // Open entries are sorted by dragging the handle; screen readers get up/down actions.
+            if (index != null)
+              Semantics(
+                label: l.entryDragHandle,
+                customSemanticsActions: {
+                  if (index > 0) CustomSemanticsAction(label: l.entryMoveUp): () => _moveOpen(index, index - 1),
+                  if (index < open.length - 1)
+                    CustomSemanticsAction(label: l.entryMoveDown): () => _moveOpen(index, index + 1),
+                },
+                child: ReorderableDragStartListener(
+                  key: ValueKey('drag-${e.id}'),
+                  index: index,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Icon(Icons.drag_indicator, size: 20),
+                  ),
+                ),
+              ),
             Checkbox(
               value: e.done,
               onChanged: (v) => setState(() => _c = _c.copyWith(checklist: [
@@ -299,24 +337,46 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
                 controller: _entryCtrl(e),
                 autofocus: e.text.isEmpty && widget.isNew,
                 style: e.done ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
-                decoration: InputDecoration(border: InputBorder.none, hintText: context.l10n.entryHint),
+                decoration: InputDecoration(border: InputBorder.none, hintText: l.entryHint),
                 onSubmitted: (_) => _addEntry(),
               ),
             ),
             IconButton(
+              tooltip: l.entryDelete,
               icon: const Icon(Icons.close, size: 18),
               onPressed: () => setState(() => _c = _c.copyWith(checklist: [..._c.checklist]..removeWhere((x) => x.id == e.id))),
             ),
           ],
         );
     return [
-      ...open.map(row),
-      TextButton.icon(onPressed: _addEntry, icon: const Icon(Icons.add), label: Text(context.l10n.entryHint)),
+      ReorderableListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        onReorderItem: _moveOpen,
+        children: [for (var k = 0; k < open.length; k++) row(open[k], index: k)],
+      ),
+      TextButton.icon(onPressed: _addEntry, icon: const Icon(Icons.add), label: Text(l.entryHint)),
       if (done.isNotEmpty) ...[
-        Text(context.l10n.doneCount(done.length), style: Theme.of(context).textTheme.labelMedium),
+        Text(l.doneCount(done.length), style: Theme.of(context).textTheme.labelMedium),
         ...done.map(row),
       ],
     ];
+  }
+
+  /// Adds entries from a packing list template or another trip's list.
+  Future<void> _addFromPacking() async {
+    final l = context.l10n;
+    final pick = await showPackingSheet(context, tripId: widget.tripId, adding: true);
+    if (pick == null || !mounted) return;
+    final before = _collect();
+    final merged = addEntries(before.checklist, pick.entries, newId: newId);
+    final added = newEntryTexts(before.checklist.map((e) => e.text), pick.entries).length;
+    setState(() {
+      _c = before.copyWith(checklist: merged);
+      if (_title.text.trim().isEmpty) _title.text = pick.title;
+    });
+    showSnack(context, added == 0 ? l.packingNothingNew : l.packingEntriesAdded(added));
   }
 
   void _addEntry() => setState(() {
@@ -348,6 +408,8 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
           return;
         }
         if (mounted) Navigator.pop(context);
+      case 'packing':
+        await _addFromPacking();
       case 'toggle':
         setState(() {
           final c = _collect();

@@ -41,7 +41,7 @@ class _NotesViewState extends ConsumerState<NotesView> {
             childCount: list.length,
             itemBuilder: (_, k) => GestureDetector(
               onTap: () => openCardEditor(context, widget.data, card: list[k]),
-              child: CardPreview(card: list[k], data: widget.data),
+              child: CardPreview(card: list[k], data: widget.data, tickable: true),
             ),
           ),
         );

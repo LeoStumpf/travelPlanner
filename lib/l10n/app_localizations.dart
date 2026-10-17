@@ -3822,6 +3822,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'in {duration}'**
   String reminderIn(String duration);
+
+  /// No description provided for @packingList.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing list'**
+  String get packingList;
+
+  /// No description provided for @packingTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get packingTemplates;
+
+  /// No description provided for @packingTemplateBasics.
+  ///
+  /// In en, this message translates to:
+  /// **'Basics'**
+  String get packingTemplateBasics;
+
+  /// No description provided for @packingTemplateBeach.
+  ///
+  /// In en, this message translates to:
+  /// **'Beach'**
+  String get packingTemplateBeach;
+
+  /// No description provided for @packingTemplateHiking.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking'**
+  String get packingTemplateHiking;
+
+  /// No description provided for @packingTemplateCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get packingTemplateCity;
+
+  /// No description provided for @packingTemplateBasicsItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Passport / ID|Wallet & cards|Phone charger|Power bank|Travel adapter|Medication|First-aid kit|Toothbrush & toiletries|Underwear|Socks|T-shirts|Trousers|Sleepwear|Rain jacket|Headphones|Copies of documents'**
+  String get packingTemplateBasicsItems;
+
+  /// No description provided for @packingTemplateBeachItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Swimwear|Sunscreen|Sunglasses|Sun hat|Beach towel|Flip-flops|After-sun lotion|Waterproof phone pouch|Snorkel gear|Book'**
+  String get packingTemplateBeachItems;
+
+  /// No description provided for @packingTemplateHikingItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking boots|Daypack|Water bottle|Rain jacket|Warm layer / fleece|Hiking socks|Blister plasters|Headlamp|Offline maps|Snacks|Pocket knife|Sunscreen'**
+  String get packingTemplateHikingItems;
+
+  /// No description provided for @packingTemplateCityItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfortable shoes|Day bag|Offline maps|Public transport ticket|Umbrella|Smart outfit|Reusable water bottle|Museum tickets'**
+  String get packingTemplateCityItems;
+
+  /// No description provided for @packingCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create list'**
+  String get packingCreate;
+
+  /// No description provided for @packingAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add entries'**
+  String get packingAdd;
+
+  /// No description provided for @packingEntryCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries'**
+  String packingEntryCount(int count);
+
+  /// No description provided for @packingFromOtherTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy list from another trip'**
+  String get packingFromOtherTrip;
+
+  /// No description provided for @packingNoOtherLists.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no checklists in other trips yet.'**
+  String get packingNoOtherLists;
+
+  /// No description provided for @packingSource.
+  ///
+  /// In en, this message translates to:
+  /// **'{trip} · {count} entries'**
+  String packingSource(String trip, int count);
+
+  /// No description provided for @packingAddFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Add from template or trip …'**
+  String get packingAddFrom;
+
+  /// No description provided for @packingEntriesAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries added'**
+  String packingEntriesAdded(int count);
+
+  /// No description provided for @packingNothingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'All entries are already on the list'**
+  String get packingNothingNew;
+
+  /// No description provided for @stepEntryTicked.
+  ///
+  /// In en, this message translates to:
+  /// **'“{entry}” ticked off'**
+  String stepEntryTicked(String entry);
+
+  /// No description provided for @stepEntryUnticked.
+  ///
+  /// In en, this message translates to:
+  /// **'“{entry}” unticked'**
+  String stepEntryUnticked(String entry);
+
+  /// No description provided for @entryMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get entryMoveUp;
+
+  /// No description provided for @entryMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get entryMoveDown;
+
+  /// No description provided for @entryDragHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get entryDragHandle;
+
+  /// No description provided for @entryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry'**
+  String get entryDelete;
 }
 
 class _AppLocalizationsDelegate

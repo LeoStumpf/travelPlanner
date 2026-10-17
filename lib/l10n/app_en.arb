@@ -2030,5 +2030,68 @@
         "type": "String"
       }
     }
-  }
+  },
+  "packingList": "Packing list",
+  "packingTemplates": "Templates",
+  "packingTemplateBasics": "Basics",
+  "packingTemplateBeach": "Beach",
+  "packingTemplateHiking": "Hiking",
+  "packingTemplateCity": "City",
+  "packingTemplateBasicsItems": "Passport / ID|Wallet & cards|Phone charger|Power bank|Travel adapter|Medication|First-aid kit|Toothbrush & toiletries|Underwear|Socks|T-shirts|Trousers|Sleepwear|Rain jacket|Headphones|Copies of documents",
+  "packingTemplateBeachItems": "Swimwear|Sunscreen|Sunglasses|Sun hat|Beach towel|Flip-flops|After-sun lotion|Waterproof phone pouch|Snorkel gear|Book",
+  "packingTemplateHikingItems": "Hiking boots|Daypack|Water bottle|Rain jacket|Warm layer / fleece|Hiking socks|Blister plasters|Headlamp|Offline maps|Snacks|Pocket knife|Sunscreen",
+  "packingTemplateCityItems": "Comfortable shoes|Day bag|Offline maps|Public transport ticket|Umbrella|Smart outfit|Reusable water bottle|Museum tickets",
+  "packingCreate": "Create list",
+  "packingAdd": "Add entries",
+  "packingEntryCount": "{count} entries",
+  "@packingEntryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packingFromOtherTrip": "Copy list from another trip",
+  "packingNoOtherLists": "There are no checklists in other trips yet.",
+  "packingSource": "{trip} · {count} entries",
+  "@packingSource": {
+    "placeholders": {
+      "trip": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packingAddFrom": "Add from template or trip …",
+  "packingEntriesAdded": "{count} entries added",
+  "@packingEntriesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packingNothingNew": "All entries are already on the list",
+  "stepEntryTicked": "“{entry}” ticked off",
+  "@stepEntryTicked": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "stepEntryUnticked": "“{entry}” unticked",
+  "@stepEntryUnticked": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "entryMoveUp": "Move up",
+  "entryMoveDown": "Move down",
+  "entryDragHandle": "Drag to reorder",
+  "entryDelete": "Delete entry"
 }
