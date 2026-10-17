@@ -22,6 +22,12 @@ Future<void> main() async {
   final store = AttachmentStore(attachments);
   await store.emptyTrash();
   final repo = Repository(AppDatabase(), store);
+  try {
+    await repo.purgeTrash();
+  } catch (e) {
+    // A broken trash must never keep the app from starting.
+    debugPrint('Purging the trash failed: $e');
+  }
 
   runApp(ProviderScope(
     overrides: [repositoryProvider.overrideWithValue(repo)],

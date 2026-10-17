@@ -11,6 +11,8 @@ final repositoryProvider = Provider<Repository>((ref) => throw UnimplementedErro
 
 final tripsProvider = StreamProvider<List<Trip>>((ref) => ref.watch(repositoryProvider).watchTrips());
 
+final trashProvider = StreamProvider<List<TrashedTrip>>((ref) => ref.watch(repositoryProvider).watchTrash());
+
 final tripDataProvider = StreamProvider.family<TripData?, String>(
   (ref, tripId) => ref.watch(repositoryProvider).watchTrip(tripId),
 );

@@ -6,6 +6,17 @@ void showSnack(BuildContext context, String text, {SnackBarAction? action}) {
     ..showSnackBar(SnackBar(content: Text(text), action: action));
 }
 
+/// Shows [text] with a "Rückgängig" action. Takes the messenger instead of a
+/// context, so callers can grab it before the widget that deleted something is gone.
+void showUndoSnack(ScaffoldMessengerState messenger, String text, VoidCallback onUndo) {
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      content: Text(text),
+      action: SnackBarAction(label: 'Rückgängig', onPressed: onUndo),
+    ));
+}
+
 Future<bool> confirm(BuildContext context, String title, [String? body, String ok = 'Löschen']) async {
   final r = await showDialog<bool>(
     context: context,

@@ -327,11 +327,13 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
             await ref.read(repositoryProvider).deleteAttachment(a);
           }
         } else if (await confirm(context, 'Notiz löschen?')) {
+          if (!mounted) return;
           _deleted = true;
+          final messenger = ScaffoldMessenger.of(context);
+          final actions = ref.read(planActionsProvider);
           await _saving;
-          await ref
-              .read(planActionsProvider)
-              .record(widget.tripId, 'Notiz gelöscht', (r) => r.deleteCard(data, _c.id));
+          await actions.record(widget.tripId, 'Notiz gelöscht', (r) => r.deleteCard(data, _c.id));
+          showUndoSnack(messenger, 'Notiz gelöscht', () => actions.undo(widget.tripId));
         } else {
           return;
         }

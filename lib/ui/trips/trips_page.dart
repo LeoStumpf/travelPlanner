@@ -11,6 +11,7 @@ import '../common/dialogs.dart';
 import '../common/route_line.dart';
 import '../exchange/plan_exchange_ui.dart';
 import '../trip/trip_page.dart';
+import 'trash_page.dart';
 import 'trip_settings_dialog.dart';
 
 class TripsPage extends ConsumerWidget {
@@ -28,6 +29,7 @@ class TripsPage extends ConsumerWidget {
               'import' => _import(context, ref),
               'claude' => showPlanExchangeSheet(context, ref, null),
               'demo' => _loadDemos(context, ref),
+              'trash' => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TrashPage())),
               _ => null,
             },
             itemBuilder: (_) => const [
@@ -50,6 +52,13 @@ class TripsPage extends ConsumerWidget {
                 child: ListTile(
                   leading: Icon(Icons.auto_awesome),
                   title: Text('Beispielreisen laden'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'trash',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline),
+                  title: Text('Papierkorb'),
                 ),
               ),
             ],
@@ -181,15 +190,11 @@ class _TripTile extends ConsumerWidget {
         final bytes = await Backup.exportTrip(repo, trip.id);
         await Backup.importZip(repo, bytes);
       case 'delete':
-        final ok = await confirm(
-          context,
-          'Reise „${trip.title}“ löschen?',
-          'Alle Orte, Notizen und Anhänge dieser Reise werden entfernt.',
-        );
-        if (ok) {
-          await repo.deleteTrip(trip.id);
-          ref.read(undoProvider.notifier).forget(trip.id);
-        }
+        // Soft delete: the trip goes to the trash and can be restored from there,
+        // so no confirmation. The undo history is kept for a restore.
+        final messenger = ScaffoldMessenger.of(context);
+        await repo.trashTrip(trip.id);
+        showUndoSnack(messenger, 'Reise gelöscht', () => repo.restoreFromTrash(trip.id));
     }
   }
 }

@@ -6,7 +6,25 @@ import '../domain/models.dart';
 import 'attachment_store.dart';
 import 'db.dart';
 
+/// A trip in the trash and when it was put there.
+class TrashedTrip {
+  final Trip trip;
+  final DateTime deletedAt;
+  const TrashedTrip(this.trip, this.deletedAt);
+
+  /// When [Repository.purgeTrash] removes it for good.
+  DateTime get purgeAt => deletedAt.add(Repository.trashRetention);
+}
+
 class Repository {
+  /// How long deleted trips stay in the trash.
+  static const trashRetention = Duration(days: 30);
+
+  /// Marks a trashed trip: one extra row per trip, so the trip itself stays
+  /// untouched and restoring is just removing the marker.
+  static const _trashType = 'trashed';
+  static String _trashId(String tripId) => 'trash:$tripId';
+
   final AppDatabase db;
   final AttachmentStore files;
 
@@ -14,13 +32,38 @@ class Repository {
 
   // --- reading ---------------------------------------------------------------
 
-  Stream<List<Trip>> watchTrips() {
-    final q = db.select(db.docs)..where((d) => d.type.equals('trip'));
-    return q.watch().map((rows) {
-      final trips = [for (final r in rows) Trip.fromJson(_decode(r.json))];
-      trips.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return trips;
-    });
+  Stream<List<DocRow>> _watchTripsAndMarkers() =>
+      (db.select(db.docs)..where((d) => d.type.isIn(['trip', _trashType]))).watch();
+
+  /// Trips that are not in the trash, newest first.
+  Stream<List<Trip>> watchTrips() => _watchTripsAndMarkers().map((rows) {
+        final trashed = {for (final r in rows) if (r.type == _trashType) r.tripId};
+        final trips = [
+          for (final r in rows)
+            if (r.type == 'trip' && !trashed.contains(r.tripId)) Trip.fromJson(_decode(r.json)),
+        ];
+        trips.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return trips;
+      });
+
+  /// Trips in the trash, most recently deleted first.
+  Stream<List<TrashedTrip>> watchTrash() => _watchTripsAndMarkers().map(_trashed);
+
+  Future<List<TrashedTrip>> loadTrash() async =>
+      _trashed(await (db.select(db.docs)..where((d) => d.type.isIn(['trip', _trashType]))).get());
+
+  List<TrashedTrip> _trashed(List<DocRow> rows) {
+    final trips = {for (final r in rows) if (r.type == 'trip') r.tripId: r};
+    final list = [
+      for (final r in rows)
+        if (r.type == _trashType && trips[r.tripId] != null)
+          TrashedTrip(
+            Trip.fromJson(_decode(trips[r.tripId]!.json)),
+            DateTime.parse(_decode(r.json)['deletedAt'] as String),
+          ),
+    ];
+    list.sort((a, b) => b.deletedAt.compareTo(a.deletedAt));
+    return list;
   }
 
   Stream<TripData?> watchTrip(String tripId) {
@@ -126,6 +169,32 @@ class Repository {
     }
   }
 
+  /// Moves a trip to the trash. Its documents and files stay as they are.
+  Future<void> trashTrip(String tripId, {DateTime? now}) => _put(
+        _trashId(tripId),
+        tripId,
+        _trashType,
+        {'deletedAt': (now ?? DateTime.now()).toIso8601String()},
+      );
+
+  /// Takes a trip out of the trash.
+  Future<void> restoreFromTrash(String tripId) => _delete(_trashId(tripId));
+
+  /// Deletes trips that have been in the trash longer than [trashRetention].
+  /// Called on app start. Returns how many trips were removed.
+  Future<int> purgeTrash({DateTime? now}) async {
+    final limit = (now ?? DateTime.now()).subtract(trashRetention);
+    var n = 0;
+    for (final t in await loadTrash()) {
+      if (t.deletedAt.isBefore(limit)) {
+        await deleteTrip(t.trip.id);
+        n++;
+      }
+    }
+    return n;
+  }
+
+  /// Deletes a trip for good, including its attachment files.
   Future<void> deleteTrip(String tripId) async {
     final data = await loadTrip(tripId);
     await (db.delete(db.docs)..where((d) => d.tripId.equals(tripId))).go();

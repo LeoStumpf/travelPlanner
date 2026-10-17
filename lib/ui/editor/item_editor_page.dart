@@ -200,8 +200,12 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
                   if (await confirm(context, '„${_i.title}“ löschen?')) {
-                    await ref.read(planActionsProvider).deleteItem(data, _i.id);
+                    if (!context.mounted) return;
+                    final messenger = ScaffoldMessenger.of(context);
+                    final actions = ref.read(planActionsProvider);
+                    await actions.deleteItem(data, _i.id);
                     ref.read(tripUiProvider.notifier).select(null);
+                    showUndoSnack(messenger, '„${_i.title}“ gelöscht', () => actions.undo(widget.tripId));
                     if (context.mounted) _leave();
                   }
                 },
