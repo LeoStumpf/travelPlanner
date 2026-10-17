@@ -54,7 +54,7 @@ void main() {
 
   Future<void> pumpMap(WidgetTester tester) async {
     await tester.runAsync(() => repo.putTripData(demo));
-    tester.view.physicalSize = const Size(400, 800);
+    tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(UncontrolledProviderScope(

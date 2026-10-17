@@ -124,6 +124,29 @@ void main() {
     expect(store.downloaded, hasLength(1));
   });
 
+  test('a failed or cancelled re-save keeps the old map', () async {
+    await loaded();
+    await notifier().save(plan, now: now);
+    final first = [...state().regionIds];
+
+    store.failAt = store.downloaded.length + 2;
+    await notifier().save(plan, now: DateTime(2026, 10, 18));
+    expect(state().error, 'tile server said no');
+    expect(state().saved, isTrue);
+    expect(state().regionIds, first);
+    expect(state().savedAt, now);
+
+    store.failAt = null;
+    store.gate = Completer();
+    final saving = notifier().save(plan, now: DateTime(2026, 10, 18));
+    await pumpEventQueue();
+    await notifier().cancel();
+    await saving;
+    expect(state().saved, isTrue);
+    expect(state().regionIds, first);
+    expect(store.regionsById.keys.toSet(), first.toSet());
+  });
+
   test('delete removes the trip\'s regions', () async {
     await loaded();
     await notifier().save(plan, now: now);

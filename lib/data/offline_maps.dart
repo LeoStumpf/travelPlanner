@@ -100,6 +100,9 @@ class MaplibreOfflineStore implements OfflineMapStore {
       _limitRaised = true;
     }
     final done = Completer<int>();
+    // An error event may arrive before anyone awaits; don't report it as
+    // unhandled (it is still delivered to the await below).
+    done.future.ignore();
     int? id;
     final region = await ml.downloadOfflineRegion(
       ml.OfflineRegionDefinition(

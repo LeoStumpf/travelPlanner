@@ -127,16 +127,16 @@ class OfflineMapNotifier extends Notifier<OfflineMapState> {
   }
 
   /// Downloads [plan], replacing what was saved for the trip before. The
-  /// regions download one after another; progress is weighted by tiles.
+  /// regions download one after another; progress is weighted by tiles. The
+  /// old map is only removed once the new one is complete, so a failed or
+  /// cancelled re-save (typically on a poor connection) keeps it usable.
   Future<void> save(OfflinePlan plan, {DateTime? now}) async {
     if (state.downloading) return;
     _cancelled = false;
     state = state.copyWith(progress: () => 0, downloadedBytes: 0, error: () => null);
     final created = <int>[];
     try {
-      for (final old in await _mine()) {
-        await _store.delete(old.id);
-      }
+      final old = await _mine();
       final total = plan.tiles == 0 ? 1 : plan.tiles;
       var doneTiles = 0, doneBytes = 0;
       final metadata = {
@@ -169,6 +169,12 @@ class OfflineMapNotifier extends Notifier<OfflineMapState> {
         if (!created.contains(id)) created.add(id);
         doneTiles += tiles;
         doneBytes += lastBytes;
+      }
+      if (_cancelled) throw const OfflineDownloadCancelled();
+      for (final r in old) {
+        try {
+          await _store.delete(r.id);
+        } catch (_) {}
       }
       if (ref.mounted) state = state.copyWith(progress: () => null);
     } catch (e) {

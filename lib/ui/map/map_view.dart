@@ -282,7 +282,9 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       styleLoaded: _styleLoaded,
       styleTimedOut: _styleTimedOut,
       online: _online,
-      saved: offline.saved,
+      // Until the stored regions are listed, assume a saved map rather than
+      // flashing "unavailable" when the connection check answers first.
+      saved: offline.saved || !offline.loaded,
     );
     final covered = offline.covers(placesBox(data));
     final l = context.l10n;
