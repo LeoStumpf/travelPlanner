@@ -9,6 +9,7 @@ import '../../domain/time.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
 import '../common/route_line.dart';
+import '../exchange/plan_exchange_ui.dart';
 import '../trip/trip_page.dart';
 import 'trip_settings_dialog.dart';
 
@@ -25,10 +26,18 @@ class TripsPage extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
               'import' => _import(context, ref),
+              'claude' => showPlanExchangeSheet(context, ref, null),
               'demo' => _loadDemos(context, ref),
               _ => null,
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'claude',
+                child: ListTile(
+                  leading: Icon(Icons.auto_fix_high),
+                  title: Text('Mit Claude planen …'),
+                ),
+              ),
               PopupMenuItem(
                 value: 'import',
                 child: ListTile(

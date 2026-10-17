@@ -9,7 +9,9 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../../domain/plan_exchange.dart';
 import '../editor/card_editor_page.dart';
+import '../exchange/plan_exchange_ui.dart';
 import '../trips/trip_settings_dialog.dart';
 import '../trips/trips_page.dart';
 
@@ -49,8 +51,14 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
     if (media.isEmpty) return;
     // Wait for the first frame so a navigator exists on cold start.
     await WidgetsBinding.instance.endOfFrame;
+    // A plan shared from a chat app (e.g. Claude) is imported, not stored.
+    final plan = await _planText(media);
     final context = navigatorKey.currentContext;
     if (context == null || !context.mounted) return;
+    if (plan != null) {
+      await importPlanText(context, ref, plan);
+      return;
+    }
 
     final tripId = await _chooseTrip(context);
     if (tripId == null) return;
@@ -74,6 +82,21 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
     if (fresh != null && ctx2 != null && ctx2.mounted) {
       await openCardEditor(ctx2, fresh, card: fresh.card(card.id));
     }
+  }
+
+  Future<String?> _planText(List<SharedMediaFile> media) async {
+    for (final m in media) {
+      String? text;
+      if (m.type == SharedMediaType.text || m.type == SharedMediaType.url) {
+        text = m.path;
+      } else if (m.type == SharedMediaType.file && RegExp(r'\.(json|md|txt)$', caseSensitive: false).hasMatch(m.path)) {
+        try {
+          text = await File(m.path).readAsString();
+        } catch (_) {}
+      }
+      if (text != null && PlanExchange.looksLikePlan(text)) return text;
+    }
+    return null;
   }
 
   Future<NoteCard?> _store(TripData data, SharedMediaFile m) async {

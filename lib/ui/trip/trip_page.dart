@@ -8,6 +8,7 @@ import '../common/dialogs.dart';
 import '../common/style.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
+import '../exchange/plan_exchange_ui.dart';
 import '../keep/notes_view.dart';
 import '../map/map_view.dart';
 import '../timeline/timeline_view.dart';
@@ -57,9 +58,12 @@ class _TripPageState extends ConsumerState<TripPage> {
                     }
                   } else if (v == 'export') {
                     if (context.mounted) await exportTrip(context, ref, data.trip);
+                  } else if (v == 'claude') {
+                    if (context.mounted) await showPlanExchangeSheet(context, ref, data);
                   }
                 },
                 itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'claude', child: Text('Mit Claude planen …')),
                   PopupMenuItem(value: 'settings', child: Text('Reise bearbeiten')),
                   PopupMenuItem(value: 'export', child: Text('Backup exportieren')),
                 ],

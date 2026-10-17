@@ -8,6 +8,12 @@ Ein Flutter-Reiseplaner für Android (iOS-fähig). Er bietet drei Sichten auf di
 
 Alle Daten liegen lokal (SQLite über drift). Backups lassen sich als ZIP exportieren und importieren. Inhalte, die man aus anderen Apps „teilt“, landen als Notiz in einer Reise.
 
+## Mit Claude planen
+
+Über **⋮ → Mit Claude planen …** (in der Reiseliste oder in einer Reise) kopiert die App eine Anleitung zum Austauschformat `tripboard-plan`, auf Wunsch zusammen mit dem aktuellen Plan. Den Text fügt man in der Claude-App ein und lässt Claude mit Websuche planen. Claudes Antwort endet mit einem JSON-Block. Diesen kopiert man und übernimmt ihn in der App über „Plan aus Zwischenablage übernehmen“; alternativ teilt man die Antwort direkt an Tripboard. Vor dem Übernehmen zeigt die App eine Vorschau mit den Änderungen und Hinweisen. Fehlende Koordinaten sucht sie über OpenStreetMap. Der Import in eine bestehende Reise lässt sich als ein Schritt rückgängig machen.
+
+Das Format ist in [`assets/plan_format.md`](assets/plan_format.md) beschrieben, die Logik steckt in `lib/domain/plan_exchange.dart`. Bekannte `ref`s aktualisieren bestehende Einträge, unbekannte legen neue an. Gelöscht wird nur, was unter `remove` steht.
+
 ## Struktur
 
 | Pfad | Inhalt |
