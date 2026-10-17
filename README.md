@@ -6,7 +6,7 @@ Ein Flutter-Reiseplaner für Android (iOS-fähig). Er bietet drei Sichten auf di
 - **Zeitplan**: die Ebenen Orte → Transport → Unterkünfte (in Nächten) → Aktivitäten. Verschieben per Long-Press und Ziehen; nachfolgende Elemente rutschen mit, fixe Termine bleiben stehen. Konflikte, freie Tage und Nächte ohne Unterkunft werden angezeigt.
 - **Karte**: MapLibre mit OpenStreetMap-Stil von OpenFreeMap, kein API-Key nötig.
 
-Alle Daten liegen lokal (SQLite über drift). Backups lassen sich als ZIP exportieren und importieren. Gelöschte Reisen liegen 30 Tage im Papierkorb (⋮ → Papierkorb) und werden danach beim App-Start endgültig entfernt, samt Anhängen. Inhalte, die man aus anderen Apps „teilt“, landen als Notiz in einer Reise.
+Alle Daten liegen lokal (SQLite über drift). Einzelne Reisen oder alle Reisen auf einmal lassen sich als ZIP exportieren; „Backup importieren“ nimmt beide Varianten an. Zusätzlich schreibt die App beim Start und beim Wechsel in den Hintergrund ein Backup aller Reisen, wenn das letzte älter als 24 Stunden ist. Diese Backups liegen im App-Ordner auf dem externen Speicher (`Android/data/<App>/files/backups`), die letzten 7 bleiben erhalten. Unter ⋮ → Backups & Wiederherstellen sieht man das letzte Backup und kann eines zurückspielen. Die Android-Cloud-Sicherung umfasst Datenbank und Anhänge (`android/app/src/main/res/xml/`). Gelöschte Reisen liegen 30 Tage im Papierkorb (⋮ → Papierkorb) und werden danach beim App-Start endgültig entfernt, samt Anhängen. Inhalte, die man aus anderen Apps „teilt“, landen als Notiz in einer Reise.
 
 ## Mit Claude planen
 

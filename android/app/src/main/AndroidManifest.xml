@@ -1,10 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Map tiles, place search and link previews. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android cloud backup covers the database and attachments, see
+         res/xml/backup_rules.xml and data_extraction_rules.xml. -->
     <application
         android:label="Tripboard"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

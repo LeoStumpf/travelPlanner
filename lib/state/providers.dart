@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/auto_backup.dart';
 import '../data/db.dart';
 import '../data/repository.dart';
 import '../domain/models.dart';
@@ -8,6 +9,14 @@ import '../domain/scheduler.dart';
 
 /// Overridden in main() with the initialised repository.
 final repositoryProvider = Provider<Repository>((ref) => throw UnimplementedError());
+
+/// Overridden in main(); null where no backup folder is available (tests).
+final autoBackupProvider = Provider<AutoBackup?>((ref) => null);
+
+/// The automatic backups, newest first. Invalidated after every backup.
+final backupsProvider = FutureProvider<List<BackupFile>>(
+  (ref) async => await ref.watch(autoBackupProvider)?.list() ?? const <BackupFile>[],
+);
 
 final tripsProvider = StreamProvider<List<Trip>>((ref) => ref.watch(repositoryProvider).watchTrips());
 

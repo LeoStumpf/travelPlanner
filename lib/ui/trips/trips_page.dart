@@ -7,6 +7,7 @@ import '../../domain/demo.dart';
 import '../../domain/models.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
+import '../backup/backups_page.dart';
 import '../common/dialogs.dart';
 import '../common/route_line.dart';
 import '../exchange/plan_exchange_ui.dart';
@@ -20,6 +21,8 @@ class TripsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trips = ref.watch(tripsProvider);
+    final hasAutoBackup = ref.watch(autoBackupProvider) != null;
+    final backups = ref.watch(backupsProvider).value;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meine Reisen'),
@@ -27,34 +30,52 @@ class TripsPage extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
               'import' => _import(context, ref),
+              'exportAll' => exportAllTrips(context, ref),
+              'backups' => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BackupsPage())),
               'claude' => showPlanExchangeSheet(context, ref, null),
               'demo' => _loadDemos(context, ref),
               'trash' => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TrashPage())),
               _ => null,
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
+            itemBuilder: (_) => [
+              const PopupMenuItem(
                 value: 'claude',
                 child: ListTile(
                   leading: Icon(Icons.auto_fix_high),
                   title: Text('Mit Claude planen …'),
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
+                value: 'exportAll',
+                child: ListTile(
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Alle Reisen exportieren'),
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'import',
                 child: ListTile(
                   leading: Icon(Icons.file_open),
                   title: Text('Backup importieren'),
                 ),
               ),
-              PopupMenuItem(
+              if (hasAutoBackup)
+                PopupMenuItem(
+                  value: 'backups',
+                  child: ListTile(
+                    leading: const Icon(Icons.settings_backup_restore),
+                    title: const Text('Backups & Wiederherstellen'),
+                    subtitle: Text(lastBackupLabel(backups)),
+                  ),
+                ),
+              const PopupMenuItem(
                 value: 'demo',
                 child: ListTile(
                   leading: Icon(Icons.auto_awesome),
                   title: Text('Beispielreisen laden'),
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'trash',
                 child: ListTile(
                   leading: Icon(Icons.delete_outline),
@@ -105,8 +126,14 @@ class TripsPage extends ConsumerWidget {
     if (f == null) return;
     try {
       final bytes = await f.xFile.readAsBytes();
-      final id = await Backup.importZip(ref.read(repositoryProvider), bytes);
-      if (context.mounted) openTrip(context, ref, id);
+      // Accepts single-trip and all-trips ZIPs; existing trips become copies.
+      final ids = await Backup.importAny(ref.read(repositoryProvider), bytes);
+      if (!context.mounted) return;
+      if (ids.length == 1) {
+        openTrip(context, ref, ids.single);
+      } else {
+        showSnack(context, ids.isEmpty ? 'Keine Reisen im Backup' : '${ids.length} Reisen importiert');
+      }
     } catch (e) {
       if (context.mounted) showSnack(context, 'Import fehlgeschlagen: $e');
     }
@@ -215,6 +242,29 @@ Future<void> exportTrip(BuildContext context, WidgetRef ref, Trip trip) async {
     if (uri != null && context.mounted) {
       showSnack(context, 'Backup gespeichert');
     }
+  } catch (e) {
+    if (context.mounted) showSnack(context, 'Export fehlgeschlagen: $e');
+  }
+}
+
+/// One ZIP with all trips (not the trash), importable via "Backup importieren".
+Future<void> exportAllTrips(BuildContext context, WidgetRef ref) async {
+  try {
+    final repo = ref.read(repositoryProvider);
+    if ((await repo.watchTrips().first).isEmpty) {
+      if (context.mounted) showSnack(context, 'Keine Reisen zum Exportieren');
+      return;
+    }
+    final bytes = await Backup.exportAll(repo);
+    final now = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    final uri = await FilePicker.saveFile(
+      fileName: 'tripboard-alle-reisen-${now.year}${two(now.month)}${two(now.day)}.zip',
+      bytes: bytes,
+      mimeType: 'application/zip',
+      dialogTitle: 'Alle Reisen speichern',
+    );
+    if (uri != null && context.mounted) showSnack(context, 'Alle Reisen exportiert');
   } catch (e) {
     if (context.mounted) showSnack(context, 'Export fehlgeschlagen: $e');
   }

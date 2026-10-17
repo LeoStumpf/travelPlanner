@@ -7,7 +7,8 @@ import 'package:uuid/uuid.dart';
 import '../domain/models.dart';
 import 'repository.dart';
 
-/// ZIP backup of one trip: `trip.json` plus all attachment files.
+/// ZIP backups: one trip (`trip.json` plus all attachment files) or all
+/// trips at once (see [exportAll]).
 class Backup {
   static const formatVersion = 1;
 
@@ -47,22 +48,83 @@ class Backup {
     );
   }
 
-  /// Imports a ZIP. If the trip already exists it is imported as a copy with
-  /// fresh ids. Returns the id of the imported trip.
+  /// ZIP backup of all trips that are not in the trash: `backup.json` lists
+  /// the trips, each one lies in `trips/<id>/` exactly like a single-trip ZIP.
+  static Future<Uint8List> exportAll(Repository repo) async {
+    final trips = await repo.watchTrips().first;
+    final archive = Archive();
+    final ids = <String>[];
+    for (final t in trips) {
+      final data = await repo.loadTrip(t.id);
+      if (data == null) continue;
+      ids.add(t.id);
+      final dir = 'trips/${t.id}/';
+      archive.addFile(ArchiveFile.string('${dir}trip.json', jsonEncode(toJson(data))));
+      for (final a in data.attachments) {
+        final f = repo.files.fileFor(a);
+        if (await f.exists()) {
+          archive.addFile(ArchiveFile.bytes('${dir}files/${a.relPath}', await f.readAsBytes()));
+        }
+      }
+    }
+    archive.addFile(ArchiveFile.string(
+      'backup.json',
+      jsonEncode({
+        'format': 'travel_planner_all',
+        'version': formatVersion,
+        'createdAt': DateTime.now().toIso8601String(),
+        'trips': ids,
+      }),
+    ));
+    return ZipEncoder().encodeBytes(archive);
+  }
+
+  /// Imports a single-trip ZIP. If the trip already exists it is imported as
+  /// a copy with fresh ids. Returns the id of the imported trip.
   static Future<String> importZip(Repository repo, Uint8List bytes) async {
+    final ids = await importAny(repo, bytes);
+    return ids.first;
+  }
+
+  /// Imports a single-trip or an all-trips ZIP and returns the ids of the
+  /// imported trips.
+  ///
+  /// Trips that already exist become copies with fresh ids, unless [replace]
+  /// is set (restoring a backup): then the existing trip is overwritten with
+  /// the state from the ZIP, including a trip that is in the trash.
+  static Future<List<String>> importAny(Repository repo, Uint8List bytes, {bool replace = false}) async {
     final archive = ZipDecoder().decodeBytes(bytes);
-    final tripFile = archive.findFile('trip.json');
-    if (tripFile == null) throw const FormatException('Keine trip.json im Archiv');
+    final manifest = archive.findFile('backup.json');
+    if (manifest == null) {
+      if (archive.findFile('trip.json') == null) {
+        throw const FormatException('Kein Tripboard-Backup (keine trip.json im Archiv)');
+      }
+      return [await _importTrip(repo, archive, '', replace: replace)];
+    }
+    final m = (jsonDecode(utf8.decode(manifest.content)) as Map).cast<String, Object?>();
+    if (m['format'] != 'travel_planner_all') throw const FormatException('Unbekanntes Backup-Format');
+    final ids = <String>[];
+    for (final id in (m['trips'] as List? ?? const [])) {
+      final dir = 'trips/$id/';
+      if (archive.findFile('${dir}trip.json') == null) continue;
+      ids.add(await _importTrip(repo, archive, dir, replace: replace));
+    }
+    return ids;
+  }
+
+  /// Imports the trip stored under [dir] (`''` or `trips/<id>/`) of [archive].
+  static Future<String> _importTrip(Repository repo, Archive archive, String dir, {required bool replace}) async {
+    final tripFile = archive.findFile('${dir}trip.json')!;
     final original = fromJson((jsonDecode(utf8.decode(tripFile.content)) as Map).cast<String, Object?>());
-    final data = await repo.tripExists(original.trip.id)
-        ? withFreshIds(original, titleSuffix: ' (Kopie)')
-        : original;
+    final exists = await repo.tripExists(original.trip.id);
+    if (exists && replace) await repo.deleteTrip(original.trip.id);
+    final data = exists && !replace ? withFreshIds(original, titleSuffix: ' (Kopie)') : original;
 
     // withFreshIds keeps the order, so index k maps back to the ZIP entry.
     final atts = <Attachment>[];
     for (var k = 0; k < data.attachments.length; k++) {
       final a = data.attachments[k];
-      final f = archive.findFile('files/${original.attachments[k].relPath}');
+      final f = archive.findFile('${dir}files/${original.attachments[k].relPath}');
       if (f == null) continue;
       atts.add(await repo.files.addBytes(
         tripId: a.tripId,
