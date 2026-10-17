@@ -113,6 +113,14 @@ void main() {
       final after = await tester.runAsync(() => repo.loadTrip(demo.trip.id));
       expect(after!.item(kandy.id)!.start, kandy.start! + minutesPerDay);
       expect(container.read(undoProvider)[demo.trip.id], hasLength(1));
+
+      // It is confirmed out loud (snack) and can be undone from there.
+      expect(find.textContaining(de.stepShiftedDays('Kandy', '+', de.daysCount(1))), findsOneWidget);
+      await tester.pump(const Duration(seconds: 1)); // snack slides in
+      await tester.tap(find.text(de.undo));
+      await settle(tester);
+      final undone = await tester.runAsync(() => repo.loadTrip(demo.trip.id));
+      expect(undone!.item(kandy.id)!.start, kandy.start);
       handle.dispose();
     });
 

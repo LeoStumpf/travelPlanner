@@ -100,11 +100,14 @@ Future<void> toggleFixed(AppLocalizations l, WidgetRef ref, TripData data, PlanI
 
 /// Moves [item] by [days] whole days with the scheduler, rippling like a
 /// drag on the timeline in the current shift mode. One undoable step.
-Future<void> shiftItemDays(AppLocalizations l, WidgetRef ref, TripData data, PlanItem item, int days) {
+/// Returns the step's label and what the scheduler changed.
+Future<(String, ScheduleResult)> shiftItemDays(
+    AppLocalizations l, WidgetRef ref, TripData data, PlanItem item, int days) async {
   final r = Scheduler.move(data.items, item.id, days * minutesPerDay, ref.read(tripUiProvider).shiftMode,
       zones: data.zones);
   final label = l.stepShiftedDays(item.title, days > 0 ? '+' : '−', l.days(days.abs()));
-  return ref.read(planActionsProvider).applySchedule(data, r, label);
+  await ref.read(planActionsProvider).applySchedule(data, r, label);
+  return (label, r);
 }
 
 /// Selects [id] and shows its details with links to the other views.

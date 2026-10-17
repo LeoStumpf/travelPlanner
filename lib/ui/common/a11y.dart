@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/analysis.dart';
 import '../../domain/models.dart';
 import '../../domain/time.dart';
+import '../../domain/zones.dart';
+import '../../state/providers.dart';
+import 'dialogs.dart';
 import 'item_sheet.dart';
 import 'l10n.dart';
 import 'style.dart';
@@ -54,9 +58,24 @@ Map<CustomSemanticsAction, VoidCallback> itemShiftActions(
 ) {
   if (!item.isScheduled || item.fixed) return const {};
   final l = context.l10n;
+  // Like after a drag, a snack (read out by screen readers) says what moved
+  // along and offers undo; without it the shift would happen silently.
+  Future<void> shift(int days) async {
+    final actions = ref.read(planActionsProvider);
+    final (label, r) = await shiftItemDays(l, ref, data, item, days);
+    if (!context.mounted || r.changedIds.isEmpty) return;
+    final others = r.changedIds.length - 1;
+    final conflicts = findConflicts(r.items, zones: data.zones).length;
+    showSnack(
+      context,
+      [label, if (others > 0) l.othersMovedAlong(others), if (conflicts > 0) l.conflictsCount(conflicts)].join(' · '),
+      action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(data.trip.id)),
+    );
+  }
+
   return {
-    CustomSemanticsAction(label: l.a11yDayEarlier): () => shiftItemDays(l, ref, data, item, -1),
-    CustomSemanticsAction(label: l.a11yDayLater): () => shiftItemDays(l, ref, data, item, 1),
+    CustomSemanticsAction(label: l.a11yDayEarlier): () => shift(-1),
+    CustomSemanticsAction(label: l.a11yDayLater): () => shift(1),
   };
 }
 
