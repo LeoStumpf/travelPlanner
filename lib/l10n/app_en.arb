@@ -1320,5 +1320,69 @@
         "type": "String"
       }
     }
-  }
+  },
+  "placesListEmpty": "This trip has no places yet.",
+  "mapNoPlaces": "No places with coordinates yet.",
+  "mapNoCoordinates": "No location",
+  "mapOpenInMapsApp": "Open in maps app",
+  "mapUnavailableTitle": "Map not available",
+  "mapUnavailableOffline": "No internet connection, and this trip's map isn't saved offline. Here are its places.",
+  "mapUnavailableFailed": "The map couldn't be loaded. Here are the trip's places.",
+  "mapRetry": "Try again",
+  "mapOfflineLimited": "Offline – parts of the map may be missing.",
+  "mapOfflineSaved": "Offline – showing the saved map",
+  "mapPlaces": "Places",
+  "mapPlacesTitle": "Places of this trip",
+  "offlineMapTitle": "Offline map",
+  "offlineMapSave": "Save map offline",
+  "offlineMapSaveAgain": "Save again",
+  "offlineMapExplain": "Saves the map around all places of the trip – an overview of the whole route and street level around every stay – so it works without internet.",
+  "offlineMapEstimate": "About {tiles} tiles, roughly {size}.",
+  "@offlineMapEstimate": {
+    "placeholders": {
+      "tiles": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineMapProgress": "{percent} % · {size} downloaded",
+  "@offlineMapProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineMapProgressHint": "Keeps running when you leave the map. Without a connection it waits until the network is back.",
+  "offlineMapSaved": "Saved offline",
+  "offlineMapSavedInfo": "Saved {date} · {size}",
+  "@offlineMapSavedInfo": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineMapIncomplete": "The last download didn't finish. Save again or delete it.",
+  "offlineMapOutdated": "Some places lie outside the saved area. Save again to include them.",
+  "offlineMapFailed": "Saving failed: {error}",
+  "@offlineMapFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineMapNeedsConnection": "Saving needs an internet connection.",
+  "offlineMapDelete": "Delete offline map",
+  "offlineMapDeleteConfirm": "Delete the offline map of this trip?"
 }

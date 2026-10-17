@@ -218,3 +218,8 @@ extension DomainL10n on AppLocalizations {
         roughIdeaText: demoRoughIdeaText,
       );
 }
+
+/// "512 KB", "12.3 MB" – file and download sizes.
+String formatBytes(int bytes) => bytes < 1024 * 1024
+    ? '${(bytes / 1024).toStringAsFixed(0)} KB'
+    : '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';

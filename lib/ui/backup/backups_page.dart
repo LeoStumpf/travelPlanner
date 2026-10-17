@@ -92,9 +92,7 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
     );
   }
 
-  static String _size(int bytes) => bytes < 1024 * 1024
-      ? '${(bytes / 1024).toStringAsFixed(0)} KB'
-      : '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
+  static String _size(int bytes) => formatBytes(bytes);
 
   /// Runs [job] with the progress bar. [job] gets the provider container,
   /// which stays usable when the user leaves the page while it runs (`ref`

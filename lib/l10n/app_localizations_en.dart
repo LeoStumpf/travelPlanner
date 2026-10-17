@@ -1567,4 +1567,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String agendaOpenFailed(String name) {
     return 'Couldn\'t open $name. Is an app for this file type installed?';
   }
+
+  @override
+  String get placesListEmpty => 'This trip has no places yet.';
+
+  @override
+  String get mapNoPlaces => 'No places with coordinates yet.';
+
+  @override
+  String get mapNoCoordinates => 'No location';
+
+  @override
+  String get mapOpenInMapsApp => 'Open in maps app';
+
+  @override
+  String get mapUnavailableTitle => 'Map not available';
+
+  @override
+  String get mapUnavailableOffline =>
+      'No internet connection, and this trip\'s map isn\'t saved offline. Here are its places.';
+
+  @override
+  String get mapUnavailableFailed =>
+      'The map couldn\'t be loaded. Here are the trip\'s places.';
+
+  @override
+  String get mapRetry => 'Try again';
+
+  @override
+  String get mapOfflineLimited => 'Offline – parts of the map may be missing.';
+
+  @override
+  String get mapOfflineSaved => 'Offline – showing the saved map';
+
+  @override
+  String get mapPlaces => 'Places';
+
+  @override
+  String get mapPlacesTitle => 'Places of this trip';
+
+  @override
+  String get offlineMapTitle => 'Offline map';
+
+  @override
+  String get offlineMapSave => 'Save map offline';
+
+  @override
+  String get offlineMapSaveAgain => 'Save again';
+
+  @override
+  String get offlineMapExplain =>
+      'Saves the map around all places of the trip – an overview of the whole route and street level around every stay – so it works without internet.';
+
+  @override
+  String offlineMapEstimate(int tiles, String size) {
+    return 'About $tiles tiles, roughly $size.';
+  }
+
+  @override
+  String offlineMapProgress(int percent, String size) {
+    return '$percent % · $size downloaded';
+  }
+
+  @override
+  String get offlineMapProgressHint =>
+      'Keeps running when you leave the map. Without a connection it waits until the network is back.';
+
+  @override
+  String get offlineMapSaved => 'Saved offline';
+
+  @override
+  String offlineMapSavedInfo(String date, String size) {
+    return 'Saved $date · $size';
+  }
+
+  @override
+  String get offlineMapIncomplete =>
+      'The last download didn\'t finish. Save again or delete it.';
+
+  @override
+  String get offlineMapOutdated =>
+      'Some places lie outside the saved area. Save again to include them.';
+
+  @override
+  String offlineMapFailed(String error) {
+    return 'Saving failed: $error';
+  }
+
+  @override
+  String get offlineMapNeedsConnection =>
+      'Saving needs an internet connection.';
+
+  @override
+  String get offlineMapDelete => 'Delete offline map';
+
+  @override
+  String get offlineMapDeleteConfirm => 'Delete the offline map of this trip?';
 }

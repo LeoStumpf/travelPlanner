@@ -1569,4 +1569,100 @@ class AppLocalizationsDe extends AppLocalizations {
   String agendaOpenFailed(String name) {
     return '$name ließ sich nicht öffnen. Ist eine App für diesen Dateityp installiert?';
   }
+
+  @override
+  String get placesListEmpty => 'Die Reise hat noch keine Orte.';
+
+  @override
+  String get mapNoPlaces => 'Noch keine Orte mit Koordinaten.';
+
+  @override
+  String get mapNoCoordinates => 'Ohne Ort';
+
+  @override
+  String get mapOpenInMapsApp => 'In Karten-App öffnen';
+
+  @override
+  String get mapUnavailableTitle => 'Karte nicht verfügbar';
+
+  @override
+  String get mapUnavailableOffline =>
+      'Keine Internetverbindung, und die Karte dieser Reise ist nicht offline gespeichert. Hier sind ihre Orte.';
+
+  @override
+  String get mapUnavailableFailed =>
+      'Die Karte ließ sich nicht laden. Hier sind die Orte der Reise.';
+
+  @override
+  String get mapRetry => 'Erneut versuchen';
+
+  @override
+  String get mapOfflineLimited => 'Offline – Teile der Karte fehlen evtl.';
+
+  @override
+  String get mapOfflineSaved => 'Offline – gespeicherte Karte';
+
+  @override
+  String get mapPlaces => 'Orte';
+
+  @override
+  String get mapPlacesTitle => 'Orte dieser Reise';
+
+  @override
+  String get offlineMapTitle => 'Karte offline';
+
+  @override
+  String get offlineMapSave => 'Karte offline speichern';
+
+  @override
+  String get offlineMapSaveAgain => 'Erneut speichern';
+
+  @override
+  String get offlineMapExplain =>
+      'Speichert die Karte rund um alle Orte der Reise – eine Übersicht der ganzen Route und Straßenebene rund um jeden Ort –, damit sie ohne Internet funktioniert.';
+
+  @override
+  String offlineMapEstimate(int tiles, String size) {
+    return 'Etwa $tiles Kacheln, ca. $size.';
+  }
+
+  @override
+  String offlineMapProgress(int percent, String size) {
+    return '$percent % · $size geladen';
+  }
+
+  @override
+  String get offlineMapProgressHint =>
+      'Läuft weiter, wenn du die Karte verlässt. Ohne Verbindung wartet es, bis wieder Netz da ist.';
+
+  @override
+  String get offlineMapSaved => 'Offline gespeichert';
+
+  @override
+  String offlineMapSavedInfo(String date, String size) {
+    return 'Gespeichert am $date · $size';
+  }
+
+  @override
+  String get offlineMapIncomplete =>
+      'Der letzte Download wurde nicht fertig. Erneut speichern oder löschen.';
+
+  @override
+  String get offlineMapOutdated =>
+      'Einige Orte liegen außerhalb des gespeicherten Bereichs. Erneut speichern, um sie aufzunehmen.';
+
+  @override
+  String offlineMapFailed(String error) {
+    return 'Speichern fehlgeschlagen: $error';
+  }
+
+  @override
+  String get offlineMapNeedsConnection =>
+      'Zum Speichern ist eine Internetverbindung nötig.';
+
+  @override
+  String get offlineMapDelete => 'Offline-Karte löschen';
+
+  @override
+  String get offlineMapDeleteConfirm => 'Offline-Karte dieser Reise löschen?';
 }

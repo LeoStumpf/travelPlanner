@@ -2418,6 +2418,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t open {name}. Is an app for this file type installed?'**
   String agendaOpenFailed(String name);
+
+  /// No description provided for @placesListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This trip has no places yet.'**
+  String get placesListEmpty;
+
+  /// No description provided for @mapNoPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'No places with coordinates yet.'**
+  String get mapNoPlaces;
+
+  /// No description provided for @mapNoCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'No location'**
+  String get mapNoCoordinates;
+
+  /// No description provided for @mapOpenInMapsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in maps app'**
+  String get mapOpenInMapsApp;
+
+  /// No description provided for @mapUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map not available'**
+  String get mapUnavailableTitle;
+
+  /// No description provided for @mapUnavailableOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection, and this trip\'s map isn\'t saved offline. Here are its places.'**
+  String get mapUnavailableOffline;
+
+  /// No description provided for @mapUnavailableFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The map couldn\'t be loaded. Here are the trip\'s places.'**
+  String get mapUnavailableFailed;
+
+  /// No description provided for @mapRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get mapRetry;
+
+  /// No description provided for @mapOfflineLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline – parts of the map may be missing.'**
+  String get mapOfflineLimited;
+
+  /// No description provided for @mapOfflineSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline – showing the saved map'**
+  String get mapOfflineSaved;
+
+  /// No description provided for @mapPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get mapPlaces;
+
+  /// No description provided for @mapPlacesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Places of this trip'**
+  String get mapPlacesTitle;
+
+  /// No description provided for @offlineMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline map'**
+  String get offlineMapTitle;
+
+  /// No description provided for @offlineMapSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save map offline'**
+  String get offlineMapSave;
+
+  /// No description provided for @offlineMapSaveAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Save again'**
+  String get offlineMapSaveAgain;
+
+  /// No description provided for @offlineMapExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves the map around all places of the trip – an overview of the whole route and street level around every stay – so it works without internet.'**
+  String get offlineMapExplain;
+
+  /// No description provided for @offlineMapEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'About {tiles} tiles, roughly {size}.'**
+  String offlineMapEstimate(int tiles, String size);
+
+  /// No description provided for @offlineMapProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % · {size} downloaded'**
+  String offlineMapProgress(int percent, String size);
+
+  /// No description provided for @offlineMapProgressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps running when you leave the map. Without a connection it waits until the network is back.'**
+  String get offlineMapProgressHint;
+
+  /// No description provided for @offlineMapSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved offline'**
+  String get offlineMapSaved;
+
+  /// No description provided for @offlineMapSavedInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {date} · {size}'**
+  String offlineMapSavedInfo(String date, String size);
+
+  /// No description provided for @offlineMapIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'The last download didn\'t finish. Save again or delete it.'**
+  String get offlineMapIncomplete;
+
+  /// No description provided for @offlineMapOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Some places lie outside the saved area. Save again to include them.'**
+  String get offlineMapOutdated;
+
+  /// No description provided for @offlineMapFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving failed: {error}'**
+  String offlineMapFailed(String error);
+
+  /// No description provided for @offlineMapNeedsConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving needs an internet connection.'**
+  String get offlineMapNeedsConnection;
+
+  /// No description provided for @offlineMapDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete offline map'**
+  String get offlineMapDelete;
+
+  /// No description provided for @offlineMapDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the offline map of this trip?'**
+  String get offlineMapDeleteConfirm;
 }
 
 class _AppLocalizationsDelegate
