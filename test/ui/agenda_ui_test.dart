@@ -25,14 +25,19 @@ void main() {
   late ProviderContainer container;
   late TripData demo;
   late List<(String, String)> opened;
+  var openWorks = true;
 
   setUp(() {
     repo = Repository(AppDatabase(NativeDatabase.memory()), AttachmentStore(Directory.systemTemp));
     opened = [];
+    openWorks = true;
     container = ProviderContainer(overrides: [
       repositoryProvider.overrideWithValue(repo),
       clockProvider.overrideWithValue(() => now),
-      fileOpenerProvider.overrideWithValue((path, mime) async => opened.add((path, mime))),
+      fileOpenerProvider.overrideWithValue((path, mime) async {
+        opened.add((path, mime));
+        return openWorks;
+      }),
     ]);
     final d = demoInterrail();
     demo = TripData(trip: d.trip.copyWith(startDate: DateTime(2026, 10, 14)), items: d.items, cards: d.cards, edges: d.edges);
@@ -139,6 +144,15 @@ void main() {
       expect(opened, hasLength(1));
       expect(opened.single.$1, endsWith('tgv.pdf'));
       expect(opened.single.$2, 'application/pdf');
+      expect(find.text(de.agendaOpenFailed('tgv.pdf')), findsNothing);
+
+      // No app for the file (or the file is gone): say so instead of nothing.
+      openWorks = false;
+      await tester.tap(chip);
+      await tester.pump();
+      await tester.pump();
+      expect(opened, hasLength(2));
+      expect(find.text(de.agendaOpenFailed('tgv.pdf')), findsOneWidget);
     });
 
     testWidgets('tapping an item opens its sheet', (tester) async {

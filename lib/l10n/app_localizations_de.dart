@@ -1564,4 +1564,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agendaEnded => 'Diese Reise ist vorbei.';
+
+  @override
+  String agendaOpenFailed(String name) {
+    return '$name ließ sich nicht öffnen. Ist eine App für diesen Dateityp installiert?';
+  }
 }

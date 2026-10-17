@@ -2412,6 +2412,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This trip is over.'**
   String get agendaEnded;
+
+  /// No description provided for @agendaOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open {name}. Is an app for this file type installed?'**
+  String agendaOpenFailed(String name);
 }
 
 class _AppLocalizationsDelegate

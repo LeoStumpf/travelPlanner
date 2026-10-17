@@ -9,16 +9,22 @@ import '../../domain/analysis.dart';
 import '../../domain/models.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
+import '../common/dialogs.dart';
 import '../common/item_sheet.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
 
-/// Opens a local file in another app; overridden in tests.
-typedef FileOpener = Future<void> Function(String path, String mime);
+/// Opens a local file in another app and tells whether that worked (no
+/// file, no app for the type); overridden in tests.
+typedef FileOpener = Future<bool> Function(String path, String mime);
 
 final fileOpenerProvider = Provider<FileOpener>(
   (ref) => (path, mime) async {
-    await OpenFilex.open(path, type: mime);
+    try {
+      return (await OpenFilex.open(path, type: mime)).type == ResultType.done;
+    } catch (_) {
+      return false;
+    }
   },
 );
 
@@ -334,7 +340,10 @@ class _ItemCard extends ConsumerWidget {
                                 constraints: const BoxConstraints(maxWidth: 180),
                                 child: Text(a.fileName, overflow: TextOverflow.ellipsis),
                               ),
-                              onPressed: () => ref.read(fileOpenerProvider)(repo.files.fileFor(a).path, a.mime),
+                              onPressed: () async {
+                                final ok = await ref.read(fileOpenerProvider)(repo.files.fileFor(a).path, a.mime);
+                                if (!ok && context.mounted) showSnack(context, l.agendaOpenFailed(a.fileName));
+                              },
                             ),
                         ]),
                       ),

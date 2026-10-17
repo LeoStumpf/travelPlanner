@@ -1312,5 +1312,13 @@
       }
     }
   },
-  "agendaEnded": "This trip is over."
+  "agendaEnded": "This trip is over.",
+  "agendaOpenFailed": "Couldn't open {name}. Is an app for this file type installed?",
+  "@agendaOpenFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

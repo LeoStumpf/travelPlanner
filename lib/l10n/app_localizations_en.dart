@@ -1562,4 +1562,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agendaEnded => 'This trip is over.';
+
+  @override
+  String agendaOpenFailed(String name) {
+    return 'Couldn\'t open $name. Is an app for this file type installed?';
+  }
 }

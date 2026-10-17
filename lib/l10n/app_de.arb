@@ -384,5 +384,6 @@
   "agendaOpenFile": "{name} öffnen",
   "agendaNoStartDate": "Ohne Startdatum zeigt die Agenda Reisetage. Lege eines unter ⋮ → Reise bearbeiten fest, um „Heute“ zu sehen.",
   "agendaStartsIn": "{count, plural, =1{Die Reise beginnt morgen.} other{Die Reise beginnt in {count} Tagen.}}",
-  "agendaEnded": "Diese Reise ist vorbei."
+  "agendaEnded": "Diese Reise ist vorbei.",
+  "agendaOpenFailed": "{name} ließ sich nicht öffnen. Ist eine App für diesen Dateityp installiert?"
 }
