@@ -1665,4 +1665,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get offlineMapDeleteConfirm => 'Offline-Karte dieser Reise löschen?';
+
+  @override
+  String get transportDetails => 'Ticketdaten';
+
+  @override
+  String get departureStationLabel => 'Abfahrt von (Bahnhof / Flughafen)';
+
+  @override
+  String get arrivalStationLabel => 'Ankunft in (Bahnhof / Flughafen)';
+
+  @override
+  String get transportNumberLabel => 'Zug- / Flugnummer';
+
+  @override
+  String get seatLabel => 'Sitzplatz / Gleis';
+
+  @override
+  String get bookingRefLabel => 'Buchungsnummer';
+
+  @override
+  String get copyBookingRef => 'Buchungsnummer kopieren';
+
+  @override
+  String get bookingRefCopied => 'Buchungsnummer kopiert';
 }

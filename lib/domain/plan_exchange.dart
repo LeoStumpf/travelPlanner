@@ -224,6 +224,11 @@ class PlanExchange {
         if (i.fromId != null) 'from': i.fromId,
         if (i.toId != null) 'to': i.toId,
         if (i.mode != null) 'mode': i.mode!.name,
+        if (i.departureStation != null) 'departure': i.departureStation,
+        if (i.arrivalStation != null) 'arrival': i.arrivalStation,
+        if (i.transportNumber != null) 'number': i.transportNumber,
+        if (i.seat != null) 'seat': i.seat,
+        if (i.bookingRef != null) 'bookingRef': i.bookingRef,
         if (i.notes.isNotEmpty) 'notes': i.notes,
         if (i.links.isNotEmpty) 'links': i.links,
       };
@@ -456,6 +461,12 @@ class PlanExchange {
         }
         item = item.copyWith(mode: e['mode'] == null ? null : (m ?? TransportMode.other));
       }
+      // Ticket details: blank text clears like null.
+      if (has('departure')) item = item.copyWith(departureStation: _text(e['departure']));
+      if (has('arrival')) item = item.copyWith(arrivalStation: _text(e['arrival']));
+      if (has('number')) item = item.copyWith(transportNumber: _text(e['number']));
+      if (has('seat')) item = item.copyWith(seat: _text(e['seat']));
+      if (has('bookingRef')) item = item.copyWith(bookingRef: _text(e['bookingRef']));
       if (has('stay')) item = item.copyWith(parentId: resolveItem(e['stay'], 'stay', e));
       if (has('from')) item = item.copyWith(fromId: resolveItem(e['from'], 'from', e));
       if (has('to')) item = item.copyWith(toId: resolveItem(e['to'], 'to', e));
@@ -598,6 +609,12 @@ class PlanExchange {
   }
 
   static String? _str(Object? v) => v == null ? null : '$v';
+
+  /// [_str] trimmed, with blank text read as null.
+  static String? _text(Object? v) {
+    final t = _str(v)?.trim();
+    return t == null || t.isEmpty ? null : t;
+  }
 
   static ({int? value})? _parseInt(Object? v, String field, List<PlanWarning> warnings) {
     if (v == null) return (value: null);

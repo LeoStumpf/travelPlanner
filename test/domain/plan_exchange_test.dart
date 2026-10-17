@@ -200,5 +200,75 @@ void main() {
     final train = imp.items.firstWhere((i) => i.kind == ItemKind.transport && i.mode == TransportMode.train);
     expect([train.fromId, train.toId], [ids['Colombo'], ids['Kandy']]);
     expect(imp.items.firstWhere((i) => i.title == 'Galle').isScheduled, isFalse);
+    expect(train.departureStation, 'Colombo Fort');
+    expect(train.transportNumber, '1009');
+  });
+
+  group('transport ticket details', () {
+    PlanItem tgvOf(TripData d) => d.items.firstWhere((i) => i.title.startsWith('TGV'));
+
+    TripData withDetails() {
+      final demo = demoInterrail();
+      final tgv = tgvOf(demo).copyWith(
+        departureStation: 'Paris Gare de Lyon',
+        arrivalStation: 'Lyon Part-Dieu',
+        transportNumber: 'TGV 6603',
+        seat: 'Car 12, seat 81',
+        bookingRef: 'QX7K2P',
+      );
+      return TripData(trip: demo.trip, items: [for (final i in demo.items) i.id == tgv.id ? tgv : i], cards: demo.cards);
+    }
+
+    test('are exported under short keys and only when set', () {
+      final d = withDetails();
+      final items = PlanExchange.export(d)['items'] as List;
+      final tgv = items.cast<Map<String, Object?>>().firstWhere((i) => i['ref'] == tgvOf(d).id);
+      expect(tgv['departure'], 'Paris Gare de Lyon');
+      expect(tgv['arrival'], 'Lyon Part-Dieu');
+      expect(tgv['number'], 'TGV 6603');
+      expect(tgv['seat'], 'Car 12, seat 81');
+      expect(tgv['bookingRef'], 'QX7K2P');
+      final other = items.cast<Map<String, Object?>>().firstWhere((i) => i['title'] == 'Euromed Barcelona → Valencia');
+      expect(other.keys, isNot(contains('bookingRef')));
+      expect(other.keys, isNot(contains('departure')));
+    });
+
+    test('survive an export → import round trip; re-import changes nothing', () {
+      final d = withDetails();
+      final imp = _apply(PlanExchange.exportText(d));
+      final tgv = imp.items.firstWhere((i) => i.title.startsWith('TGV'));
+      expect(tgv.departureStation, 'Paris Gare de Lyon');
+      expect(tgv.arrivalStation, 'Lyon Part-Dieu');
+      expect(tgv.transportNumber, 'TGV 6603');
+      expect(tgv.seat, 'Car 12, seat 81');
+      expect(tgv.bookingRef, 'QX7K2P');
+      expect(_apply(PlanExchange.exportText(d), into: d).isEmpty, isTrue);
+    });
+
+    test('are set, trimmed and cleared (null or blank) on an existing item', () {
+      final d = withDetails();
+      final id = tgvOf(d).id;
+      final imp = _apply(
+        _plan([
+          {'ref': id, 'number': '  TGV 6611 ', 'seat': null, 'bookingRef': '   '},
+        ]),
+        into: d,
+      );
+      expect(imp.warnings, isEmpty);
+      final tgv = imp.items.single;
+      expect(tgv.transportNumber, 'TGV 6611');
+      expect(tgv.seat, isNull);
+      expect(tgv.bookingRef, isNull);
+      // Fields left out stay as they were.
+      expect(tgv.departureStation, 'Paris Gare de Lyon');
+      expect(tgv.arrivalStation, 'Lyon Part-Dieu');
+    });
+
+    test('plans without the fields (older exports) import as before', () {
+      final imp = _apply(_plan([
+        {'ref': 'bus', 'kind': 'transport', 'mode': 'bus', 'title': 'Bus'},
+      ]));
+      expect(imp.items.single.hasTransportDetails, isFalse);
+    });
   });
 }

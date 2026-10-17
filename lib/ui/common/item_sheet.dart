@@ -14,6 +14,7 @@ import 'conflict_tile.dart';
 import 'dialogs.dart';
 import 'l10n.dart';
 import 'style.dart';
+import 'transport_details.dart';
 
 String timeSummary(AppLocalizations l, PlanItem i, DateTime? tripStart) {
   if (!i.isScheduled) return l.notScheduledYet;
@@ -147,8 +148,9 @@ class _ItemSheet extends ConsumerWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.route),
-            title: Text('${data.item(item.fromId)?.title ?? '?'} → ${data.item(item.toId)?.title ?? '?'}'),
+            title: Text(transportRoute(data, item)),
           ),
+        if (item.kind == ItemKind.transport) TransportDetailsPanel(item: item),
         if (item.parentId != null && data.item(item.parentId) != null)
           ListTile(
             contentPadding: EdgeInsets.zero,

@@ -1384,5 +1384,13 @@
   },
   "offlineMapNeedsConnection": "Saving needs an internet connection.",
   "offlineMapDelete": "Delete offline map",
-  "offlineMapDeleteConfirm": "Delete the offline map of this trip?"
+  "offlineMapDeleteConfirm": "Delete the offline map of this trip?",
+  "transportDetails": "Ticket details",
+  "departureStationLabel": "Departure station / airport",
+  "arrivalStationLabel": "Arrival station / airport",
+  "transportNumberLabel": "Train / flight no.",
+  "seatLabel": "Seat / platform",
+  "bookingRefLabel": "Booking reference",
+  "copyBookingRef": "Copy booking reference",
+  "bookingRefCopied": "Booking reference copied"
 }

@@ -130,6 +130,12 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   late PlanItem _i = widget.initial;
   late final _title = TextEditingController(text: _i.title);
   late final _notes = TextEditingController(text: _i.notes);
+  // Transport ticket details.
+  late final _departure = TextEditingController(text: _i.departureStation);
+  late final _arrival = TextEditingController(text: _i.arrivalStation);
+  late final _number = TextEditingController(text: _i.transportNumber);
+  late final _seat = TextEditingController(text: _i.seat);
+  late final _bookingRef = TextEditingController(text: _i.bookingRef);
   late bool _scheduled = _i.isScheduled;
   late int _start = _i.start ?? at(0, defaultStayArrival);
   late int _end = _i.end ?? at(2, defaultStayDeparture);
@@ -151,6 +157,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         'item': _i.toJson(),
         'title': _title.text.trim(),
         'notes': _notes.text,
+        'details': [for (final c in _detailControllers) c.text.trim()],
         'scheduled': _scheduled,
         if (_scheduled) 'start': _start,
         if (_scheduled) 'end': _end,
@@ -195,8 +202,13 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   void dispose() {
     _title.dispose();
     _notes.dispose();
+    for (final c in _detailControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
+
+  List<TextEditingController> get _detailControllers => [_departure, _arrival, _number, _seat, _bookingRef];
 
   void _update(PlanItem Function(PlanItem) f) => setState(() => _i = f(_i));
 
@@ -292,6 +304,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             ),
             const Divider(),
             ..._relationFields(stays),
+            if (_i.kind == ItemKind.transport) ..._detailFields(),
             if (_i.kind != ItemKind.transport) _placeTile(),
             const Divider(),
             SwitchListTile(
@@ -365,6 +378,39 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           const SizedBox(height: 8),
         ];
     }
+  }
+
+  /// Ticket details of a transport; all optional.
+  List<Widget> _detailFields() {
+    final l = context.l10n;
+    Widget text(Key key, TextEditingController c, String label, IconData icon,
+            {TextCapitalization caps = TextCapitalization.words}) =>
+        TextField(
+          key: key,
+          controller: c,
+          textCapitalization: caps,
+          decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+        );
+    return [
+      const Divider(),
+      Text(l.transportDetails, style: Theme.of(context).textTheme.titleSmall),
+      text(const ValueKey('field-departure'), _departure, l.departureStationLabel, Icons.trip_origin),
+      text(const ValueKey('field-arrival'), _arrival, l.arrivalStationLabel, Icons.place),
+      Row(children: [
+        Expanded(
+          child: text(const ValueKey('field-number'), _number, l.transportNumberLabel, Icons.tag,
+              caps: TextCapitalization.characters),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: text(const ValueKey('field-seat'), _seat, l.seatLabel, Icons.event_seat,
+              caps: TextCapitalization.sentences),
+        ),
+      ]),
+      text(const ValueKey('field-booking-ref'), _bookingRef, l.bookingRefLabel, Icons.confirmation_number_outlined,
+          caps: TextCapitalization.characters),
+      const SizedBox(height: 8),
+    ];
   }
 
   Widget _placeTile() => ListTile(
@@ -502,7 +548,26 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       start: _scheduled ? _start : null,
       end: _scheduled ? _end : null,
     );
-    if (item.kind != ItemKind.transport) item = item.copyWith(fromId: null, toId: null, mode: null);
+    String? opt(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
+    item = item.copyWith(
+      departureStation: opt(_departure),
+      arrivalStation: opt(_arrival),
+      transportNumber: opt(_number),
+      seat: opt(_seat),
+      bookingRef: opt(_bookingRef),
+    );
+    if (item.kind != ItemKind.transport) {
+      item = item.copyWith(
+        fromId: null,
+        toId: null,
+        mode: null,
+        departureStation: null,
+        arrivalStation: null,
+        transportNumber: null,
+        seat: null,
+        bookingRef: null,
+      );
+    }
     if (item.kind == ItemKind.stay || item.kind == ItemKind.transport) item = item.copyWith(parentId: null);
 
     final old = data.item(item.id);

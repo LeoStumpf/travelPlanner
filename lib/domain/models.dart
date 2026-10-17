@@ -107,6 +107,20 @@ class PlanItem {
   final String? toId;
   final TransportMode? mode;
 
+  /// For transport: structured ticket details, all optional free text.
+  /// Departure / arrival station, airport or port ("Colombo Fort", "FRA T1").
+  final String? departureStation;
+  final String? arrivalStation;
+
+  /// Train, flight or bus number ("IC 1009", "LH 754").
+  final String? transportNumber;
+
+  /// Seat and/or platform ("Car 3, seat 42", "Pl. 2").
+  final String? seat;
+
+  /// Booking reference / PNR, shown with a copy button.
+  final String? bookingRef;
+
   /// Position on the canvas; null = auto-placed.
   final double? canvasX;
   final double? canvasY;
@@ -130,6 +144,11 @@ class PlanItem {
     this.fromId,
     this.toId,
     this.mode,
+    this.departureStation,
+    this.arrivalStation,
+    this.transportNumber,
+    this.seat,
+    this.bookingRef,
     this.canvasX,
     this.canvasY,
     required this.createdAt,
@@ -144,6 +163,14 @@ class PlanItem {
   String? get anchorId => parentId ?? toId ?? fromId;
 
   int get duration => (end ?? 0) - (start ?? 0);
+
+  /// True if any of the transport ticket details is filled in.
+  bool get hasTransportDetails =>
+      departureStation != null ||
+      arrivalStation != null ||
+      transportNumber != null ||
+      seat != null ||
+      bookingRef != null;
 
   PlanItem copyWith({
     ItemKind? kind,
@@ -161,6 +188,11 @@ class PlanItem {
     Object? fromId = _keep,
     Object? toId = _keep,
     Object? mode = _keep,
+    Object? departureStation = _keep,
+    Object? arrivalStation = _keep,
+    Object? transportNumber = _keep,
+    Object? seat = _keep,
+    Object? bookingRef = _keep,
     Object? canvasX = _keep,
     Object? canvasY = _keep,
   }) =>
@@ -182,6 +214,12 @@ class PlanItem {
         fromId: identical(fromId, _keep) ? this.fromId : fromId as String?,
         toId: identical(toId, _keep) ? this.toId : toId as String?,
         mode: identical(mode, _keep) ? this.mode : mode as TransportMode?,
+        departureStation:
+            identical(departureStation, _keep) ? this.departureStation : departureStation as String?,
+        arrivalStation: identical(arrivalStation, _keep) ? this.arrivalStation : arrivalStation as String?,
+        transportNumber: identical(transportNumber, _keep) ? this.transportNumber : transportNumber as String?,
+        seat: identical(seat, _keep) ? this.seat : seat as String?,
+        bookingRef: identical(bookingRef, _keep) ? this.bookingRef : bookingRef as String?,
         canvasX: identical(canvasX, _keep) ? this.canvasX : canvasX as double?,
         canvasY: identical(canvasY, _keep) ? this.canvasY : canvasY as double?,
         createdAt: createdAt,
@@ -209,6 +247,13 @@ class PlanItem {
         'fromId': fromId,
         'toId': toId,
         'mode': mode?.name,
+        // Optional since doc version 1; left out when empty so rows of
+        // items without details look as before.
+        if (departureStation != null) 'departureStation': departureStation,
+        if (arrivalStation != null) 'arrivalStation': arrivalStation,
+        if (transportNumber != null) 'transportNumber': transportNumber,
+        if (seat != null) 'seat': seat,
+        if (bookingRef != null) 'bookingRef': bookingRef,
         'canvasX': canvasX,
         'canvasY': canvasY,
         'createdAt': createdAt.toIso8601String(),
@@ -232,6 +277,11 @@ class PlanItem {
         fromId: j['fromId'] as String?,
         toId: j['toId'] as String?,
         mode: j['mode'] == null ? null : _enumByName(TransportMode.values, j['mode'], TransportMode.other),
+        departureStation: j['departureStation'] as String?,
+        arrivalStation: j['arrivalStation'] as String?,
+        transportNumber: j['transportNumber'] as String?,
+        seat: j['seat'] as String?,
+        bookingRef: j['bookingRef'] as String?,
         canvasX: (j['canvasX'] as num?)?.toDouble(),
         canvasY: (j['canvasY'] as num?)?.toDouble(),
         createdAt: DateTime.parse(j['createdAt'] as String),

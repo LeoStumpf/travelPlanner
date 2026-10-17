@@ -412,5 +412,13 @@
   "offlineMapFailed": "Speichern fehlgeschlagen: {error}",
   "offlineMapNeedsConnection": "Zum Speichern ist eine Internetverbindung nötig.",
   "offlineMapDelete": "Offline-Karte löschen",
-  "offlineMapDeleteConfirm": "Offline-Karte dieser Reise löschen?"
+  "offlineMapDeleteConfirm": "Offline-Karte dieser Reise löschen?",
+  "transportDetails": "Ticketdaten",
+  "departureStationLabel": "Abfahrt von (Bahnhof / Flughafen)",
+  "arrivalStationLabel": "Ankunft in (Bahnhof / Flughafen)",
+  "transportNumberLabel": "Zug- / Flugnummer",
+  "seatLabel": "Sitzplatz / Gleis",
+  "bookingRefLabel": "Buchungsnummer",
+  "copyBookingRef": "Buchungsnummer kopieren",
+  "bookingRefCopied": "Buchungsnummer kopiert"
 }

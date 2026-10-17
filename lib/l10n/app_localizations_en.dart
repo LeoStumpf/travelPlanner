@@ -1663,4 +1663,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineMapDeleteConfirm => 'Delete the offline map of this trip?';
+
+  @override
+  String get transportDetails => 'Ticket details';
+
+  @override
+  String get departureStationLabel => 'Departure station / airport';
+
+  @override
+  String get arrivalStationLabel => 'Arrival station / airport';
+
+  @override
+  String get transportNumberLabel => 'Train / flight no.';
+
+  @override
+  String get seatLabel => 'Seat / platform';
+
+  @override
+  String get bookingRefLabel => 'Booking reference';
+
+  @override
+  String get copyBookingRef => 'Copy booking reference';
+
+  @override
+  String get bookingRefCopied => 'Booking reference copied';
 }

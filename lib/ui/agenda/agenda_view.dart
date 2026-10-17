@@ -13,6 +13,7 @@ import '../common/dialogs.dart';
 import '../common/item_sheet.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
+import '../common/transport_details.dart';
 
 /// Opens a local file in another app and tells whether that worked (no
 /// file, no app for the type); overridden in tests.
@@ -236,7 +237,7 @@ class _AgendaViewState extends ConsumerState<AgendaView> {
     );
   }
 
-  String _route(TripData data, PlanItem t) => '${data.item(t.fromId)?.title ?? '?'} → ${data.item(t.toId)?.title ?? '?'}';
+  String _route(TripData data, PlanItem t) => transportRoute(data, t);
 }
 
 class _Header extends StatelessWidget {
@@ -321,6 +322,8 @@ class _ItemCard extends ConsumerWidget {
                         Tooltip(message: l.statusBooked, child: const Icon(Icons.verified, size: 18)),
                     ]),
                     for (final line in lines) Text(line, style: theme.textTheme.bodyMedium),
+                    if (item.kind == ItemKind.transport)
+                      TransportDetailsPanel(item: item, onCopied: () => showSnack(context, l.bookingRefCopied)),
                     if (tickets.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),

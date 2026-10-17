@@ -48,6 +48,10 @@ Every item has a `ref` (unique string; for new items use short slugs like `"kand
 | `stay` | ref | accommodation/activity: the stay it belongs to |
 | `from`, `to` | ref | transport: origin and destination stay (omit for home) |
 | `mode` | `"train"` \| `"bus"` \| `"plane"` \| `"ferry"` \| `"car"` \| `"taxi"` \| `"walk"` \| `"other"` | transport only |
+| `departure`, `arrival` | string | transport only, optional: departure / arrival station, airport or port, e.g. `"Colombo Fort"`, `"FRA Terminal 1"` |
+| `number` | string | transport only, optional: train, flight, bus or ferry number, e.g. `"IC 1009"`, `"LH 754"` |
+| `seat` | string | transport only, optional: seat and/or platform, e.g. `"Car 3, seat 42"` |
+| `bookingRef` | string | transport only, optional: booking reference / PNR – only if the user gave it, never invent one |
 | `notes` | string | details, prices, tips |
 | `links` | string[] | URLs |
 
@@ -58,6 +62,7 @@ Every item has a `ref` (unique string; for new items use short slugs like `"kand
 1. `stay` – a place you stay at (city, region, beach). It spans the whole time there: from arrival (typically day N 14:00) to departure (typically day M 10:00). Consecutive stays share the travel day: the next stay starts on the day the previous one ends.
 2. `transport` – travel between two stays, with `from`/`to` and real departure/arrival times. Outbound and return flights: leave `from` resp. `to` empty and set `fixed: true` if booked.
 3. `accommodation` – where you sleep, linked to its stay via `stay`, check-in (e.g. 15:00) to check-out (e.g. 11:00); nights count. Several alternatives for the same stay: give each `status: "option"`.
+   Put known ticket details into `departure`/`arrival`/`number`/`seat`/`bookingRef` rather than into `notes`, so the app can show them on the day.
 4. `activity` – things to do, linked to their stay via `stay`, with a time window.
 
 ## Notes
@@ -83,10 +88,10 @@ Good uses: packing list, visa/vaccination to-dos, budget overview, alternatives 
   "version": 1,
   "trip": { "title": "Sri Lanka in 10 days", "startDate": "2027-02-03", "days": 10 },
   "items": [
-    { "ref": "flight-out", "kind": "transport", "mode": "plane", "title": "Flight Frankfurt → Colombo", "to": "colombo", "start": {"day": 1, "time": "01:30"}, "end": {"day": 1, "time": "09:00"}, "status": "booked", "fixed": true },
+    { "ref": "flight-out", "kind": "transport", "mode": "plane", "title": "Flight Frankfurt → Colombo", "to": "colombo", "departure": "Frankfurt FRA", "arrival": "Colombo CMB", "number": "UL 554", "start": {"day": 1, "time": "01:30"}, "end": {"day": 1, "time": "09:00"}, "status": "booked", "fixed": true },
     { "ref": "colombo", "kind": "stay", "title": "Colombo", "place": "Colombo, Sri Lanka", "lat": 6.9271, "lng": 79.8612, "start": {"day": 1, "time": "10:00"}, "end": {"day": 2, "time": "08:00"} },
     { "ref": "hotel-colombo", "kind": "accommodation", "title": "Hotel near Colombo Fort", "stay": "colombo", "place": "Colombo Fort, Sri Lanka", "start": {"day": 1, "time": "14:00"}, "end": {"day": 2, "time": "07:30"} },
-    { "ref": "train-colombo-kandy", "kind": "transport", "mode": "train", "title": "Train Colombo Fort → Kandy", "from": "colombo", "to": "kandy", "start": {"day": 2, "time": "08:30"}, "end": {"day": 2, "time": "11:20"}, "notes": "Intercity, reserve 2nd class seats", "links": ["https://eservices.railway.gov.lk/schedule/searchTrain.action?lang=en"] },
+    { "ref": "train-colombo-kandy", "kind": "transport", "mode": "train", "title": "Train Colombo Fort → Kandy", "from": "colombo", "to": "kandy", "departure": "Colombo Fort", "arrival": "Kandy", "number": "1009", "start": {"day": 2, "time": "08:30"}, "end": {"day": 2, "time": "11:20"}, "notes": "Intercity, reserve 2nd class seats", "links": ["https://eservices.railway.gov.lk/schedule/searchTrain.action?lang=en"] },
     { "ref": "kandy", "kind": "stay", "title": "Kandy", "place": "Kandy, Sri Lanka", "lat": 7.2906, "lng": 80.6337, "start": {"day": 2, "time": "12:00"}, "end": {"day": 4, "time": "08:00"} },
     { "ref": "temple", "kind": "activity", "title": "Temple of the Tooth", "stay": "kandy", "lat": 7.2936, "lng": 80.6413, "start": {"day": 3, "time": "09:00"}, "end": {"day": 3, "time": "11:00"} },
     { "ref": "galle", "kind": "stay", "title": "Galle", "place": "Galle Fort, Sri Lanka", "status": "idea" }

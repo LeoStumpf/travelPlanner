@@ -2580,6 +2580,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete the offline map of this trip?'**
   String get offlineMapDeleteConfirm;
+
+  /// No description provided for @transportDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket details'**
+  String get transportDetails;
+
+  /// No description provided for @departureStationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure station / airport'**
+  String get departureStationLabel;
+
+  /// No description provided for @arrivalStationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival station / airport'**
+  String get arrivalStationLabel;
+
+  /// No description provided for @transportNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Train / flight no.'**
+  String get transportNumberLabel;
+
+  /// No description provided for @seatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Seat / platform'**
+  String get seatLabel;
+
+  /// No description provided for @bookingRefLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking reference'**
+  String get bookingRefLabel;
+
+  /// No description provided for @copyBookingRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy booking reference'**
+  String get copyBookingRef;
+
+  /// No description provided for @bookingRefCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking reference copied'**
+  String get bookingRefCopied;
 }
 
 class _AppLocalizationsDelegate
