@@ -1699,12 +1699,6 @@ abstract class AppLocalizations {
   /// **'The plan contains no changes.'**
   String get planNoChanges;
 
-  /// No description provided for @planTripChanged.
-  ///
-  /// In en, this message translates to:
-  /// **'• Trip details (title/start/length) change'**
-  String get planTripChanged;
-
   /// No description provided for @planItemsCreated.
   ///
   /// In en, this message translates to:
@@ -1746,6 +1740,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The plan comes from another trip – everything will be created anew.'**
   String get planFromOtherTrip;
+
+  /// No description provided for @planTripChangedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'• Trip details change: {fields}'**
+  String planTripChangedFields(String fields);
+
+  /// No description provided for @planFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'title'**
+  String get planFieldTitle;
+
+  /// No description provided for @planFieldKind.
+  ///
+  /// In en, this message translates to:
+  /// **'type'**
+  String get planFieldKind;
+
+  /// No description provided for @planFieldPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'place'**
+  String get planFieldPlace;
+
+  /// No description provided for @planFieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'status'**
+  String get planFieldStatus;
+
+  /// No description provided for @planFieldFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'fixed'**
+  String get planFieldFixed;
+
+  /// No description provided for @planFieldTime.
+  ///
+  /// In en, this message translates to:
+  /// **'time'**
+  String get planFieldTime;
+
+  /// No description provided for @planFieldNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'notes'**
+  String get planFieldNotes;
+
+  /// No description provided for @planFieldLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'links'**
+  String get planFieldLinks;
+
+  /// No description provided for @planFieldRelation.
+  ///
+  /// In en, this message translates to:
+  /// **'link'**
+  String get planFieldRelation;
+
+  /// No description provided for @planFieldMode.
+  ///
+  /// In en, this message translates to:
+  /// **'transport mode'**
+  String get planFieldMode;
+
+  /// No description provided for @planFieldTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'ticket details'**
+  String get planFieldTicket;
+
+  /// No description provided for @planFieldZone.
+  ///
+  /// In en, this message translates to:
+  /// **'time zone'**
+  String get planFieldZone;
+
+  /// No description provided for @planFieldCost.
+  ///
+  /// In en, this message translates to:
+  /// **'cost'**
+  String get planFieldCost;
+
+  /// No description provided for @planFieldText.
+  ///
+  /// In en, this message translates to:
+  /// **'text'**
+  String get planFieldText;
+
+  /// No description provided for @planFieldUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'URL'**
+  String get planFieldUrl;
+
+  /// No description provided for @planFieldPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'pinned'**
+  String get planFieldPinned;
+
+  /// No description provided for @planFieldChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'checklist'**
+  String get planFieldChecklist;
+
+  /// No description provided for @planFieldDates.
+  ///
+  /// In en, this message translates to:
+  /// **'dates'**
+  String get planFieldDates;
+
+  /// No description provided for @planFieldCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'currency'**
+  String get planFieldCurrency;
+
+  /// No description provided for @planFieldTravellers.
+  ///
+  /// In en, this message translates to:
+  /// **'travellers'**
+  String get planFieldTravellers;
+
+  /// No description provided for @planFieldRates.
+  ///
+  /// In en, this message translates to:
+  /// **'rates'**
+  String get planFieldRates;
+
+  /// No description provided for @planEntryRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get planEntryRemoved;
+
+  /// No description provided for @planConflictsAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No conflicts after the import} =1{1 conflict after the import} other{{count} conflicts after the import}}'**
+  String planConflictsAfter(int count);
+
+  /// No description provided for @planConflictsBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{none so far} =1{1 so far} other{{count} so far}}'**
+  String planConflictsBefore(int count);
+
+  /// No description provided for @geocodeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'{missing} of {total} not found'**
+  String geocodeNotFound(int missing, int total);
+
+  /// No description provided for @geocodeNotFoundSub.
+  ///
+  /// In en, this message translates to:
+  /// **'The plan is applied. These entries have no coordinates and are missing from the map; add the place in the editor.'**
+  String get geocodeNotFoundSub;
+
+  /// No description provided for @clipboardPlanFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan found in the clipboard. Apply plan?'**
+  String get clipboardPlanFound;
 
   /// No description provided for @findCoordinates.
   ///

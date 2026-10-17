@@ -1043,9 +1043,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planNoChanges => 'The plan contains no changes.';
 
   @override
-  String get planTripChanged => '• Trip details (title/start/length) change';
-
-  @override
   String planItemsCreated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1114,6 +1111,113 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get planFromOtherTrip =>
       'The plan comes from another trip – everything will be created anew.';
+
+  @override
+  String planTripChangedFields(String fields) {
+    return '• Trip details change: $fields';
+  }
+
+  @override
+  String get planFieldTitle => 'title';
+
+  @override
+  String get planFieldKind => 'type';
+
+  @override
+  String get planFieldPlace => 'place';
+
+  @override
+  String get planFieldStatus => 'status';
+
+  @override
+  String get planFieldFixed => 'fixed';
+
+  @override
+  String get planFieldTime => 'time';
+
+  @override
+  String get planFieldNotes => 'notes';
+
+  @override
+  String get planFieldLinks => 'links';
+
+  @override
+  String get planFieldRelation => 'link';
+
+  @override
+  String get planFieldMode => 'transport mode';
+
+  @override
+  String get planFieldTicket => 'ticket details';
+
+  @override
+  String get planFieldZone => 'time zone';
+
+  @override
+  String get planFieldCost => 'cost';
+
+  @override
+  String get planFieldText => 'text';
+
+  @override
+  String get planFieldUrl => 'URL';
+
+  @override
+  String get planFieldPinned => 'pinned';
+
+  @override
+  String get planFieldChecklist => 'checklist';
+
+  @override
+  String get planFieldDates => 'dates';
+
+  @override
+  String get planFieldCurrency => 'currency';
+
+  @override
+  String get planFieldTravellers => 'travellers';
+
+  @override
+  String get planFieldRates => 'rates';
+
+  @override
+  String get planEntryRemoved => 'Deleted';
+
+  @override
+  String planConflictsAfter(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conflicts after the import',
+      one: '1 conflict after the import',
+      zero: 'No conflicts after the import',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String planConflictsBefore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count so far',
+      one: '1 so far',
+      zero: 'none so far',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String geocodeNotFound(int missing, int total) {
+    return '$missing of $total not found';
+  }
+
+  @override
+  String get geocodeNotFoundSub =>
+      'The plan is applied. These entries have no coordinates and are missing from the map; add the place in the editor.';
+
+  @override
+  String get clipboardPlanFound => 'Plan found in the clipboard. Apply plan?';
 
   @override
   String findCoordinates(int count) {

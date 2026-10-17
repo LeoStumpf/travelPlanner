@@ -259,3 +259,73 @@ List<KnownPlace> recentPlaces(
   }
   return out;
 }
+
+// --- geocoding a plan -----------------------------------------------------------
+
+/// Where a place search should look first (Photon's location bias). A
+/// higher [zoom] keeps results closer to the point.
+class GeoBias {
+  final double lat;
+  final double lng;
+  final int zoom;
+  const GeoBias(this.lat, this.lng, this.zoom);
+
+  @override
+  bool operator ==(Object other) => other is GeoBias && other.lat == lat && other.lng == lng && other.zoom == zoom;
+
+  @override
+  int get hashCode => Object.hash(lat, lng, zoom);
+
+  @override
+  String toString() => 'GeoBias($lat, $lng, z$zoom)';
+}
+
+/// The search text for an item that still lacks coordinates: its place, or
+/// a stay's title. Null if it has coordinates, is a transport or has no
+/// usable name.
+String? geoQuery(PlanItem i) {
+  if (i.hasLocation || i.kind == ItemKind.transport) return null;
+  final q = i.placeName ?? (i.kind == ItemKind.stay ? i.title : null);
+  return q == null || q.trim().length < 2 ? null : q.trim();
+}
+
+/// The middle of the trip's located [items] (median latitude and
+/// longitude, so one far-off place does not drag it into the sea), as a
+/// country-scale bias. Null without any located item.
+GeoBias? tripBias(Iterable<PlanItem> items) {
+  final located = [for (final i in items) if (i.hasLocation) i];
+  if (located.isEmpty) return null;
+  double median(List<double> v) {
+    v.sort();
+    final m = v.length ~/ 2;
+    return v.length.isOdd ? v[m] : (v[m - 1] + v[m]) / 2;
+  }
+
+  return GeoBias(
+    median([for (final i in located) i.lat!]),
+    median([for (final i in located) i.lng!]),
+    5,
+  );
+}
+
+/// The bias for looking up [item]: the located stay it belongs to (city
+/// scale), else the trip's [fallback].
+GeoBias? biasFor(PlanItem item, Map<String, PlanItem> byId, GeoBias? fallback) {
+  final p = byId[item.parentId];
+  if (p != null && p.hasLocation) return GeoBias(p.lat!, p.lng!, 11);
+  return fallback;
+}
+
+/// The country of a saved place name ("Kandy, Central Province, Sri Lanka"
+/// → "Sri Lanka"): its last part, if it has more than one.
+String? countryOf(String? placeName) {
+  final parts = (placeName ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  return parts.length < 2 ? null : parts.last;
+}
+
+/// The countries the trip's located [items] lie in, by their place names.
+Set<String> tripCountries(Iterable<PlanItem> items) => {
+      for (final i in items)
+        if (i.hasLocation)
+          if (countryOf(i.placeName) case final c?) c.toLowerCase(),
+    };

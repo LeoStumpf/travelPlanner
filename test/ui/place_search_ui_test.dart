@@ -10,6 +10,7 @@ import 'package:travel_planner/data/db.dart';
 import 'package:travel_planner/data/geocoding.dart';
 import 'package:travel_planner/data/repository.dart';
 import 'package:travel_planner/domain/models.dart';
+import 'package:travel_planner/domain/places.dart';
 import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/editor/item_editor_page.dart';
 import 'package:travel_planner/ui/editor/place_search.dart';
@@ -28,7 +29,7 @@ class FakeGeocoder extends Geocoder {
   Completer<void>? gate;
 
   @override
-  Future<List<PlaceResult>> search(String query, {String lang = 'en'}) async {
+  Future<List<PlaceResult>> search(String query, {String lang = 'en', GeoBias? bias}) async {
     queries.add(query);
     if (gate != null) await gate!.future;
     if (offline) throw const SocketException('offline');

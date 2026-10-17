@@ -152,6 +152,30 @@ extension DomainL10n on AppLocalizations {
         ConflictFixType.startEarlierAtArrival => fixStartEarlierAtArrival(f.subject),
       };
 
+  String planField(PlanField f) => switch (f) {
+        PlanField.title => planFieldTitle,
+        PlanField.kind => planFieldKind,
+        PlanField.place => planFieldPlace,
+        PlanField.status => planFieldStatus,
+        PlanField.fixed => planFieldFixed,
+        PlanField.time => planFieldTime,
+        PlanField.notes => planFieldNotes,
+        PlanField.links => planFieldLinks,
+        PlanField.relation => planFieldRelation,
+        PlanField.mode => planFieldMode,
+        PlanField.ticket => planFieldTicket,
+        PlanField.zone => planFieldZone,
+        PlanField.cost => planFieldCost,
+        PlanField.text => planFieldText,
+        PlanField.url => planFieldUrl,
+        PlanField.pinned => planFieldPinned,
+        PlanField.checklist => planFieldChecklist,
+        PlanField.dates => planFieldDates,
+        PlanField.currency => planFieldCurrency,
+        PlanField.travellers => planFieldTravellers,
+        PlanField.rates => planFieldRates,
+      };
+
   String planWarning(PlanWarning w) {
     final e = w.entry ?? '?', f = w.field ?? '', v = w.value ?? '';
     return switch (w.type) {

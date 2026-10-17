@@ -193,6 +193,61 @@ class PlanImport {
       items.isEmpty && cards.isEmpty && removeItemIds.isEmpty && removeCardIds.isEmpty && !tripChanged;
 }
 
+/// What happens to an entry in a [PlanChange].
+enum PlanChangeType { created, updated, removed }
+
+/// Groups of fields a plan changes, for the import preview. Item and note
+/// fields share the group where they mean the same; the trip has its own.
+enum PlanField {
+  title,
+  kind,
+  place,
+  status,
+  fixed,
+  time,
+  notes,
+  links,
+
+  /// stay / from / to of an item, the linked item of a note.
+  relation,
+  mode,
+
+  /// Stations, number, seat, booking reference.
+  ticket,
+  zone,
+  cost,
+  text,
+  url,
+  pinned,
+  checklist,
+
+  /// Trip start date and length.
+  dates,
+  currency,
+  travellers,
+  rates,
+}
+
+/// One entry a plan creates, changes or deletes, named by its title as it
+/// will be (or was, for a removal).
+class PlanChange {
+  final PlanChangeType type;
+  final String id;
+  final String title;
+
+  /// Null for a note.
+  final ItemKind? kind;
+  bool get isNote => kind == null;
+
+  /// What changes; empty unless [type] is [PlanChangeType.updated].
+  final Set<PlanField> fields;
+
+  const PlanChange(this.type, this.id, this.title, {this.kind, this.fields = const {}});
+
+  @override
+  String toString() => 'PlanChange(${type.name}, $title, ${fields.map((f) => f.name).join(',')})';
+}
+
 class PlanExchange {
   // --- export ----------------------------------------------------------------
 
@@ -276,6 +331,129 @@ class PlanExchange {
 
   static String _date(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  // --- preview ---------------------------------------------------------------
+
+  /// The trip fields that differ between [old] and [trip].
+  static Set<PlanField> tripChanges(Trip old, Trip trip) => {
+        if (trip.title != old.title) PlanField.title,
+        if (trip.startDate != old.startDate || trip.plannedDays != old.plannedDays) PlanField.dates,
+        if (trip.homeZone != old.homeZone) PlanField.zone,
+        if (trip.currency != old.currency) PlanField.currency,
+        if (trip.travellers != old.travellers) PlanField.travellers,
+        if (jsonEncode(trip.rates) != jsonEncode(old.rates)) PlanField.rates,
+      };
+
+  /// Every entry [imp] creates, changes or deletes in [into] (null for a new
+  /// trip): new ones first, then changed ones with their fields, then
+  /// deletions; items before notes within each group.
+  static List<PlanChange> changes(PlanImport imp, TripData? into) {
+    final oldItems = {for (final i in into?.items ?? const <PlanItem>[]) i.id: i};
+    final oldCards = {for (final c in into?.cards ?? const <NoteCard>[]) c.id: c};
+    final created = <PlanChange>[], updated = <PlanChange>[], removed = <PlanChange>[];
+    for (final i in imp.items) {
+      final old = oldItems[i.id];
+      if (old == null) {
+        created.add(PlanChange(PlanChangeType.created, i.id, i.title, kind: i.kind));
+      } else {
+        updated.add(PlanChange(PlanChangeType.updated, i.id, i.title,
+            kind: i.kind, fields: _diff(old.toJson(), i.toJson(), _itemFields)));
+      }
+    }
+    for (final c in imp.cards) {
+      final old = oldCards[c.id];
+      if (old == null) {
+        created.add(PlanChange(PlanChangeType.created, c.id, _cardTitle(c)));
+      } else {
+        updated.add(PlanChange(PlanChangeType.updated, c.id, _cardTitle(c),
+            fields: _diff(_cardCompare(old), _cardCompare(c), _cardFields)));
+      }
+    }
+    for (final id in imp.removeItemIds) {
+      final old = oldItems[id];
+      if (old != null) removed.add(PlanChange(PlanChangeType.removed, id, old.title, kind: old.kind));
+    }
+    for (final id in imp.removeCardIds) {
+      final old = oldCards[id];
+      if (old != null) removed.add(PlanChange(PlanChangeType.removed, id, _cardTitle(old)));
+    }
+    return [...created, ...updated, ...removed];
+  }
+
+  /// The trip's items once [imp] is written into [into]: removed items gone
+  /// (and unlinked), new and changed ones in place. Used to judge the plan
+  /// (e.g. conflicts) before it is applied.
+  static List<PlanItem> itemsAfter(PlanImport imp, TripData? into) {
+    final removed = imp.removeItemIds.toSet();
+    final byId = {
+      for (final i in into?.items ?? const <PlanItem>[])
+        if (!removed.contains(i.id)) i.id: i,
+      for (final i in imp.items) i.id: i,
+    };
+    return [
+      for (final i in byId.values)
+        i.copyWith(
+          parentId: removed.contains(i.parentId) ? null : i.parentId,
+          fromId: removed.contains(i.fromId) ? null : i.fromId,
+          toId: removed.contains(i.toId) ? null : i.toId,
+        ),
+    ];
+  }
+
+  /// A note without a title is named by the start of its text, its link or
+  /// its first checklist entry.
+  static String _cardTitle(NoteCard c) {
+    for (final s in [c.title, c.text, c.url ?? '', c.checklist.firstOrNull?.text ?? '']) {
+      final line = s.trim().split('\n').first.trim();
+      if (line.isNotEmpty) return line.length > 60 ? '${line.substring(0, 59)}…' : line;
+    }
+    return '';
+  }
+
+  static const _itemFields = {
+    'title': PlanField.title,
+    'kind': PlanField.kind,
+    'placeName': PlanField.place,
+    'lat': PlanField.place,
+    'lng': PlanField.place,
+    'status': PlanField.status,
+    'fixed': PlanField.fixed,
+    'start': PlanField.time,
+    'end': PlanField.time,
+    'notes': PlanField.notes,
+    'links': PlanField.links,
+    'parentId': PlanField.relation,
+    'fromId': PlanField.relation,
+    'toId': PlanField.relation,
+    'mode': PlanField.mode,
+    'departureStation': PlanField.ticket,
+    'arrivalStation': PlanField.ticket,
+    'transportNumber': PlanField.ticket,
+    'seat': PlanField.ticket,
+    'bookingRef': PlanField.ticket,
+    'tz': PlanField.zone,
+    'endTz': PlanField.zone,
+    'cost': PlanField.cost,
+  };
+
+  static const _cardFields = {
+    'type': PlanField.kind,
+    'title': PlanField.title,
+    'text': PlanField.text,
+    'url': PlanField.url,
+    'pinned': PlanField.pinned,
+    'checklist': PlanField.checklist,
+    'itemId': PlanField.relation,
+  };
+
+  /// The field groups whose JSON differs between [a] and [b], in enum order.
+  static Set<PlanField> _diff(Map<String, Object?> a, Map<String, Object?> b, Map<String, PlanField> fields) {
+    final out = <PlanField>{};
+    for (final e in fields.entries) {
+      if (jsonEncode(a[e.key]) != jsonEncode(b[e.key])) out.add(e.value);
+    }
+    return (out.toList()..sort((x, y) => x.index.compareTo(y.index))).toSet();
+  }
 
   // --- parse -----------------------------------------------------------------
 

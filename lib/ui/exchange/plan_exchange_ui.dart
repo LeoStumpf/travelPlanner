@@ -6,11 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/geocoding.dart';
+import '../../domain/analysis.dart';
 import '../../domain/models.dart';
+import '../../domain/places.dart';
 import '../../domain/plan_exchange.dart';
+import '../../domain/zones.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
+import '../common/style.dart';
 import '../trips/trips_page.dart';
 
 /// "Plan with Claude": copy the format guide (plus the trip) for a chat
@@ -91,10 +95,15 @@ Future<String> planPrompt(AppLocalizations l, TripData? data) async {
   return '$spec\n---\n\n## Current trip\n\n```json\n${PlanExchange.exportText(data)}\n```\n\n${l.promptMyWishes}';
 }
 
+/// Hashes of plan texts the user has already seen in the import dialog or
+/// been offered from the clipboard; those are not offered again.
+final seenPlanTexts = <int>{};
+
 /// Parses [text], shows what the plan would change and applies it on
 /// confirmation (one undoable step for existing trips).
 Future<void> importPlanText(BuildContext context, WidgetRef ref, String text, {String? targetTripId}) async {
   final l = context.l10n;
+  seenPlanTexts.add(text.trim().hashCode);
   final PlanDoc doc;
   try {
     doc = PlanExchange.parse(text);
@@ -133,8 +142,16 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
   /// Selected trip id, '' = new trip.
   late String _target = widget.initialTarget ?? '';
   PlanImport? _imp;
+  TripData? _into;
+  List<PlanChange> _changes = const [];
+  int _conflictsBefore = 0;
+  List<Conflict> _conflictsAfter = const [];
   bool _geocode = true;
   String? _busy;
+
+  /// Set once the plan is written and some places were not found: the
+  /// dialog then lists them instead of closing.
+  GeocodeOutcome? _geocoded;
 
   @override
   void initState() {
@@ -143,11 +160,18 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
   }
 
   Future<void> _load() async {
-    final into = _target.isEmpty ? null : await ref.read(repositoryProvider).loadTrip(_target);
+    // Always awaits, so this never runs inside initState.
+    final into = await (_target.isEmpty ? Future<TripData?>.value() : ref.read(repositoryProvider).loadTrip(_target));
     if (!mounted) return;
+    final imp = PlanExchange.apply(widget.doc,
+        into: into, now: DateTime.now(), newId: newId, newTripTitle: context.l10n.importedTripTitle);
+    final after = PlanExchange.itemsAfter(imp, into);
     setState(() {
-      _imp = PlanExchange.apply(widget.doc,
-          into: into, now: DateTime.now(), newId: newId, newTripTitle: context.l10n.importedTripTitle);
+      _imp = imp;
+      _into = into;
+      _changes = PlanExchange.changes(imp, into);
+      _conflictsBefore = into == null ? 0 : findConflicts(into.items, zones: TripZones.of(into.trip, into.items)).length;
+      _conflictsAfter = findConflicts(after, zones: TripZones.of(imp.trip, after));
     });
   }
 
@@ -158,10 +182,16 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final done = _geocoded;
+    if (done != null) return _notFoundDialog(context, done);
     final imp = _imp;
     final theme = Theme.of(context);
-    final missing = imp == null ? 0 : _needsCoordinates(imp.items).length;
+    final missing = imp == null ? 0 : imp.items.where((i) => geoQuery(i) != null).length;
     final l = context.l10n;
+    List<PlanChange> group(PlanChangeType t, bool notes) =>
+        [for (final c in _changes) if (c.type == t && c.isNote == notes) c];
+    final into = _into;
+    final tripFields = imp == null || into == null ? const <PlanField>{} : PlanExchange.tripChanges(into.trip, imp.trip);
     return AlertDialog(
       title: Text(l.applyPlanTitle),
       content: SizedBox(
@@ -195,18 +225,20 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
                   ),
                   const SizedBox(height: 16),
                   if (imp.isEmpty) Text(l.planNoChanges),
-                  if (imp.tripChanged) Text(l.planTripChanged),
-                  if (imp.itemsCreated > 0) Text(l.planItemsCreated(imp.itemsCreated)),
-                  if (imp.itemsUpdated > 0) Text(l.planItemsUpdated(imp.itemsUpdated)),
-                  if (imp.removeItemIds.isNotEmpty) Text(l.planItemsRemoved(imp.removeItemIds.length)),
-                  if (imp.notesCreated > 0) Text(l.planNotesCreated(imp.notesCreated)),
-                  if (imp.notesUpdated > 0) Text(l.planNotesUpdated(imp.notesUpdated)),
-                  if (imp.removeCardIds.isNotEmpty) Text(l.planNotesRemoved(imp.removeCardIds.length)),
+                  if (imp.tripChanged)
+                    Text(l.planTripChangedFields(tripFields.map(l.planField).join(', '))),
+                  ..._section(l.planItemsCreated(imp.itemsCreated), group(PlanChangeType.created, false)),
+                  ..._section(l.planItemsUpdated(imp.itemsUpdated), group(PlanChangeType.updated, false)),
+                  ..._section(l.planItemsRemoved(imp.removeItemIds.length), group(PlanChangeType.removed, false)),
+                  ..._section(l.planNotesCreated(imp.notesCreated), group(PlanChangeType.created, true)),
+                  ..._section(l.planNotesUpdated(imp.notesUpdated), group(PlanChangeType.updated, true)),
+                  ..._section(l.planNotesRemoved(imp.removeCardIds.length), group(PlanChangeType.removed, true)),
                   if (_target.isNotEmpty && widget.doc.tripId != null && widget.doc.tripId != _target)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(l.planFromOtherTrip, style: theme.textTheme.bodySmall),
                     ),
+                  if (!imp.isEmpty) _conflictTile(context),
                   if (missing > 0)
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
@@ -253,17 +285,141 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
     );
   }
 
+  /// A count line with the entries it counts below it, by title: changed
+  /// ones with what changes, deleted ones in red.
+  List<Widget> _section(String heading, List<PlanChange> entries) {
+    if (entries.isEmpty) return const [];
+    final theme = Theme.of(context);
+    final l = context.l10n;
+    final error = theme.colorScheme.error;
+    return [
+      Padding(padding: const EdgeInsets.only(top: 4), child: Text(heading)),
+      for (final c in entries)
+        Padding(
+          padding: const EdgeInsets.only(left: 12, top: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                c.kind == null ? Icons.sticky_note_2_outlined : kindIcon(c.kind!),
+                size: 16,
+                color: c.type == PlanChangeType.removed ? error : (c.kind == null ? null : kindColor(c.kind!)),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                      text: c.title.isEmpty ? '–' : c.title,
+                      style: c.type == PlanChangeType.removed
+                          ? TextStyle(color: error, decoration: TextDecoration.lineThrough, decorationColor: error)
+                          : null,
+                    ),
+                    if (c.fields.isNotEmpty)
+                      TextSpan(
+                        text: '  ${c.fields.map(l.planField).join(', ')}',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                  ]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+    ];
+  }
+
+  /// How many conflicts the trip has once the plan is in, compared to now;
+  /// expands to the list.
+  Widget _conflictTile(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final after = _conflictsAfter;
+    final worse = after.length > _conflictsBefore;
+    final title = Text(l.planConflictsAfter(after.length));
+    final subtitle = _into == null ? null : Text(l.planConflictsBefore(_conflictsBefore));
+    final icon = after.isEmpty
+        ? Icon(Icons.check_circle_outline, color: theme.colorScheme.primary)
+        : Icon(Icons.warning_amber, color: worse ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant);
+    if (after.isEmpty) {
+      return ListTile(contentPadding: EdgeInsets.zero, leading: icon, title: title, subtitle: subtitle);
+    }
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      leading: icon,
+      title: title,
+      subtitle: subtitle,
+      children: [
+        for (final c in after)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(l.conflict(c), style: theme.textTheme.bodySmall),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// After applying: which places the search could not find.
+  Widget _notFoundDialog(BuildContext context, GeocodeOutcome g) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return AlertDialog(
+      icon: Icon(Icons.wrong_location_outlined, color: theme.colorScheme.error),
+      title: Text(l.geocodeNotFound(g.notFound.length, g.searched.length)),
+      content: SizedBox(
+        width: 480,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Text(l.geocodeNotFoundSub, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 8),
+            for (final i in g.notFound)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(kindIcon(i.kind), color: kindColor(i.kind)),
+                title: Text(i.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: i.placeName == null || i.placeName == i.title
+                    ? null
+                    : Text(i.placeName!, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        FilledButton(onPressed: () => Navigator.pop(context, _imp!.trip.id), child: Text(l.ok)),
+      ],
+    );
+  }
+
   Future<void> _apply(PlanImport imp) async {
     final l = context.l10n;
     var items = imp.items;
-    if (_geocode && _needsCoordinates(items).isNotEmpty) {
+    GeocodeOutcome? geocoded;
+    if (_geocode && items.any((i) => geoQuery(i) != null)) {
       setState(() => _busy = l.searchingCoordinates);
-      items = await fillCoordinates(items, Geocoder(), lang: l.localeName);
+      geocoded = await fillCoordinates(items, ref.read(geocoderProvider),
+          context: PlanExchange.itemsAfter(imp, _into), lang: l.localeName);
+      items = geocoded.items;
     }
     if (!mounted) return;
     setState(() => _busy = l.saving);
     await writePlanImport(ref.read(planActionsProvider), imp, items: items, label: l.stepPlanImported);
-    if (mounted) Navigator.pop(context, imp.trip.id);
+    if (!mounted) return;
+    if (geocoded != null && geocoded.notFound.isNotEmpty) {
+      setState(() {
+        _busy = null;
+        _geocoded = geocoded;
+      });
+    } else {
+      Navigator.pop(context, imp.trip.id);
+    }
   }
 }
 
@@ -294,37 +450,4 @@ Future<void> writePlanImport(PlanActions actions, PlanImport imp,
       await r.saveCard(c);
     }
   });
-}
-
-/// Search text for items without coordinates: their place, or a stay's title.
-String? _geoQuery(PlanItem i) {
-  if (i.hasLocation || i.kind == ItemKind.transport) return null;
-  final q = i.placeName ?? (i.kind == ItemKind.stay ? i.title : null);
-  return q == null || q.trim().length < 2 ? null : q.trim();
-}
-
-List<PlanItem> _needsCoordinates(List<PlanItem> items) =>
-    [for (final i in items) if (_geoQuery(i) != null) i];
-
-/// Looks up missing coordinates (first OSM match); lookups that fail are skipped.
-Future<List<PlanItem>> fillCoordinates(List<PlanItem> items, Geocoder geocoder, {String lang = 'en'}) async {
-  final cache = <String, PlaceResult?>{};
-  final out = <PlanItem>[];
-  for (final i in items) {
-    final q = _geoQuery(i);
-    if (q == null) {
-      out.add(i);
-      continue;
-    }
-    if (!cache.containsKey(q)) {
-      try {
-        cache[q] = (await geocoder.search(q, lang: lang)).firstOrNull;
-      } catch (_) {
-        cache[q] = null;
-      }
-    }
-    final r = cache[q];
-    out.add(r == null ? i : i.copyWith(lat: r.lat, lng: r.lng));
-  }
-  return out;
 }

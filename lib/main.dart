@@ -15,6 +15,7 @@ import 'state/providers.dart';
 import 'ui/backup/auto_backup_listener.dart';
 import 'ui/common/l10n.dart';
 import 'ui/common/theme.dart';
+import 'ui/exchange/clipboard_plan_listener.dart';
 import 'ui/share/share_listener.dart';
 import 'ui/trips/trips_page.dart';
 
@@ -81,7 +82,8 @@ class TravelPlannerApp extends StatelessWidget {
         supportedLocales: appLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         navigatorKey: navigatorKey,
-        builder: (context, child) => ShareListener(child: AutoBackupListener(child: child!)),
+        builder: (context, child) =>
+            ShareListener(child: AutoBackupListener(child: ClipboardPlanListener(child: child!))),
         home: const TripsPage(),
       );
 }

@@ -926,7 +926,6 @@
     }
   },
   "planNoChanges": "The plan contains no changes.",
-  "planTripChanged": "• Trip details (title/start/length) change",
   "planItemsCreated": "• {count, plural, =1{1 new entry} other{{count} new entries}}",
   "@planItemsCreated": {
     "placeholders": {
@@ -976,6 +975,65 @@
     }
   },
   "planFromOtherTrip": "The plan comes from another trip – everything will be created anew.",
+  "planTripChangedFields": "• Trip details change: {fields}",
+  "@planTripChangedFields": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "planFieldTitle": "title",
+  "planFieldKind": "type",
+  "planFieldPlace": "place",
+  "planFieldStatus": "status",
+  "planFieldFixed": "fixed",
+  "planFieldTime": "time",
+  "planFieldNotes": "notes",
+  "planFieldLinks": "links",
+  "planFieldRelation": "link",
+  "planFieldMode": "transport mode",
+  "planFieldTicket": "ticket details",
+  "planFieldZone": "time zone",
+  "planFieldCost": "cost",
+  "planFieldText": "text",
+  "planFieldUrl": "URL",
+  "planFieldPinned": "pinned",
+  "planFieldChecklist": "checklist",
+  "planFieldDates": "dates",
+  "planFieldCurrency": "currency",
+  "planFieldTravellers": "travellers",
+  "planFieldRates": "rates",
+  "planEntryRemoved": "Deleted",
+  "planConflictsAfter": "{count, plural, =0{No conflicts after the import} =1{1 conflict after the import} other{{count} conflicts after the import}}",
+  "@planConflictsAfter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planConflictsBefore": "{count, plural, =0{none so far} =1{1 so far} other{{count} so far}}",
+  "@planConflictsBefore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "geocodeNotFound": "{missing} of {total} not found",
+  "@geocodeNotFound": {
+    "placeholders": {
+      "missing": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "geocodeNotFoundSub": "The plan is applied. These entries have no coordinates and are missing from the map; add the place in the editor.",
+  "clipboardPlanFound": "Plan found in the clipboard. Apply plan?",
   "findCoordinates": "{count, plural, =1{Find coordinates for 1 entry} other{Find coordinates for {count} entries}}",
   "@findCoordinates": {
     "placeholders": {

@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../domain/models.dart';
+import '../domain/places.dart';
+
 /// A place picked in the search. [lat]/[lng] are null when it is saved by
 /// name only ("save without coordinates").
 class PlaceResult {
@@ -9,7 +12,10 @@ class PlaceResult {
   final String detail;
   final double? lat;
   final double? lng;
-  const PlaceResult(this.name, this.detail, this.lat, this.lng);
+
+  /// The country Photon reports, if any.
+  final String? country;
+  const PlaceResult(this.name, this.detail, this.lat, this.lng, {this.country});
 
   bool get hasLocation => lat != null && lng != null;
 
@@ -22,12 +28,19 @@ class Geocoder {
   final http.Client _client;
   Geocoder([http.Client? client]) : _client = client ?? http.Client();
 
-  Future<List<PlaceResult>> search(String query, {String lang = 'en'}) async {
+  /// Searches [query]; with a [bias], results near it rank higher.
+  Future<List<PlaceResult>> search(String query, {String lang = 'en', GeoBias? bias}) async {
     if (query.trim().length < 2) return const [];
     final uri = Uri.https('photon.komoot.io', '/api/', {
       'q': query.trim(),
       'limit': '8',
       'lang': lang,
+      if (bias != null) ...{
+        'lat': bias.lat.toStringAsFixed(5),
+        'lon': bias.lng.toStringAsFixed(5),
+        'zoom': '${bias.zoom}',
+        'location_bias_scale': '0.5',
+      },
     });
     final res = await _client
         .get(uri, headers: {'User-Agent': 'TravelPlanner/1.0 (Flutter app)'})
@@ -68,8 +81,66 @@ class Geocoder {
         props['state'],
         props['country'],
       ].whereType<String>().where((s) => s != name).toSet().join(', ');
-      out.add(PlaceResult(name, detail, coords[1].toDouble(), coords[0].toDouble()));
+      out.add(PlaceResult(name, detail, coords[1].toDouble(), coords[0].toDouble(),
+          country: props['country'] as String?));
     }
     return out;
   }
+}
+
+/// The outcome of [fillCoordinates].
+class GeocodeOutcome {
+  /// The items, with coordinates where a place was found.
+  final List<PlanItem> items;
+
+  /// Items that were looked up.
+  final List<PlanItem> searched;
+
+  /// Looked-up items for which nothing was found (or the search failed).
+  final List<PlanItem> notFound;
+  const GeocodeOutcome(this.items, this.searched, this.notFound);
+}
+
+/// Looks up missing coordinates of [items] ([geoQuery]). Searches lean
+/// towards the trip: an item's located stay, else the middle of all located
+/// places of [items] and [context] (the rest of the trip), and among the
+/// results one in a country the trip already visits wins. Stays go first, so
+/// their activities can lean on them. Failed lookups are reported, not thrown.
+Future<GeocodeOutcome> fillCoordinates(
+  List<PlanItem> items,
+  Geocoder geocoder, {
+  Iterable<PlanItem> context = const [],
+  String lang = 'en',
+}) async {
+  final byId = {for (final i in context) i.id: i, for (final i in items) i.id: i};
+  final countries = tripCountries(byId.values);
+  final trip = tripBias(byId.values);
+  final cache = <String, PlaceResult?>{};
+  final searched = <PlanItem>[], notFound = <PlanItem>[];
+  final todo = [
+    for (final i in items) if (geoQuery(i) != null && i.kind == ItemKind.stay) i,
+    for (final i in items) if (geoQuery(i) != null && i.kind != ItemKind.stay) i,
+  ];
+  for (final i in todo) {
+    final q = geoQuery(i)!;
+    final bias = biasFor(i, byId, trip);
+    final key = '$q|$bias';
+    searched.add(i);
+    if (!cache.containsKey(key)) {
+      try {
+        final results = await geocoder.search(q, lang: lang, bias: bias);
+        cache[key] = results.where((r) => countries.contains(r.country?.toLowerCase())).firstOrNull ??
+            results.firstOrNull;
+      } catch (_) {
+        cache[key] = null;
+      }
+    }
+    final r = cache[key];
+    if (r == null || !r.hasLocation) {
+      notFound.add(i);
+    } else {
+      byId[i.id] = i.copyWith(lat: r.lat, lng: r.lng);
+    }
+  }
+  return GeocodeOutcome([for (final i in items) byId[i.id]!], searched, notFound);
 }
