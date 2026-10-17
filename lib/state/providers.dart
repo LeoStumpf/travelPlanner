@@ -28,7 +28,12 @@ final tripDataProvider = StreamProvider.family<TripData?, String>(
 
 String newId() => const Uuid().v4();
 
-enum TripView { canvas, notes, timeline, map }
+/// The trip's views in bottom-bar order. [agenda] is the "Today" view for
+/// being on the road; it opens first while a trip is running.
+enum TripView { canvas, notes, timeline, map, agenda }
+
+/// The wall clock; overridden in tests to pin "today".
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 /// View state shared by all views of the open trip, so switching views keeps
 /// the selection and the layer filter.
@@ -39,12 +44,18 @@ class TripUi {
   final bool showOptions;
   final ShiftMode shiftMode;
 
+  /// Set when a trip was just opened: the trip page then picks the view
+  /// once its data is there (the agenda while the trip is running). Any
+  /// explicit [TripUiNotifier.setView] clears it.
+  final bool pickView;
+
   const TripUi({
     this.view = TripView.timeline,
     this.selectedId,
     this.layers = const {...ItemKind.values},
     this.showOptions = true,
     this.shiftMode = ShiftMode.following,
+    this.pickView = false,
   });
 
   bool shows(PlanItem i) => layers.contains(i.kind) && (showOptions || !i.isOption);
@@ -55,6 +66,7 @@ class TripUi {
     Set<ItemKind>? layers,
     bool? showOptions,
     ShiftMode? shiftMode,
+    bool? pickView,
   }) =>
       TripUi(
         view: view ?? this.view,
@@ -62,6 +74,7 @@ class TripUi {
         layers: layers ?? this.layers,
         showOptions: showOptions ?? this.showOptions,
         shiftMode: shiftMode ?? this.shiftMode,
+        pickView: pickView ?? this.pickView,
       );
 }
 
@@ -71,7 +84,7 @@ class TripUiNotifier extends Notifier<TripUi> {
   @override
   TripUi build() => const TripUi();
 
-  void setView(TripView v) => state = state.copyWith(view: v);
+  void setView(TripView v) => state = state.copyWith(view: v, pickView: false);
   void select(String? id) => state = state.copyWith(selectedId: id);
   void setShiftMode(ShiftMode m) => state = state.copyWith(shiftMode: m);
   void toggleOptions() => state = state.copyWith(showOptions: !state.showOptions);
@@ -81,7 +94,9 @@ class TripUiNotifier extends Notifier<TripUi> {
     state = state.copyWith(layers: l);
   }
 
-  void reset() => state = TripUi(view: state.view, shiftMode: state.shiftMode);
+  /// Fresh state for a newly opened trip; keeps the last view and shift
+  /// mode and lets the trip page pick the view (see [TripUi.pickView]).
+  void reset() => state = TripUi(view: state.view, shiftMode: state.shiftMode, pickView: true);
 }
 
 final tripUiProvider = NotifierProvider<TripUiNotifier, TripUi>(TripUiNotifier.new);

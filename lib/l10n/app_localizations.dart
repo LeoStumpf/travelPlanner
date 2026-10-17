@@ -2298,6 +2298,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unscheduled:'**
   String get unscheduledLabel;
+
+  /// No description provided for @viewAgenda.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get viewAgenda;
+
+  /// No description provided for @agendaToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get agendaToday;
+
+  /// No description provided for @agendaTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get agendaTomorrow;
+
+  /// No description provided for @agendaYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get agendaYesterday;
+
+  /// No description provided for @agendaJumpToToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to today'**
+  String get agendaJumpToToday;
+
+  /// No description provided for @agendaWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Where you are'**
+  String get agendaWhere;
+
+  /// No description provided for @agendaNextTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Next transport'**
+  String get agendaNextTransport;
+
+  /// No description provided for @agendaProgramme.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get agendaProgramme;
+
+  /// No description provided for @agendaNothingPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing planned for this day.'**
+  String get agendaNothingPlanned;
+
+  /// No description provided for @agendaCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in {time}'**
+  String agendaCheckIn(String time);
+
+  /// No description provided for @agendaCheckOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-out {time}'**
+  String agendaCheckOut(String time);
+
+  /// No description provided for @agendaDeparts.
+  ///
+  /// In en, this message translates to:
+  /// **'Departs {time}'**
+  String agendaDeparts(String time);
+
+  /// No description provided for @agendaArrives.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrives {time}'**
+  String agendaArrives(String time);
+
+  /// No description provided for @agendaNoBed.
+  ///
+  /// In en, this message translates to:
+  /// **'No accommodation for this night yet'**
+  String get agendaNoBed;
+
+  /// No description provided for @agendaOptionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 option} other{{count} options}}'**
+  String agendaOptionsCount(int count);
+
+  /// No description provided for @agendaOpenFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String agendaOpenFile(String name);
+
+  /// No description provided for @agendaNoStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Without a start date the agenda shows trip days. Set one under ⋮ → Edit trip to see today.'**
+  String get agendaNoStartDate;
+
+  /// No description provided for @agendaStartsIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{The trip starts tomorrow.} other{The trip starts in {count} days.}}'**
+  String agendaStartsIn(int count);
+
+  /// No description provided for @agendaEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'This trip is over.'**
+  String get agendaEnded;
 }
 
 class _AppLocalizationsDelegate

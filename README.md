@@ -1,10 +1,11 @@
 # Tripboard – Travel Planner
 
-Ein Flutter-Reiseplaner für Android (iOS-fähig). Er bietet drei Sichten auf dieselben Daten:
+Ein Flutter-Reiseplaner für Android (iOS-fähig). Er bietet vier Sichten auf dieselben Daten und eine Agenda für unterwegs:
 
 - **Canvas / Notizen**: eine freie Fläche und ein Keep-artiges Raster für Notizen, Checklisten, Links, Bilder und Tickets. Wischen verschiebt die Fläche; Elemente werden per Long-Press und Ziehen bewegt.
 - **Zeitplan**: die Ebenen Orte → Transport → Unterkünfte (in Nächten) → Aktivitäten. Verschieben per Long-Press und Ziehen, Beginn/Ende über die Griffe am ausgewählten Block; nachfolgende Elemente rutschen mit, fixe Termine bleiben stehen. Konflikte, freie Tage und Nächte ohne Unterkunft werden angezeigt. Gibt es für eine solche Nacht schon Unterkunfts-Optionen, zeigt die Markierung deren Anzahl und bietet sie zuerst zur Wahl an; jede Option lässt sich auch in ihrem Detailblatt wählen oder als gebucht markieren. Fehlt zwischen zwei aufeinanderfolgenden Orten ein Transport, zeigt die Transport-Ebene dort „+ Transport“; ein Tipp öffnet den Editor mit beiden Orten und passender Abfahrt. Im Detailblatt eines Orts legen „Transport hierher“ und „Transport weiter“ die Verbindung zum vorigen bzw. nächsten Ort an.
 - **Karte**: MapLibre mit OpenStreetMap-Stil von OpenFreeMap, kein API-Key nötig. Long-Press auf die Karte legt dort etwas an.
+- **Heute**: die Agenda für unterwegs. Oben eine Leiste mit allen Reisetagen (Heute, Morgen, Gestern, sonst das Datum), darunter der gewählte Tag: wo man ist, die Unterkunft mit Adresse und Check-in/-out (oder der Hinweis, dass für die Nacht noch ein Bett fehlt, samt Optionen), der nächste Transport mit Abfahrt und Ankunft und das Programm des Tages. Anhänge eines Elements und der mit ihm verknüpften Notizen (Tickets) öffnen sich mit einem Tipp. „Springe zu heute“ führt von einem anderen Tag zurück. Läuft eine Reise gerade (Startdatum gesetzt, heute liegt in der Reise), öffnet sie direkt in dieser Sicht. Die Logik steckt in `lib/domain/agenda.dart`; alles kommt aus den lokalen Daten, die Sicht funktioniert also offline.
 
 Das Detailblatt eines Elements bietet Schnellaktionen: Gebucht an/aus, Fix an/aus, −1/+1 Tag (im aktuellen Verschiebe-Modus) und Löschen, alles mit Rückgängig. Die versteckten Gesten erklärt jede Sicht einmalig mit einem Tipp-Banner; die Bestätigungen liegen in den Shared Preferences, ⋮ → Tipps wieder anzeigen setzt sie zurück.
 

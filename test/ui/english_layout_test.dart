@@ -71,10 +71,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('${locale.languageCode}: canvas, notes and timeline fit 360 dp', (tester) async {
+    testWidgets('${locale.languageCode}: canvas, notes, timeline and agenda fit 360 dp', (tester) async {
       await pump(tester, Builder(builder: (_) => TripPage(tripId: demo.trip.id)));
       expect(tester.takeException(), isNull);
-      for (final v in [TripView.notes, TripView.timeline]) {
+      for (final v in [TripView.notes, TripView.timeline, TripView.agenda]) {
         await tester.tap(find.text(l.view(v)));
         await settle(tester);
         expect(tester.takeException(), isNull, reason: '$v');

@@ -1244,5 +1244,73 @@
   "shiftModeTooltip": "Shift mode",
   "zoomOut": "Zoom out",
   "zoomIn": "Zoom in",
-  "unscheduledLabel": "Unscheduled:"
+  "unscheduledLabel": "Unscheduled:",
+  "viewAgenda": "Today",
+  "agendaToday": "Today",
+  "agendaTomorrow": "Tomorrow",
+  "agendaYesterday": "Yesterday",
+  "agendaJumpToToday": "Jump to today",
+  "agendaWhere": "Where you are",
+  "agendaNextTransport": "Next transport",
+  "agendaProgramme": "Schedule",
+  "agendaNothingPlanned": "Nothing planned for this day.",
+  "agendaCheckIn": "Check-in {time}",
+  "@agendaCheckIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaCheckOut": "Check-out {time}",
+  "@agendaCheckOut": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaDeparts": "Departs {time}",
+  "@agendaDeparts": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaArrives": "Arrives {time}",
+  "@agendaArrives": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaNoBed": "No accommodation for this night yet",
+  "agendaOptionsCount": "{count, plural, =1{1 option} other{{count} options}}",
+  "@agendaOptionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agendaOpenFile": "Open {name}",
+  "@agendaOpenFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaNoStartDate": "Without a start date the agenda shows trip days. Set one under ⋮ → Edit trip to see today.",
+  "agendaStartsIn": "{count, plural, =1{The trip starts tomorrow.} other{The trip starts in {count} days.}}",
+  "@agendaStartsIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agendaEnded": "This trip is over."
 }

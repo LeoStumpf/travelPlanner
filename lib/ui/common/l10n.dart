@@ -79,6 +79,7 @@ extension DomainL10n on AppLocalizations {
         TripView.notes => viewNotes,
         TripView.timeline => viewTimeline,
         TripView.map => viewMap,
+        TripView.agenda => viewAgenda,
       };
 
   /// "Day 3" without a start date, "Wed, Mar 12" / "Mi., 12. März" with one.
@@ -87,6 +88,15 @@ extension DomainL10n on AppLocalizations {
     final s = DateFormat.MMMEd(localeName).format(dateOfDay(tripStart, day));
     return withDayNumber ? dayWithNumber(s, day + 1) : s;
   }
+
+  /// "Today" / "Tomorrow" / "Yesterday" relative to trip day [today], else
+  /// as [day].
+  String relativeDay(DateTime? tripStart, int day, int? today) => switch (today == null ? null : day - today) {
+        0 => agendaToday,
+        1 => agendaTomorrow,
+        -1 => agendaYesterday,
+        _ => this.day(tripStart, day),
+      };
 
   /// Day and clock time of a trip minute.
   String moment(DateTime? tripStart, int minute) => dayAndTime(day(tripStart, dayOf(minute)), formatClock(minute));

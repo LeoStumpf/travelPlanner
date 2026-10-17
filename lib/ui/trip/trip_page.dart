@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/agenda.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../agenda/agenda_view.dart';
 import '../canvas/canvas_view.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
@@ -41,6 +43,7 @@ class _TripPageState extends ConsumerState<TripPage> {
       error: (e, _) => Scaffold(body: Center(child: Text(l.errorWith('$e')))),
       data: (data) {
         if (data == null) return Scaffold(body: Center(child: Text(l.tripNotFound)));
+        if (ui.pickView) _pickView(data, ui);
         final showLayerBar = ui.view == TripView.timeline || ui.view == TripView.map;
         return Scaffold(
           appBar: AppBar(
@@ -87,6 +90,7 @@ class _TripPageState extends ConsumerState<TripPage> {
                     TripView.notes => NotesView(data: data),
                     TripView.timeline => TimelineView(data: data),
                     TripView.map => TripMapView(data: data, active: ui.view == TripView.map),
+                    TripView.agenda => AgendaView(data: data),
                   },
             ],
           ),
@@ -110,11 +114,24 @@ class _TripPageState extends ConsumerState<TripPage> {
                   selectedIcon: const Icon(Icons.view_timeline),
                   label: l.viewTimeline),
               NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: l.viewMap),
+              NavigationDestination(
+                  icon: const Icon(Icons.today_outlined), selectedIcon: const Icon(Icons.today), label: l.viewAgenda),
             ],
           ),
         );
       },
     );
+  }
+
+  /// Right after opening: the agenda while the trip is running; otherwise
+  /// the last view, except the agenda, which then falls back to the
+  /// timeline. Runs after the frame – providers can't change during build.
+  void _pickView(TripData data, TripUi ui) {
+    final running = isTripRunning(data, ref.read(clockProvider)());
+    final view = running ? TripView.agenda : (ui.view == TripView.agenda ? TripView.timeline : ui.view);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ref.read(tripUiProvider).pickView) ref.read(tripUiProvider.notifier).setView(view);
+    });
   }
 
   Future<void> _undo() async {

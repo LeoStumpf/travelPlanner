@@ -1480,4 +1480,88 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get unscheduledLabel => 'Ohne Termin:';
+
+  @override
+  String get viewAgenda => 'Heute';
+
+  @override
+  String get agendaToday => 'Heute';
+
+  @override
+  String get agendaTomorrow => 'Morgen';
+
+  @override
+  String get agendaYesterday => 'Gestern';
+
+  @override
+  String get agendaJumpToToday => 'Springe zu heute';
+
+  @override
+  String get agendaWhere => 'Hier bist du';
+
+  @override
+  String get agendaNextTransport => 'Nächster Transport';
+
+  @override
+  String get agendaProgramme => 'Programm';
+
+  @override
+  String get agendaNothingPlanned => 'Für diesen Tag ist nichts geplant.';
+
+  @override
+  String agendaCheckIn(String time) {
+    return 'Check-in $time';
+  }
+
+  @override
+  String agendaCheckOut(String time) {
+    return 'Check-out $time';
+  }
+
+  @override
+  String agendaDeparts(String time) {
+    return 'Abfahrt $time';
+  }
+
+  @override
+  String agendaArrives(String time) {
+    return 'Ankunft $time';
+  }
+
+  @override
+  String get agendaNoBed => 'Für diese Nacht fehlt noch eine Unterkunft';
+
+  @override
+  String agendaOptionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Optionen',
+      one: '1 Option',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agendaOpenFile(String name) {
+    return '$name öffnen';
+  }
+
+  @override
+  String get agendaNoStartDate =>
+      'Ohne Startdatum zeigt die Agenda Reisetage. Lege eines unter ⋮ → Reise bearbeiten fest, um „Heute“ zu sehen.';
+
+  @override
+  String agendaStartsIn(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Die Reise beginnt in $count Tagen.',
+      one: 'Die Reise beginnt morgen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agendaEnded => 'Diese Reise ist vorbei.';
 }
