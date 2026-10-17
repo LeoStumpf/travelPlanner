@@ -201,11 +201,33 @@ void main() {
     expect(find.text('Plan übernommen'), findsOneWidget);
   });
 
+  testWidgets('closing the not-found list with back still confirms the import', (tester) async {
+    final demo = demoInterrail();
+    await tester.runAsync(() => repo.putTripData(demo));
+    final plan = jsonEncode({
+      'format': planFormat,
+      'trip': {'id': demo.trip.id},
+      'items': [
+        {'ref': 'a', 'kind': 'activity', 'title': 'Geheimtipp', 'place': 'Irgendwo im Marais'},
+      ],
+    });
+    await openImport(tester, plan, target: demo.trip.id);
+    await tester.tap(find.text('Übernehmen'));
+    await settle(tester, 300);
+    expect(find.text('1 von 1 nicht gefunden'), findsOneWidget);
+
+    // System back instead of OK: the import is confirmed all the same.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('1 von 1 nicht gefunden'), findsNothing);
+    expect(find.text('Plan übernommen'), findsOneWidget);
+  });
+
   group('plan in the clipboard', () {
     late String clip;
     late int reads;
 
-    Future<void> pumpApp(WidgetTester tester) async {
+    Future<void> pumpApp(WidgetTester tester, {Widget home = const Scaffold(body: Text('home'))}) async {
       clip = '';
       reads = 0;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -215,6 +237,9 @@ void main() {
           case 'Clipboard.getData':
             reads++;
             return {'text': clip};
+          case 'Clipboard.setData':
+            clip = (call.arguments as Map)['text'] as String;
+            return null;
         }
         return null;
       });
@@ -227,7 +252,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           navigatorKey: navigatorKey,
           builder: (context, child) => ClipboardPlanListener(child: child!),
-          home: const Scaffold(body: Text('home')),
+          home: home,
         ),
       ));
     }
@@ -281,6 +306,34 @@ void main() {
       clip = 'tripboard-plan, aber kaputt {';
       await resume(tester);
       expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('the prompt copied for Claude is not offered back', (tester) async {
+      final demo = demoInterrail();
+      tester.view.physicalSize = const Size(1080, 2400);
+      addTearDown(tester.view.reset);
+      await pumpApp(tester,
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => showPlanExchangeSheet(context, ref, demo),
+                child: const Text('claude'),
+              ),
+            ),
+          ));
+      await tester.tap(find.text('claude'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.content_copy));
+      await settle(tester);
+      // The prompt does hold a parseable plan (the guide's example / the trip) ...
+      expect(PlanExchange.looksLikePlan(clip), isTrue);
+      expect(() => PlanExchange.parse(clip), returnsNormally);
+      ScaffoldMessenger.of(tester.element(find.text('claude'))).clearSnackBars();
+      await tester.pumpAndSettle();
+
+      // ... but coming back from the chat app with it does not offer it.
+      await resume(tester);
+      expect(find.text('Plan in der Zwischenablage gefunden. Plan übernehmen?'), findsNothing);
     });
 
     testWidgets('a plan already opened via paste is not offered', (tester) async {

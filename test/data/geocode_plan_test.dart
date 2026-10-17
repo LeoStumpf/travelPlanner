@@ -23,6 +23,18 @@ class _Geocoder extends Geocoder {
   }
 }
 
+/// Fails while [fail] says so, else finds every place at 1/1.
+class _FlakyGeocoder extends Geocoder {
+  final bool Function() fail;
+  _FlakyGeocoder(this.fail);
+
+  @override
+  Future<List<PlaceResult>> search(String query, {String lang = 'en', GeoBias? bias}) async {
+    if (fail()) throw const SocketException('flaky');
+    return [PlaceResult(query, '', 1, 1)];
+  }
+}
+
 PlanItem _item(String id, ItemKind kind, {String? place, double? lat, double? lng, String? parent, String? title}) =>
     PlanItem(
       id: id,
@@ -73,11 +85,20 @@ void main() {
 
   test('offline: everything searched is reported as not found', () async {
     final g = _Geocoder({})..offline = true;
-    final out = await fillCoordinates([_item('Galle', ItemKind.stay), _item('Ella', ItemKind.stay)], g);
-    expect(out.notFound, hasLength(2));
-    expect(out.searched, hasLength(2));
+    final out = await fillCoordinates(
+        [_item('Galle', ItemKind.stay), _item('Ella', ItemKind.stay), _item('Mirissa', ItemKind.stay)], g);
+    expect(out.notFound, hasLength(3));
+    expect(out.searched, hasLength(3));
     expect(out.items.every((i) => !i.hasLocation), isTrue);
-    expect(g.calls.map((c) => c.$2), [null, null], reason: 'nothing located, no bias');
+    expect(g.calls.map((c) => c.$2), [null, null], reason: 'nothing located, no bias; gives up after two failures');
+  });
+
+  test('a single failed request does not stop the search', () async {
+    var n = 0;
+    final g = _FlakyGeocoder(() => n++ == 0);
+    final out = await fillCoordinates([_item('Galle', ItemKind.stay), _item('Ella', ItemKind.stay)], g);
+    expect(out.notFound.map((i) => i.id), ['Galle']);
+    expect(out.items.last.hasLocation, isTrue);
   });
 
   test('the same name with the same bias is looked up once', () async {

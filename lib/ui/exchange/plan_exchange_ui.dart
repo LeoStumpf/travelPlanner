@@ -24,39 +24,43 @@ Future<void> showPlanExchangeSheet(BuildContext context, WidgetRef ref, TripData
   final choice = await showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
+    // Scrolls instead of overflowing on small phones (the subtitles wrap).
+    isScrollControlled: true,
     builder: (c) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(l.exchangeSteps, style: Theme.of(c).textTheme.bodyMedium),
-          ),
-          if (data != null)
-            ListTile(
-              leading: const Icon(Icons.content_copy),
-              title: Text(l.copyTripForClaude),
-              subtitle: Text(l.copyTripForClaudeSub),
-              onTap: () => Navigator.pop(c, 'copy-trip'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(l.exchangeSteps, style: Theme.of(c).textTheme.bodyMedium),
             ),
-          ListTile(
-            leading: const Icon(Icons.description_outlined),
-            title: Text(l.copyGuideOnly),
-            subtitle: Text(l.copyGuideOnlySub),
-            onTap: () => Navigator.pop(c, 'copy-spec'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.content_paste),
-            title: Text(l.pastePlan),
-            onTap: () => Navigator.pop(c, 'paste'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.file_open_outlined),
-            title: Text(l.openPlanFile),
-            onTap: () => Navigator.pop(c, 'file'),
-          ),
-        ],
+            if (data != null)
+              ListTile(
+                leading: const Icon(Icons.content_copy),
+                title: Text(l.copyTripForClaude),
+                subtitle: Text(l.copyTripForClaudeSub),
+                onTap: () => Navigator.pop(c, 'copy-trip'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: Text(l.copyGuideOnly),
+              subtitle: Text(l.copyGuideOnlySub),
+              onTap: () => Navigator.pop(c, 'copy-spec'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste),
+              title: Text(l.pastePlan),
+              onTap: () => Navigator.pop(c, 'paste'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_open_outlined),
+              title: Text(l.openPlanFile),
+              onTap: () => Navigator.pop(c, 'file'),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -64,6 +68,9 @@ Future<void> showPlanExchangeSheet(BuildContext context, WidgetRef ref, TripData
   switch (choice) {
     case 'copy-trip' || 'copy-spec':
       final text = await planPrompt(l, choice == 'copy-trip' ? data : null);
+      // The prompt itself contains plans (the guide's example, the trip):
+      // never offer it back from the clipboard after a trip to the chat app.
+      seenPlanTexts.add(text.trim().hashCode);
       await Clipboard.setData(ClipboardData(text: text));
       if (context.mounted) showSnack(context, l.copiedForClaude);
     case 'paste':
@@ -369,32 +376,41 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
   Widget _notFoundDialog(BuildContext context, GeocodeOutcome g) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    return AlertDialog(
-      icon: Icon(Icons.wrong_location_outlined, color: theme.colorScheme.error),
-      title: Text(l.geocodeNotFound(g.notFound.length, g.searched.length)),
-      content: SizedBox(
-        width: 480,
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Text(l.geocodeNotFoundSub, style: theme.textTheme.bodySmall),
-            const SizedBox(height: 8),
-            for (final i in g.notFound)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(kindIcon(i.kind), color: kindColor(i.kind)),
-                title: Text(i.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: i.placeName == null || i.placeName == i.title
-                    ? null
-                    : Text(i.placeName!, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-          ],
+    final tripId = _imp!.trip.id;
+    // The plan is saved: back or a tap beside the dialog closes it like OK,
+    // so the caller still opens the trip / confirms the import.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.pop(context, tripId);
+      },
+      child: AlertDialog(
+        icon: Icon(Icons.wrong_location_outlined, color: theme.colorScheme.error),
+        title: Text(l.geocodeNotFound(g.notFound.length, g.searched.length)),
+        content: SizedBox(
+          width: 480,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(l.geocodeNotFoundSub, style: theme.textTheme.bodySmall),
+              const SizedBox(height: 8),
+              for (final i in g.notFound)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(kindIcon(i.kind), color: kindColor(i.kind)),
+                  title: Text(i.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: i.placeName == null || i.placeName == i.title
+                      ? null
+                      : Text(i.placeName!, maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+            ],
+          ),
         ),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(context, tripId), child: Text(l.ok)),
+        ],
       ),
-      actions: [
-        FilledButton(onPressed: () => Navigator.pop(context, _imp!.trip.id), child: Text(l.ok)),
-      ],
     );
   }
 

@@ -105,7 +105,8 @@ class GeocodeOutcome {
 /// towards the trip: an item's located stay, else the middle of all located
 /// places of [items] and [context] (the rest of the trip), and among the
 /// results one in a country the trip already visits wins. Stays go first, so
-/// their activities can lean on them. Failed lookups are reported, not thrown.
+/// their activities can lean on them. Failed lookups are reported, not thrown;
+/// after two failures in a row the remaining items are not searched.
 Future<GeocodeOutcome> fillCoordinates(
   List<PlanItem> items,
   Geocoder geocoder, {
@@ -117,6 +118,9 @@ Future<GeocodeOutcome> fillCoordinates(
   final trip = tripBias(byId.values);
   final cache = <String, PlaceResult?>{};
   final searched = <PlanItem>[], notFound = <PlanItem>[];
+  // After two failed requests in a row the network is taken as down: the
+  // rest is reported as not found instead of waiting for each timeout.
+  var failures = 0;
   final todo = [
     for (final i in items) if (geoQuery(i) != null && i.kind == ItemKind.stay) i,
     for (final i in items) if (geoQuery(i) != null && i.kind != ItemKind.stay) i,
@@ -126,12 +130,14 @@ Future<GeocodeOutcome> fillCoordinates(
     final bias = biasFor(i, byId, trip);
     final key = '$q|$bias';
     searched.add(i);
-    if (!cache.containsKey(key)) {
+    if (!cache.containsKey(key) && failures < 2) {
       try {
         final results = await geocoder.search(q, lang: lang, bias: bias);
+        failures = 0;
         cache[key] = results.where((r) => countries.contains(r.country?.toLowerCase())).firstOrNull ??
             results.firstOrNull;
       } catch (_) {
+        failures++;
         cache[key] = null;
       }
     }
