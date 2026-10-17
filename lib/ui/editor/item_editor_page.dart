@@ -204,8 +204,9 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
                     final messenger = ScaffoldMessenger.of(context);
                     final actions = ref.read(planActionsProvider);
                     await actions.deleteItem(data, _i.id);
+                    final step = actions.lastStep(widget.tripId);
                     ref.read(tripUiProvider.notifier).select(null);
-                    showUndoSnack(messenger, '„${_i.title}“ gelöscht', () => actions.undo(widget.tripId));
+                    showUndoSnack(messenger, '„${_i.title}“ gelöscht', () => actions.undoStep(widget.tripId, step));
                     if (context.mounted) _leave();
                   }
                 },

@@ -158,6 +158,18 @@ class PlanActions {
     await _repo.restoreTrip(tripId, e.before);
     return e.label;
   }
+
+  /// The step [undo] would revert next. Snackbars keep it for [undoStep].
+  UndoEntry? lastStep(String tripId) => ref.read(undoProvider)[tripId]?.lastOrNull;
+
+  /// Reverts [step] only while it is still the last step of [tripId], so a
+  /// late tap on a snackbar's "Rückgängig" never reverts another change
+  /// (or the step before, after the app bar's undo was used already).
+  Future<bool> undoStep(String tripId, UndoEntry? step) async {
+    if (step == null || !identical(lastStep(tripId), step)) return false;
+    await undo(tripId);
+    return true;
+  }
 }
 
 final planActionsProvider = Provider<PlanActions>((ref) => PlanActions(ref));

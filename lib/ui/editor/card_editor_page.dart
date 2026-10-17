@@ -333,7 +333,8 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
           final actions = ref.read(planActionsProvider);
           await _saving;
           await actions.record(widget.tripId, 'Notiz gelöscht', (r) => r.deleteCard(data, _c.id));
-          showUndoSnack(messenger, 'Notiz gelöscht', () => actions.undo(widget.tripId));
+          final step = actions.lastStep(widget.tripId);
+          showUndoSnack(messenger, 'Notiz gelöscht', () => actions.undoStep(widget.tripId, step));
         } else {
           return;
         }

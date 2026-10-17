@@ -93,4 +93,29 @@ void main() {
     expect((await repo.loadTrip(demo.trip.id))!.attachments, isEmpty);
     expect(await repo.files.fileFor(att).exists(), isFalse);
   });
+
+  test('a snackbar undo only reverts its own step', () async {
+    final demo = demoInterrail();
+    await repo.putTripData(demo);
+    final actions = c.read(planActionsProvider);
+    final id = demo.trip.id;
+    final a = demo.items.first, b = demo.items.last;
+
+    await actions.deleteItem((await repo.loadTrip(id))!, a.id);
+    final step = actions.lastStep(id);
+    await actions.deleteItem((await repo.loadTrip(id))!, b.id);
+
+    // Another change came after the delete: the snackbar must not revert it.
+    expect(await actions.undoStep(id, step), isFalse);
+    expect((await repo.loadTrip(id))!.item(b.id), isNull);
+
+    // Once the later change is undone, the step is the last again.
+    await actions.undo(id);
+    expect(await actions.undoStep(id, step), isTrue);
+    expect((await repo.loadTrip(id))!.item(a.id), isNotNull);
+
+    // Tapping twice (or after the app bar's undo) does nothing more.
+    expect(await actions.undoStep(id, step), isFalse);
+    expect(actions.lastStep(id), isNull);
+  });
 }
