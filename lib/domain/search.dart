@@ -229,15 +229,18 @@ List<SearchHit> searchTrip(TripData data, String query) {
     }
   }
   int order(SearchHit h) => h.item == null ? 2 : (h.item!.isScheduled ? 0 : 1);
+  // List.sort is not stable: ties fall back to the stored order.
+  final seq = {for (final (k, h) in hits.indexed) h: k};
   hits.sort((a, b) {
     final s = b.score.compareTo(a.score);
     if (s != 0) return s;
     final o = order(a).compareTo(order(b));
     if (o != 0) return o;
     if (a.item != null && b.item != null && a.item!.isScheduled && b.item!.isScheduled) {
-      return a.item!.start!.compareTo(b.item!.start!);
+      final t = a.item!.start!.compareTo(b.item!.start!);
+      if (t != 0) return t;
     }
-    return 0;
+    return seq[a]!.compareTo(seq[b]!);
   });
   return hits;
 }

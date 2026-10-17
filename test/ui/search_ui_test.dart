@@ -217,6 +217,17 @@ void main() {
       await settle(tester);
       expect(appBarTitle('Sri Lanka'), findsOneWidget);
     });
+
+    testWidgets('fits a 360 dp wide phone', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openLankaSearch(tester);
+      await type(tester, 'PNR X7Q2');
+      await tap(tester, find.text('Alle Reisen'));
+      expect(find.byKey(const ValueKey('hit-train')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('notes grid', () {

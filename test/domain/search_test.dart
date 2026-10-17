@@ -122,6 +122,17 @@ void main() {
       expect(first.field, SearchField.title);
     });
 
+    test('equal hits keep their stored order, also in long result lists', () {
+      // Above 32 elements List.sort is a quicksort and would shuffle ties.
+      final many = _trip('m', 'Many', items: [
+        for (var k = 0; k < 40; k++) _item('i$k', 'm', 'Spot $k', notes: 'beach'),
+      ], cards: [
+        for (var k = 0; k < 40; k++) _card('c$k', 'm', title: 'Card $k', text: 'beach'),
+      ]);
+      expect([for (final h in searchTrip(many, 'beach')) h.id],
+          [for (var k = 0; k < 40; k++) 'i$k', for (var k = 0; k < 40; k++) 'c$k']);
+    });
+
     test('shows the field with the most query words', () {
       final h = searchTrip(data, 'kandy station').single;
       expect(h.id, 'train');
