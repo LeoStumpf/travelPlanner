@@ -39,6 +39,30 @@ Future<String?> openItemEditor(
       ),
     ));
 
+/// Opens the editor for a new transport from stay [from] to stay [to]
+/// (either may be null), timed by [suggestTransportTimes].
+Future<String?> openTransportEditor(BuildContext context, TripData data, {PlanItem? from, PlanItem? to}) {
+  final base = _newItem(data, ItemKind.transport, null, null, null);
+  final times = suggestTransportTimes(from, to);
+  final title = switch ((from, to)) {
+    (final f?, final t?) => '${f.title} → ${t.title}',
+    (null, final t?) => 'Nach ${t.title}',
+    (final f?, null) => 'Ab ${f.title}',
+    _ => '',
+  };
+  final initial = base.copyWith(
+    fromId: from?.id,
+    toId: to?.id,
+    title: title,
+    start: times?.$1 ?? base.start,
+    end: times?.$2 ?? base.end,
+  );
+  return Navigator.of(context).push<String>(MaterialPageRoute(
+    fullscreenDialog: true,
+    builder: (_) => ItemEditorPage(tripId: data.trip.id, initial: initial, isNew: true),
+  ));
+}
+
 PlanItem _newItem(TripData data, ItemKind kind, int? atDay, String? parentHint, String? title) {
   final chain = stayChain(data.items);
   final hint = data.item(parentHint);

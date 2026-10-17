@@ -198,7 +198,8 @@ class _ItemSheet extends ConsumerWidget {
           for (final l in lodging) _childTile(context, ref, data, l, options: lodging),
           _section(context, 'Aktivitäten', ItemKind.activity, data, id),
           for (final a in activities) _childTile(context, ref, data, a),
-          if (transports.isNotEmpty) _header(context, 'Transport'),
+          _header(context, 'Transport'),
+          _transportActions(context, data, item),
           for (final t in transports) _childTile(context, ref, data, t),
         ],
         if (item.links.isNotEmpty) _header(context, 'Links'),
@@ -252,6 +253,32 @@ class _ItemSheet extends ConsumerWidget {
           ),
         ]),
       );
+
+  /// "+ Transport hierher" from the previous stay and "+ Transport weiter"
+  /// to the next one (by [stayChain]); without a neighbour the other end
+  /// stays open in the editor.
+  Widget _transportActions(BuildContext context, TripData data, PlanItem stay) {
+    final (prev, next) = neighbourStays(data.items, stay.id);
+    void open({PlanItem? from, PlanItem? to}) {
+      Navigator.pop(context);
+      openTransportEditor(context, data, from: from, to: to);
+    }
+
+    return Wrap(spacing: 8, children: [
+      TextButton.icon(
+        key: const ValueKey('transport-here'),
+        onPressed: () => open(from: prev, to: stay),
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Transport hierher'),
+      ),
+      TextButton.icon(
+        key: const ValueKey('transport-onward'),
+        onPressed: () => open(from: stay, to: next),
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Transport weiter'),
+      ),
+    ]);
+  }
 
   Widget _childTile(BuildContext context, WidgetRef ref, TripData data, PlanItem i, {List<PlanItem>? options}) {
     final canChoose = options != null && i.isOption;

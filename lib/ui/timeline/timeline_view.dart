@@ -26,6 +26,9 @@ const _lanePad = 6.0;
 /// Touch width of a resize grip (centred on the block edge).
 const _handleW = 24.0;
 
+/// Minimum width of a "+ Transport" marker, so it stays tappable.
+const _transportGapMinW = 84.0;
+
 double _rowHeight(ItemKind k) => switch (k) {
   ItemKind.stay => 48,
   ItemKind.transport => 32,
@@ -287,6 +290,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     });
 
     final missingNights = uncoveredNights(items);
+    final transportGaps = missingTransports(items);
     final lanes = <_LaneSpec>[];
     for (final k in ItemKind.values) {
       if (!ui.layers.contains(k)) continue;
@@ -296,7 +300,12 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       ];
       final (rows, count) = packLanes(laneItems);
       // Lodging gets an extra row for "no bed yet" markers.
-      final extra = k == ItemKind.accommodation && missingNights.isNotEmpty ? 1 : 0;
+      // Transport gets one for "+ Transport" markers between stays.
+      final extra = switch (k) {
+        ItemKind.accommodation when missingNights.isNotEmpty => 1,
+        ItemKind.transport when transportGaps.isNotEmpty => 1,
+        _ => 0,
+      };
       lanes.add(_LaneSpec(k, laneItems, rows, (laneItems.isEmpty ? 0 : count) + extra));
     }
     final unscheduled = [
@@ -342,6 +351,29 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               child: _MissingNight(
                 options: optionsForNight(items, n).length,
                 onTap: () => _onMissingNight(data, n, stay),
+              ),
+            ),
+          );
+        }
+      }
+
+      if (lane.kind == ItemKind.transport) {
+        for (final g in transportGaps) {
+          // Centered between leaving the one stay and reaching the next,
+          // wide enough to tap even when they touch.
+          final mid = (x(g.from.end!) + x(g.to.start!)) / 2;
+          final w = math.max((x(g.to.start!) - x(g.from.end!)).abs(), _transportGapMinW);
+          children.add(
+            Positioned(
+              key: ValueKey('transport-gap-${g.from.id}-${g.to.id}'),
+              left: mid - w / 2,
+              width: w,
+              top: _lanePad + (lane.rowCount - 1) * rowH,
+              height: rowH - 6,
+              child: _GapBox(
+                label: 'Transport',
+                tooltip: 'Kein Transport von „${g.from.title}“ nach „${g.to.title}“',
+                onTap: () => openTransportEditor(context, data, from: g.from, to: g.to),
               ),
             ),
           );
@@ -758,13 +790,14 @@ class _ResizeHandleState extends State<_ResizeHandle> {
 
 class _GapBox extends StatelessWidget {
   final String label;
+  final String? tooltip;
   final VoidCallback onTap;
-  const _GapBox({required this.label, required this.onTap});
+  const _GapBox({required this.label, this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme.outline;
-    return InkWell(
+    final box = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: CustomPaint(
@@ -786,6 +819,7 @@ class _GapBox extends StatelessWidget {
         ),
       ),
     );
+    return tooltip == null ? box : Tooltip(message: tooltip!, child: box);
   }
 }
 

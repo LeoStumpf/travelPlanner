@@ -291,3 +291,63 @@ List<PlanItem> setBooked(List<PlanItem> items, String id, bool booked) {
   }
   return (rows, rowEnds.isEmpty ? 1 : rowEnds.length);
 }
+
+/// Two consecutive confirmed stays with no transport from [from] to [to].
+class TransportGap {
+  final PlanItem from;
+  final PlanItem to;
+  const TransportGap(this.from, this.to);
+
+  /// Suggested departure/arrival for a new transport filling the gap.
+  (int, int) get suggestedTimes => suggestTransportTimes(from, to)!;
+
+  @override
+  bool operator ==(Object other) => other is TransportGap && other.from.id == from.id && other.to.id == to.id;
+  @override
+  int get hashCode => Object.hash(from.id, to.id);
+  @override
+  String toString() => 'TransportGap(${from.id} → ${to.id})';
+}
+
+/// Default length of a suggested transport.
+const defaultTransportMinutes = 3 * 60;
+
+/// Pairs of consecutive stays in [stayChain] that no transport connects
+/// (fromId = earlier, toId = later stay). Any transport counts, also an
+/// option or one without dates: then the leg is already being planned.
+List<TransportGap> missingTransports(List<PlanItem> items) {
+  final chain = stayChain(items);
+  final linked = {
+    for (final i in items)
+      if (i.kind == ItemKind.transport && i.fromId != null && i.toId != null) (i.fromId, i.toId),
+  };
+  return [
+    for (var k = 0; k + 1 < chain.length; k++)
+      if (!linked.contains((chain[k].id, chain[k + 1].id))) TransportGap(chain[k], chain[k + 1]),
+  ];
+}
+
+/// Departure and arrival for a new transport from [from] to [to]: it leaves
+/// when [from] ends and takes [defaultTransportMinutes], arriving no later
+/// than [to] begins when that leaves room. With only [to] it arrives as
+/// [to] begins. Null when neither end has dates.
+(int, int)? suggestTransportTimes(PlanItem? from, PlanItem? to) {
+  final f = from?.isScheduled == true ? from : null;
+  final t = to?.isScheduled == true ? to : null;
+  if (f != null) {
+    final s = f.end!;
+    final e = t != null && t.start! > s ? math.min(s + defaultTransportMinutes, t.start!) : s + defaultTransportMinutes;
+    return (s, e);
+  }
+  if (t != null) return (t.start! - defaultTransportMinutes, t.start!);
+  return null;
+}
+
+/// The stays right before and after [stayId] in [stayChain] (null at the
+/// ends or when the stay is not part of the chain).
+(PlanItem?, PlanItem?) neighbourStays(List<PlanItem> items, String stayId) {
+  final chain = stayChain(items);
+  final k = chain.indexWhere((s) => s.id == stayId);
+  if (k < 0) return (null, null);
+  return (k > 0 ? chain[k - 1] : null, k + 1 < chain.length ? chain[k + 1] : null);
+}
