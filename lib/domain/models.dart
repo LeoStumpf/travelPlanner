@@ -12,40 +12,11 @@ enum ItemKind { stay, transport, accommodation, activity }
 extension ItemKindX on ItemKind {
   /// Planning layer (1 = places, 2 = transport, 3 = lodging, 4 = activities).
   int get layer => index + 1;
-
-  String get label => switch (this) {
-        ItemKind.stay => 'Ort',
-        ItemKind.transport => 'Transport',
-        ItemKind.accommodation => 'Unterkunft',
-        ItemKind.activity => 'Aktivität',
-      };
 }
 
 enum ItemStatus { idea, option, planned, booked }
 
-extension ItemStatusX on ItemStatus {
-  String get label => switch (this) {
-        ItemStatus.idea => 'Idee',
-        ItemStatus.option => 'Option',
-        ItemStatus.planned => 'Geplant',
-        ItemStatus.booked => 'Gebucht',
-      };
-}
-
 enum TransportMode { train, bus, plane, ferry, car, taxi, walk, other }
-
-extension TransportModeX on TransportMode {
-  String get label => switch (this) {
-        TransportMode.train => 'Zug',
-        TransportMode.bus => 'Bus',
-        TransportMode.plane => 'Flug',
-        TransportMode.ferry => 'Fähre',
-        TransportMode.car => 'Auto',
-        TransportMode.taxi => 'Taxi/Tuk-Tuk',
-        TransportMode.walk => 'Zu Fuß',
-        TransportMode.other => 'Sonstiges',
-      };
-}
 
 T _enumByName<T extends Enum>(List<T> values, Object? name, T fallback) {
   for (final v in values) {

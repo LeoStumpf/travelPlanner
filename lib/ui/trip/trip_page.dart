@@ -5,6 +5,7 @@ import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../canvas/canvas_view.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
@@ -33,19 +34,20 @@ class _TripPageState extends ConsumerState<TripPage> {
     final ui = ref.watch(tripUiProvider);
     final undoLabel = ref.watch(undoLabelProvider(widget.tripId));
     _visited.add(ui.view);
+    final l = context.l10n;
 
     return async.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text('Fehler: $e'))),
+      error: (e, _) => Scaffold(body: Center(child: Text(l.errorWith('$e')))),
       data: (data) {
-        if (data == null) return const Scaffold(body: Center(child: Text('Reise nicht gefunden')));
+        if (data == null) return Scaffold(body: Center(child: Text(l.tripNotFound)));
         final showLayerBar = ui.view == TripView.timeline || ui.view == TripView.map;
         return Scaffold(
           appBar: AppBar(
             title: Text(data.trip.title),
             actions: [
               IconButton(
-                tooltip: undoLabel == null ? 'Rückgängig' : 'Rückgängig: $undoLabel',
+                tooltip: undoLabel == null ? l.undo : l.undoWithLabel(undoLabel),
                 onPressed: undoLabel != null ? _undo : null,
                 icon: const Icon(Icons.undo),
               ),
@@ -54,7 +56,7 @@ class _TripPageState extends ConsumerState<TripPage> {
                   if (v == 'settings') {
                     final t = await showTripSettingsDialog(context, data.trip);
                     if (t != null) {
-                      await ref.read(planActionsProvider).record(t.id, 'Reise bearbeitet', (r) => r.saveTrip(t));
+                      await ref.read(planActionsProvider).record(t.id, l.stepTripEdited, (r) => r.saveTrip(t));
                     }
                   } else if (v == 'export') {
                     if (context.mounted) await exportTrip(context, ref, data.trip);
@@ -62,10 +64,10 @@ class _TripPageState extends ConsumerState<TripPage> {
                     if (context.mounted) await showPlanExchangeSheet(context, ref, data);
                   }
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'claude', child: Text('Mit Claude planen …')),
-                  PopupMenuItem(value: 'settings', child: Text('Reise bearbeiten')),
-                  PopupMenuItem(value: 'export', child: Text('Backup exportieren')),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'claude', child: Text(l.planWithClaude)),
+                  PopupMenuItem(value: 'settings', child: Text(l.editTrip)),
+                  PopupMenuItem(value: 'export', child: Text(l.exportBackup)),
                 ],
               ),
             ],
@@ -89,18 +91,25 @@ class _TripPageState extends ConsumerState<TripPage> {
             ],
           ),
           floatingActionButton: FloatingActionButton(
-            tooltip: 'Hinzufügen',
+            tooltip: l.add,
             onPressed: () => showAddSheet(context, ref, data),
             child: const Icon(Icons.add),
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: ui.view.index,
             onDestinationSelected: (i) => ref.read(tripUiProvider.notifier).setView(TripView.values[i]),
-            destinations: const [
-              NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Canvas'),
-              NavigationDestination(icon: Icon(Icons.sticky_note_2_outlined), selectedIcon: Icon(Icons.sticky_note_2), label: 'Notizen'),
-              NavigationDestination(icon: Icon(Icons.view_timeline_outlined), selectedIcon: Icon(Icons.view_timeline), label: 'Zeitplan'),
-              NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map), label: 'Karte'),
+            destinations: [
+              NavigationDestination(
+                  icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: l.viewCanvas),
+              NavigationDestination(
+                  icon: const Icon(Icons.sticky_note_2_outlined),
+                  selectedIcon: const Icon(Icons.sticky_note_2),
+                  label: l.viewNotes),
+              NavigationDestination(
+                  icon: const Icon(Icons.view_timeline_outlined),
+                  selectedIcon: const Icon(Icons.view_timeline),
+                  label: l.viewTimeline),
+              NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: l.viewMap),
             ],
           ),
         );
@@ -110,7 +119,7 @@ class _TripPageState extends ConsumerState<TripPage> {
 
   Future<void> _undo() async {
     final label = await ref.read(planActionsProvider).undo(widget.tripId);
-    if (label != null && mounted) showSnack(context, 'Rückgängig: $label');
+    if (label != null && mounted) showSnack(context, context.l10n.undoWithLabel(label));
   }
 }
 
@@ -125,6 +134,7 @@ class LayerBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ui = ref.watch(tripUiProvider);
     final n = ref.read(tripUiProvider.notifier);
+    final l = context.l10n;
     return SizedBox(
       height: 48,
       child: ListView(
@@ -139,8 +149,8 @@ class LayerBar extends ConsumerWidget {
                 key: ValueKey('layer-${k.name}'),
                 icon: kindIcon(k),
                 color: kindColor(k),
-                label: k.label,
-                tooltip: 'Ebene ${k.layer}: ${k.label}',
+                label: l.kind(k),
+                tooltip: l.layer(k),
                 selected: ui.layers.contains(k),
                 onSelected: () => n.toggleLayer(k),
               ),
@@ -150,8 +160,8 @@ class LayerBar extends ConsumerWidget {
             key: const ValueKey('layer-options'),
             icon: Icons.help_outline,
             color: Theme.of(context).colorScheme.primary,
-            label: 'Optionen',
-            tooltip: 'Unterkunfts-Optionen zeigen',
+            label: l.layerOptions,
+            tooltip: l.layerOptionsTooltip,
             selected: ui.showOptions,
             onSelected: n.toggleOptions,
           ),
@@ -196,6 +206,7 @@ Widget layerChip(
 }
 
 Future<void> showAddSheet(BuildContext context, WidgetRef ref, TripData data, {int? atDay}) async {
+  final l = context.l10n;
   final choice = await showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
@@ -206,22 +217,22 @@ Future<void> showAddSheet(BuildContext context, WidgetRef ref, TripData data, {i
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Plan', style: Theme.of(c).textTheme.titleSmall),
+            Text(l.addSheetPlan, style: Theme.of(c).textTheme.titleSmall),
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final k in ItemKind.values)
                 ActionChip(
                   avatar: Icon(kindIcon(k), color: kindColor(k)),
-                  label: Text(k.label),
+                  label: Text(l.kind(k)),
                   onPressed: () => Navigator.pop(c, k.name),
                 ),
             ]),
             const SizedBox(height: 16),
-            Text('Sammeln', style: Theme.of(c).textTheme.titleSmall),
+            Text(l.addSheetCollect, style: Theme.of(c).textTheme.titleSmall),
             Wrap(spacing: 8, runSpacing: 8, children: [
-              ActionChip(avatar: const Icon(Icons.notes), label: const Text('Notiz'), onPressed: () => Navigator.pop(c, 'note')),
-              ActionChip(avatar: const Icon(Icons.checklist), label: const Text('Checkliste'), onPressed: () => Navigator.pop(c, 'checklist')),
-              ActionChip(avatar: const Icon(Icons.link), label: const Text('Link'), onPressed: () => Navigator.pop(c, 'link')),
-              ActionChip(avatar: const Icon(Icons.image), label: const Text('Bild'), onPressed: () => Navigator.pop(c, 'image')),
+              ActionChip(avatar: const Icon(Icons.notes), label: Text(l.cardNote), onPressed: () => Navigator.pop(c, 'note')),
+              ActionChip(avatar: const Icon(Icons.checklist), label: Text(l.cardChecklist), onPressed: () => Navigator.pop(c, 'checklist')),
+              ActionChip(avatar: const Icon(Icons.link), label: Text(l.cardLink), onPressed: () => Navigator.pop(c, 'link')),
+              ActionChip(avatar: const Icon(Icons.image), label: Text(l.cardImage), onPressed: () => Navigator.pop(c, 'image')),
             ]),
           ],
         ),

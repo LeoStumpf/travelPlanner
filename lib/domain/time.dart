@@ -14,13 +14,6 @@ extension DayPartX on DayPart {
         DayPart.night => 22 * 60,
       };
 
-  String get label => switch (this) {
-        DayPart.morning => 'Morgens',
-        DayPart.midday => 'Mittags',
-        DayPart.afternoon => 'Nachmittags',
-        DayPart.evening => 'Abends',
-        DayPart.night => 'Nachts',
-      };
 }
 
 /// Default arrival/departure for a stay: arrive early afternoon, leave
@@ -51,22 +44,8 @@ String formatClock(int minute) {
   return '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
 }
 
-const _weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const _months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-
 DateTime dateOfDay(DateTime start, int day) =>
     DateTime(start.year, start.month, start.day + day);
 
-/// "Tag 3" without a start date, "Mi 12. Mär" with one.
-String formatDay(DateTime? tripStart, int day, {bool withDayNumber = false}) {
-  if (tripStart == null) return 'Tag ${day + 1}';
-  final d = dateOfDay(tripStart, day);
-  final s = '${_weekdays[d.weekday - 1]} ${d.day}. ${_months[d.month - 1]}';
-  return withDayNumber ? '$s (Tag ${day + 1})' : s;
-}
-
-String formatMoment(DateTime? tripStart, int minute) =>
-    '${formatDay(tripStart, dayOf(minute))}, ${formatClock(minute)}';
-
-String pluralDays(int n) => n == 1 ? '1 Tag' : '$n Tage';
-String pluralNights(int n) => n == 1 ? '1 Nacht' : '$n Nächte';
+// Day names, durations and plurals are formatted by the UI (lib/ui/common/
+// format.dart), so this file stays language-neutral.

@@ -15,7 +15,7 @@ class Geocoder {
   final http.Client _client;
   Geocoder([http.Client? client]) : _client = client ?? http.Client();
 
-  Future<List<PlaceResult>> search(String query, {String lang = 'de'}) async {
+  Future<List<PlaceResult>> search(String query, {String lang = 'en'}) async {
     if (query.trim().length < 2) return const [];
     final uri = Uri.https('photon.komoot.io', '/api/', {
       'q': query.trim(),
@@ -26,7 +26,7 @@ class Geocoder {
         .get(uri, headers: {'User-Agent': 'TravelPlanner/1.0 (Flutter app)'})
         .timeout(const Duration(seconds: 10));
     if (res.statusCode != 200) {
-      throw Exception('Ortssuche fehlgeschlagen (${res.statusCode})');
+      throw Exception('Place search failed (${res.statusCode})');
     }
     return parsePhoton(res.body);
   }

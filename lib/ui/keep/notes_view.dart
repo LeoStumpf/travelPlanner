@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../../domain/models.dart';
+import '../common/l10n.dart';
 import '../editor/card_editor_page.dart';
 import 'card_preview.dart';
 
@@ -58,7 +59,7 @@ class _NotesViewState extends ConsumerState<NotesView> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: SearchBar(
-              hintText: 'Notizen durchsuchen',
+              hintText: context.l10n.searchNotes,
               leading: const Icon(Icons.search),
               elevation: const WidgetStatePropertyAll(0),
               onChanged: (v) => setState(() => _query = v),
@@ -66,20 +67,20 @@ class _NotesViewState extends ConsumerState<NotesView> {
           ),
         ),
         if (cards.isEmpty)
-          const SliverFillRemaining(
+          SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: const EdgeInsets.all(32),
                 child: Text(
-                  'Sammle hier Ideen, Links, Screenshots und Checklisten.\nTippe auf + um etwas hinzuzufügen.',
+                  context.l10n.notesEmpty,
                   textAlign: TextAlign.center,
                 ),
               ),
             ),
           ),
-        if (pinned.isNotEmpty) ...[header('ANGEHEFTET'), grid(pinned)],
-        if (others.isNotEmpty) ...[if (pinned.isNotEmpty) header('WEITERE'), grid(others)],
+        if (pinned.isNotEmpty) ...[header(context.l10n.notesPinned), grid(pinned)],
+        if (others.isNotEmpty) ...[if (pinned.isNotEmpty) header(context.l10n.notesOthers), grid(others)],
         const SliverToBoxAdapter(child: SizedBox(height: 96)),
       ],
     );

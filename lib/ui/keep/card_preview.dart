@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 
 /// Compact rendering of a note/checklist/link/image card, used in the Keep
@@ -71,7 +72,8 @@ class CardPreview extends ConsumerWidget {
                       Expanded(child: Text(e.text, maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ]),
                   if (card.checklist.any((e) => e.done))
-                    Text('+ ${card.checklist.where((e) => e.done).length} erledigt', style: theme.textTheme.bodySmall),
+                    Text(context.l10n.checklistMoreDone(card.checklist.where((e) => e.done).length),
+                        style: theme.textTheme.bodySmall),
                 ],
                 if (linked != null) ...[
                   const SizedBox(height: 6),

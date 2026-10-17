@@ -101,9 +101,9 @@ void main() {
     final id = demo.trip.id;
     final a = demo.items.first, b = demo.items.last;
 
-    await actions.deleteItem((await repo.loadTrip(id))!, a.id);
+    await actions.deleteItem((await repo.loadTrip(id))!, a.id, 'a deleted');
     final step = actions.lastStep(id);
-    await actions.deleteItem((await repo.loadTrip(id))!, b.id);
+    await actions.deleteItem((await repo.loadTrip(id))!, b.id, 'b deleted');
 
     // Another change came after the delete: the snackbar must not revert it.
     expect(await actions.undoStep(id, step), isFalse);

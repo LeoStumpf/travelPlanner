@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models.dart';
-import '../../domain/time.dart';
 import '../../state/providers.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 
 /// Create ([trip] == null) or edit a trip's title, start date and length.
@@ -25,8 +25,9 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return AlertDialog(
-      title: Text(widget.trip == null ? 'Neue Reise' : 'Reise bearbeiten'),
+      title: Text(widget.trip == null ? l.newTrip : l.editTrip),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -35,25 +36,23 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
             TextField(
               controller: _title,
               autofocus: widget.trip == null,
-              decoration: const InputDecoration(labelText: 'Titel', hintText: 'z. B. Sri Lanka 2,5 Wochen'),
+              decoration: InputDecoration(labelText: l.tripTitleLabel, hintText: l.tripTitleHint),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _days,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Geplante Dauer (Tage)', hintText: 'optional'),
+              decoration: InputDecoration(labelText: l.plannedDaysLabel, hintText: l.optional),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: Text(_start == null
-                      ? 'Startdatum: noch offen'
-                      : 'Start: ${formatDay(_start, 0)} ${_start!.year}'),
+                  child: Text(_start == null ? l.startDateOpen : l.startDateValue(l.date(_start!))),
                 ),
                 if (_start != null)
                   IconButton(
-                    tooltip: 'Datum entfernen',
+                    tooltip: l.removeDate,
                     onPressed: () => setState(() => _start = null),
                     icon: const Icon(Icons.clear),
                   ),
@@ -68,13 +67,13 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                     );
                     if (d != null) setState(() => _start = d);
                   },
-                  child: const Text('Wählen'),
+                  child: Text(l.choose),
                 ),
               ],
             ),
-            const Text(
-              'Ohne Datum wird mit „Tag 1, Tag 2 …“ geplant.',
-              style: TextStyle(fontSize: 12),
+            Text(
+              l.withoutDateHint,
+              style: const TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -95,10 +94,10 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
         FilledButton(
           onPressed: () {
-            final title = _title.text.trim().isEmpty ? 'Neue Reise' : _title.text.trim();
+            final title = _title.text.trim().isEmpty ? l.newTrip : _title.text.trim();
             final days = int.tryParse(_days.text.trim());
             final t = widget.trip;
             Navigator.pop(
@@ -115,7 +114,7 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                   : t.copyWith(title: title, startDate: _start, plannedDays: days, color: _color),
             );
           },
-          child: const Text('Speichern'),
+          child: Text(l.save),
         ),
       ],
     );

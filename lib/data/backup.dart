@@ -15,7 +15,7 @@ class Backup {
 
   static Future<Uint8List> exportTrip(Repository repo, String tripId) async {
     final data = await repo.loadTrip(tripId);
-    if (data == null) throw StateError('Reise nicht gefunden');
+    if (data == null) throw StateError('Trip not found');
     final archive = Archive();
     archive.addFile(ArchiveFile.string('trip.json', jsonEncode(toJson(data))));
     for (final a in data.attachments) {
@@ -102,12 +102,12 @@ class Backup {
     final manifest = archive.findFile('backup.json');
     if (manifest == null) {
       if (archive.findFile('trip.json') == null) {
-        throw const FormatException('Kein Tripboard-Backup (keine trip.json im Archiv)');
+        throw const NotABackupException('no trip.json in the archive');
       }
       return [await _importTrip(repo, archive, '', replace: replace)];
     }
     final m = (jsonDecode(utf8.decode(manifest.content)) as Map).cast<String, Object?>();
-    if (m['format'] != 'travel_planner_all') throw const FormatException('Unbekanntes Backup-Format');
+    if (m['format'] != 'travel_planner_all') throw NotABackupException('unknown format ${m['format']}');
     final ids = <String>[];
     for (final id in (m['trips'] as List? ?? const [])) {
       final dir = 'trips/$id/';
@@ -226,4 +226,19 @@ class Backup {
     final i = path.lastIndexOf('.');
     return i < 0 ? '' : path.substring(i);
   }
+}
+
+/// A ZIP that is not a Tripboard backup. A [FormatException], worded for the
+/// user by the UI; [message] says what was wrong.
+class NotABackupException implements FormatException {
+  @override
+  final String message;
+  const NotABackupException(this.message);
+
+  @override
+  dynamic get source => null;
+  @override
+  int? get offset => null;
+  @override
+  String toString() => 'NotABackupException: $message';
 }

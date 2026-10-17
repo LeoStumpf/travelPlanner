@@ -10,11 +10,13 @@ import '../../domain/models.dart';
 import '../../domain/plan_exchange.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 import '../trips/trips_page.dart';
 
 /// "Plan with Claude": copy the format guide (plus the trip) for a chat
 /// assistant, then import its answer. [data] is null on the trip list.
 Future<void> showPlanExchangeSheet(BuildContext context, WidgetRef ref, TripData? data) async {
+  final l = context.l10n;
   final choice = await showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
@@ -25,34 +27,29 @@ Future<void> showPlanExchangeSheet(BuildContext context, WidgetRef ref, TripData
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              '1. Kopieren und in der Claude-App einfügen\n'
-              '2. Deine Wünsche dazuschreiben und planen lassen\n'
-              '3. Claudes Antwort kopieren (oder an Tripboard teilen) und hier übernehmen',
-              style: Theme.of(c).textTheme.bodyMedium,
-            ),
+            child: Text(l.exchangeSteps, style: Theme.of(c).textTheme.bodyMedium),
           ),
           if (data != null)
             ListTile(
               leading: const Icon(Icons.content_copy),
-              title: const Text('Reise für Claude kopieren'),
-              subtitle: const Text('Anleitung + aktueller Plan'),
+              title: Text(l.copyTripForClaude),
+              subtitle: Text(l.copyTripForClaudeSub),
               onTap: () => Navigator.pop(c, 'copy-trip'),
             ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
-            title: const Text('Nur Anleitung kopieren'),
-            subtitle: const Text('Für eine neue Reise oder als Projekt-Anweisung in Claude'),
+            title: Text(l.copyGuideOnly),
+            subtitle: Text(l.copyGuideOnlySub),
             onTap: () => Navigator.pop(c, 'copy-spec'),
           ),
           ListTile(
             leading: const Icon(Icons.content_paste),
-            title: const Text('Plan aus Zwischenablage übernehmen'),
+            title: Text(l.pastePlan),
             onTap: () => Navigator.pop(c, 'paste'),
           ),
           ListTile(
             leading: const Icon(Icons.file_open_outlined),
-            title: const Text('Plan-Datei öffnen'),
+            title: Text(l.openPlanFile),
             onTap: () => Navigator.pop(c, 'file'),
           ),
         ],
@@ -62,45 +59,47 @@ Future<void> showPlanExchangeSheet(BuildContext context, WidgetRef ref, TripData
   if (choice == null || !context.mounted) return;
   switch (choice) {
     case 'copy-trip' || 'copy-spec':
-      final text = await planPrompt(choice == 'copy-trip' ? data : null);
+      final text = await planPrompt(l, choice == 'copy-trip' ? data : null);
       await Clipboard.setData(ClipboardData(text: text));
-      if (context.mounted) showSnack(context, 'Kopiert – jetzt in der Claude-App einfügen');
+      if (context.mounted) showSnack(context, l.copiedForClaude);
     case 'paste':
       final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
       if (!context.mounted) return;
       if (text.trim().isEmpty) {
-        showSnack(context, 'Zwischenablage ist leer');
+        showSnack(context, l.clipboardEmpty);
         return;
       }
       await importPlanText(context, ref, text, targetTripId: data?.trip.id);
     case 'file':
-      final f = await FilePicker.pickFile(dialogTitle: 'Plan wählen', type: FileType.any);
+      final f = await FilePicker.pickFile(dialogTitle: l.choosePlan, type: FileType.any);
       if (f == null) return;
       try {
         final text = utf8.decode(await f.xFile.readAsBytes(), allowMalformed: true);
         if (context.mounted) await importPlanText(context, ref, text, targetTripId: data?.trip.id);
       } catch (e) {
-        if (context.mounted) showSnack(context, 'Datei nicht lesbar: $e');
+        if (context.mounted) showSnack(context, l.fileNotReadable('$e'));
       }
   }
 }
 
 /// The text to paste into the assistant: the format guide, and the current
-/// trip if there is one.
-Future<String> planPrompt(TripData? data) async {
+/// trip if there is one. The guide is English; the closing line is in the
+/// user's language, so Claude answers in it.
+Future<String> planPrompt(AppLocalizations l, TripData? data) async {
   final spec = await rootBundle.loadString('assets/plan_format.md');
-  if (data == null) return '$spec\n---\n\nNeue Reise. Meine Wünsche: ';
-  return '$spec\n---\n\n## Current trip\n\n```json\n${PlanExchange.exportText(data)}\n```\n\nMeine Wünsche: ';
+  if (data == null) return '$spec\n---\n\n${l.promptNewTrip}';
+  return '$spec\n---\n\n## Current trip\n\n```json\n${PlanExchange.exportText(data)}\n```\n\n${l.promptMyWishes}';
 }
 
 /// Parses [text], shows what the plan would change and applies it on
 /// confirmation (one undoable step for existing trips).
 Future<void> importPlanText(BuildContext context, WidgetRef ref, String text, {String? targetTripId}) async {
+  final l = context.l10n;
   final PlanDoc doc;
   try {
     doc = PlanExchange.parse(text);
   } on FormatException catch (e) {
-    showSnack(context, 'Kein gültiger Plan: ${e.message}');
+    showSnack(context, l.invalidPlan(l.planError(e)));
     return;
   }
   final repo = ref.read(repositoryProvider);
@@ -114,7 +113,7 @@ Future<void> importPlanText(BuildContext context, WidgetRef ref, String text, {S
   );
   if (tripId == null || !context.mounted) return;
   if (tripId == targetTripId) {
-    showSnack(context, 'Plan übernommen');
+    showSnack(context, l.planApplied);
   } else {
     openTrip(context, ref, tripId);
   }
@@ -147,13 +146,14 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
     final into = _target.isEmpty ? null : await ref.read(repositoryProvider).loadTrip(_target);
     if (!mounted) return;
     setState(() {
-      _imp = PlanExchange.apply(widget.doc, into: into, now: DateTime.now(), newId: newId);
+      _imp = PlanExchange.apply(widget.doc,
+          into: into, now: DateTime.now(), newId: newId, newTripTitle: context.l10n.importedTripTitle);
     });
   }
 
   String _newTitle() {
     final t = (widget.doc.trip['title'] as String?)?.trim();
-    return t == null || t.isEmpty ? 'Importierte Reise' : t;
+    return t == null || t.isEmpty ? context.l10n.importedTripTitle : t;
   }
 
   @override
@@ -161,8 +161,9 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
     final imp = _imp;
     final theme = Theme.of(context);
     final missing = imp == null ? 0 : _needsCoordinates(imp.items).length;
+    final l = context.l10n;
     return AlertDialog(
-      title: const Text('Plan übernehmen'),
+      title: Text(l.applyPlanTitle),
       content: SizedBox(
         width: 480,
         child: imp == null
@@ -173,11 +174,11 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
                   DropdownButtonFormField<String>(
                     initialValue: _target,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Ziel'),
+                    decoration: InputDecoration(labelText: l.importTarget),
                     items: [
                       DropdownMenuItem(
                         value: '',
-                        child: Text('Neue Reise „${_newTitle()}“', overflow: TextOverflow.ellipsis),
+                        child: Text(l.newTripNamed(_newTitle()), overflow: TextOverflow.ellipsis),
                       ),
                       for (final t in widget.trips)
                         DropdownMenuItem(value: t.id, child: Text(t.title, overflow: TextOverflow.ellipsis)),
@@ -193,40 +194,39 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
                           },
                   ),
                   const SizedBox(height: 16),
-                  if (imp.isEmpty) const Text('Der Plan enthält keine Änderungen.'),
-                  if (imp.tripChanged) const Text('• Reisedaten (Titel/Start/Länge) ändern sich'),
-                  if (imp.itemsCreated > 0) Text('• ${imp.itemsCreated} neue Einträge'),
-                  if (imp.itemsUpdated > 0) Text('• ${imp.itemsUpdated} Einträge geändert'),
-                  if (imp.removeItemIds.isNotEmpty) Text('• ${imp.removeItemIds.length} Einträge gelöscht'),
-                  if (imp.notesCreated > 0) Text('• ${imp.notesCreated} neue Notizen'),
-                  if (imp.notesUpdated > 0) Text('• ${imp.notesUpdated} Notizen geändert'),
-                  if (imp.removeCardIds.isNotEmpty) Text('• ${imp.removeCardIds.length} Notizen gelöscht'),
+                  if (imp.isEmpty) Text(l.planNoChanges),
+                  if (imp.tripChanged) Text(l.planTripChanged),
+                  if (imp.itemsCreated > 0) Text(l.planItemsCreated(imp.itemsCreated)),
+                  if (imp.itemsUpdated > 0) Text(l.planItemsUpdated(imp.itemsUpdated)),
+                  if (imp.removeItemIds.isNotEmpty) Text(l.planItemsRemoved(imp.removeItemIds.length)),
+                  if (imp.notesCreated > 0) Text(l.planNotesCreated(imp.notesCreated)),
+                  if (imp.notesUpdated > 0) Text(l.planNotesUpdated(imp.notesUpdated)),
+                  if (imp.removeCardIds.isNotEmpty) Text(l.planNotesRemoved(imp.removeCardIds.length)),
                   if (_target.isNotEmpty && widget.doc.tripId != null && widget.doc.tripId != _target)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text('Der Plan stammt aus einer anderen Reise – alles wird neu angelegt.',
-                          style: theme.textTheme.bodySmall),
+                      child: Text(l.planFromOtherTrip, style: theme.textTheme.bodySmall),
                     ),
                   if (missing > 0)
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
                       value: _geocode,
                       onChanged: _busy != null ? null : (v) => setState(() => _geocode = v ?? false),
-                      title: Text('Koordinaten für $missing Einträge suchen'),
-                      subtitle: const Text('Über OpenStreetMap, braucht Internet'),
+                      title: Text(l.findCoordinates(missing)),
+                      subtitle: Text(l.findCoordinatesSub),
                     ),
                   if (imp.warnings.isNotEmpty)
                     ExpansionTile(
                       tilePadding: EdgeInsets.zero,
                       leading: Icon(Icons.warning_amber, color: theme.colorScheme.error),
-                      title: Text('${imp.warnings.length} Hinweise'),
+                      title: Text(l.planWarningsCount(imp.warnings.length)),
                       children: [
                         for (final w in imp.warnings)
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
                               padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(w, style: theme.textTheme.bodySmall),
+                              child: Text(l.planWarning(w), style: theme.textTheme.bodySmall),
                             ),
                           ),
                       ],
@@ -244,38 +244,40 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
               ),
       ),
       actions: [
-        TextButton(onPressed: _busy != null ? null : () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(onPressed: _busy != null ? null : () => Navigator.pop(context), child: Text(l.cancel)),
         FilledButton(
           onPressed: imp == null || imp.isEmpty || _busy != null ? null : () => _apply(imp),
-          child: const Text('Übernehmen'),
+          child: Text(l.apply),
         ),
       ],
     );
   }
 
   Future<void> _apply(PlanImport imp) async {
+    final l = context.l10n;
     var items = imp.items;
     if (_geocode && _needsCoordinates(items).isNotEmpty) {
-      setState(() => _busy = 'Suche Koordinaten …');
-      items = await fillCoordinates(items, Geocoder());
+      setState(() => _busy = l.searchingCoordinates);
+      items = await fillCoordinates(items, Geocoder(), lang: l.localeName);
     }
     if (!mounted) return;
-    setState(() => _busy = 'Speichere …');
-    await writePlanImport(ref.read(planActionsProvider), imp, items: items);
+    setState(() => _busy = l.saving);
+    await writePlanImport(ref.read(planActionsProvider), imp, items: items, label: l.stepPlanImported);
     if (mounted) Navigator.pop(context, imp.trip.id);
   }
 }
 
 /// Writes [imp] (with [items] replacing its items, e.g. after geocoding).
-/// Changes to an existing trip are one undoable step.
-Future<void> writePlanImport(PlanActions actions, PlanImport imp, {List<PlanItem>? items}) async {
+/// Changes to an existing trip are one undoable step named [label].
+Future<void> writePlanImport(PlanActions actions, PlanImport imp,
+    {List<PlanItem>? items, required String label}) async {
   final list = items ?? imp.items;
   final repo = actions.ref.read(repositoryProvider);
   if (imp.isNewTrip) {
     await repo.putTripData(TripData(trip: imp.trip, items: list, cards: imp.cards));
     return;
   }
-  await actions.record(imp.trip.id, 'Plan importiert', (r) async {
+  await actions.record(imp.trip.id, label, (r) async {
     if (imp.tripChanged) await r.saveTrip(imp.trip);
     // Reload before each delete: deleting unlinks other items, and a stale
     // copy would bring old links back.
@@ -305,7 +307,7 @@ List<PlanItem> _needsCoordinates(List<PlanItem> items) =>
     [for (final i in items) if (_geoQuery(i) != null) i];
 
 /// Looks up missing coordinates (first OSM match); lookups that fail are skipped.
-Future<List<PlanItem>> fillCoordinates(List<PlanItem> items, Geocoder geocoder) async {
+Future<List<PlanItem>> fillCoordinates(List<PlanItem> items, Geocoder geocoder, {String lang = 'en'}) async {
   final cache = <String, PlaceResult?>{};
   final out = <PlanItem>[];
   for (final i in items) {
@@ -316,7 +318,7 @@ Future<List<PlanItem>> fillCoordinates(List<PlanItem> items, Geocoder geocoder) 
     }
     if (!cache.containsKey(q)) {
       try {
-        cache[q] = (await geocoder.search(q)).firstOrNull;
+        cache[q] = (await geocoder.search(q, lang: lang)).firstOrNull;
       } catch (_) {
         cache[q] = null;
       }

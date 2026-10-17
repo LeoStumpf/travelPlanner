@@ -5,6 +5,7 @@ import '../../domain/analysis.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import 'dialogs.dart';
+import 'l10n.dart';
 
 /// A conflict with its one-tap fix (if there is one).
 class ConflictTile extends ConsumerWidget {
@@ -19,26 +20,28 @@ class ConflictTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final error = Theme.of(context).colorScheme.error;
     final fix = conflict.fix;
+    final l = context.l10n;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: Icon(Icons.warning_amber, color: error),
-      title: Text(conflict.message, style: TextStyle(color: error)),
+      title: Text(l.conflict(conflict), style: TextStyle(color: error)),
       subtitle: fix == null
           ? null
           : Align(
               alignment: Alignment.centerLeft,
               child: FilledButton.tonalIcon(
                 icon: const Icon(Icons.auto_fix_high, size: 18),
-                label: Text(fix.label),
+                label: Text(l.conflictFix(fix)),
                 onPressed: () async {
                   final actions = ref.read(planActionsProvider);
-                  await actions.saveItems(data, fix.apply(data.items), fix.label);
+                  final label = l.conflictFix(fix);
+                  await actions.saveItems(data, fix.apply(data.items), label);
                   onFixed?.call();
                   if (context.mounted) {
                     showSnack(
                       context,
-                      'Behoben: ${fix.label}',
-                      action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(data.trip.id)),
+                      l.fixedApplied(label),
+                      action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(data.trip.id)),
                     );
                   }
                 },

@@ -16,6 +16,8 @@ import 'package:travel_planner/ui/backup/auto_backup_listener.dart';
 import 'package:travel_planner/ui/backup/backups_page.dart';
 import 'package:travel_planner/ui/trips/trips_page.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Directory tmp;
   late Repository repo;
@@ -53,7 +55,7 @@ void main() {
     await tester.runAsync(() => repo.putTripData(demo));
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(home: home),
+      child: testApp(home: home),
     ));
     await settle(tester);
   }
@@ -79,7 +81,7 @@ void main() {
     container.invalidate(backupsProvider);
     await settle(tester);
     await openMenu(tester);
-    expect(find.text('Letztes Backup: 17.10.2026, 14:03'), findsOneWidget);
+    expect(find.text('Letztes Backup: 17.10.2026 14:03'), findsOneWidget);
   });
 
   testWidgets('the listener backs up on start and when the app goes to the background', (tester) async {

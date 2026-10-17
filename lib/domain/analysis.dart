@@ -6,11 +6,35 @@ import 'models.dart';
 import 'scheduler.dart';
 import 'time.dart';
 
+/// What a [ConflictFix] does; the UI turns it into a label.
+enum ConflictFixType {
+  /// Push the later stay back until it no longer overlaps.
+  pushLater,
+
+  /// Move an accommodation's nights into the days of its stay.
+  fitNightsToStay,
+
+  /// Move an activity into its stay.
+  moveIntoStay,
+
+  /// Let the stay before a transport end at the departure (shorter / longer).
+  shortenToDeparture,
+  extendToDeparture,
+
+  /// Let the stay after a transport start at the arrival (later / earlier).
+  startLaterAtArrival,
+  startEarlierAtArrival,
+}
+
 /// A one-tap repair for a conflict: new start/end times for some items.
 class ConflictFix {
-  final String label;
+  final ConflictFixType type;
+
+  /// Title of the item the fix changes (or, for [ConflictFixType.fitNightsToStay]
+  /// and [ConflictFixType.moveIntoStay], of the stay it aligns with).
+  final String subject;
   final Map<String, (int, int)> times;
-  const ConflictFix(this.label, this.times);
+  const ConflictFix(this.type, this.subject, this.times);
 
   /// [items] with the fix applied; only changed items are returned.
   List<PlanItem> apply(List<PlanItem> items) => [
@@ -19,17 +43,53 @@ class ConflictFix {
       ];
 }
 
+/// Kinds of conflicts. Item = the conflict's [Conflict.itemId], other = its
+/// [Conflict.otherId].
+enum ConflictType {
+  /// Stay (item) begins [Conflict.amount] minutes before stay (other) ends.
+  staysOverlap,
+
+  /// Accommodation (item) has nights outside the days of its stay (other).
+  lodgingOutsideStay,
+
+  /// Activity (item) lies outside its stay (other).
+  activityOutsideStay,
+
+  /// Stay (other) ends after transport (item) departs.
+  stayEndsAfterDeparture,
+
+  /// [Conflict.amount] days without a place between stay (other) and the
+  /// departure of transport (item).
+  daysBeforeDeparture,
+
+  /// Stay (other) begins before transport (item) arrives.
+  stayStartsBeforeArrival,
+
+  /// [Conflict.amount] days without a place between the arrival of transport
+  /// (item) and stay (other).
+  daysAfterArrival,
+}
+
+/// A problem in the plan. Carries a type and the values the UI needs to
+/// describe it, so the domain stays language-neutral.
 class Conflict {
   final String itemId;
   final String? otherId;
-  final String message;
+  final ConflictType type;
+  final String itemTitle;
+  final String otherTitle;
+
+  /// Overlap in minutes ([ConflictType.staysOverlap]) or days without a
+  /// place ([ConflictType.daysBeforeDeparture], [ConflictType.daysAfterArrival]).
+  final int amount;
   final ConflictFix? fix;
-  const Conflict(this.itemId, this.otherId, this.message, [this.fix]);
+  const Conflict(this.itemId, this.otherId, this.type,
+      {required this.itemTitle, required this.otherTitle, this.amount = 0, this.fix});
 
   bool involves(String id) => itemId == id || otherId == id;
 
   @override
-  String toString() => 'Conflict($itemId, $otherId, $message)';
+  String toString() => 'Conflict($itemId, $otherId, ${type.name}, $amount)';
 }
 
 class DayGap {
@@ -70,10 +130,13 @@ List<Conflict> findConflicts(List<PlanItem> items) {
       out.add(Conflict(
         y.id,
         x.id,
-        '„${y.title}“ beginnt ${_duration(overlap)} bevor „${x.title}“ endet',
-        y.fixed
+        ConflictType.staysOverlap,
+        itemTitle: y.title,
+        otherTitle: x.title,
+        amount: overlap,
+        fix: y.fixed
             ? null
-            : ConflictFix('„${y.title}“ nach hinten schieben', {
+            : ConflictFix(ConflictFixType.pushLater, y.title, {
                 for (final c in pushed.changed) c.id: (c.start!, c.end!),
               }),
       ));
@@ -92,8 +155,10 @@ List<Conflict> findConflicts(List<PlanItem> items) {
           if (dayOf(i.start!) < dayOf(p.start!) || lastDayOf(i.end!) > lastDayOf(p.end!)) {
             final s = at(dayOf(p.start!), minuteOfDay(i.start!));
             final e = at(math.max(lastDayOf(p.end!), dayOf(p.start!) + 1), minuteOfDay(i.end!));
-            out.add(Conflict(i.id, p.id, '„${i.title}“ passt nicht zu den Tagen in ${p.title}',
-                i.fixed ? null : ConflictFix('Nächte an ${p.title} anpassen', {i.id: (s, e)})));
+            out.add(Conflict(i.id, p.id, ConflictType.lodgingOutsideStay,
+                itemTitle: i.title,
+                otherTitle: p.title,
+                fix: i.fixed ? null : ConflictFix(ConflictFixType.fitNightsToStay, p.title, {i.id: (s, e)})));
           }
         } else if (i.start! < p.start! || i.end! > p.end!) {
           final dur = i.duration;
@@ -101,8 +166,10 @@ List<Conflict> findConflicts(List<PlanItem> items) {
           var s = at(day, minuteOfDay(i.start!));
           if (s < p.start!) s = p.start!;
           if (s + dur > p.end!) s = math.max(p.start!, p.end! - dur);
-          out.add(Conflict(i.id, p.id, '„${i.title}“ liegt außerhalb des Aufenthalts in ${p.title}',
-              i.fixed ? null : ConflictFix('In ${p.title} verschieben', {i.id: (s, s + dur)})));
+          out.add(Conflict(i.id, p.id, ConflictType.activityOutsideStay,
+              itemTitle: i.title,
+              otherTitle: p.title,
+              fix: i.fixed ? null : ConflictFix(ConflictFixType.moveIntoStay, p.title, {i.id: (s, s + dur)})));
         }
       case ItemKind.transport:
         _transportConflicts(i, byId[i.fromId], byId[i.toId], out);
@@ -125,14 +192,16 @@ void _transportConflicts(PlanItem t, PlanItem? from, PlanItem? to, List<Conflict
     final fix = f.fixed || t.start! <= f.start! + 60
         ? null
         : ConflictFix(
-            lastDay > depDay ? '„${f.title}“ bis zur Abfahrt kürzen' : '„${f.title}“ bis zur Abfahrt verlängern',
+            lastDay > depDay ? ConflictFixType.shortenToDeparture : ConflictFixType.extendToDeparture,
+            f.title,
             {f.id: (f.start!, t.start!)},
           );
     if (lastDay > depDay) {
-      out.add(Conflict(t.id, f.id, '„${f.title}“ endet nach Abfahrt von „${t.title}“', fix));
+      out.add(Conflict(t.id, f.id, ConflictType.stayEndsAfterDeparture,
+          itemTitle: t.title, otherTitle: f.title, fix: fix));
     } else if (lastDay < depDay) {
-      out.add(Conflict(t.id, f.id,
-          'Zwischen „${f.title}“ und Abfahrt von „${t.title}“ ${_lie(depDay - lastDay)} ohne Ort', fix));
+      out.add(Conflict(t.id, f.id, ConflictType.daysBeforeDeparture,
+          itemTitle: t.title, otherTitle: f.title, amount: depDay - lastDay, fix: fix));
     }
   }
 
@@ -142,28 +211,21 @@ void _transportConflicts(PlanItem t, PlanItem? from, PlanItem? to, List<Conflict
     final fix = d.fixed || t.end! >= d.end! - 60
         ? null
         : ConflictFix(
-            firstDay < arrDay ? '„${d.title}“ erst ab Ankunft' : '„${d.title}“ ab Ankunft beginnen',
+            firstDay < arrDay ? ConflictFixType.startLaterAtArrival : ConflictFixType.startEarlierAtArrival,
+            d.title,
             {d.id: (t.end!, d.end!)},
           );
     if (firstDay < arrDay) {
-      out.add(Conflict(t.id, d.id, '„${d.title}“ beginnt vor Ankunft von „${t.title}“', fix));
+      out.add(Conflict(t.id, d.id, ConflictType.stayStartsBeforeArrival,
+          itemTitle: t.title, otherTitle: d.title, fix: fix));
     } else if (firstDay > arrDay) {
-      out.add(Conflict(t.id, d.id,
-          'Zwischen Ankunft von „${t.title}“ und „${d.title}“ ${_lie(firstDay - arrDay)} ohne Ort', fix));
+      out.add(Conflict(t.id, d.id, ConflictType.daysAfterArrival,
+          itemTitle: t.title, otherTitle: d.title, amount: firstDay - arrDay, fix: fix));
     }
   }
 }
 
-String _lie(int days) => days == 1 ? 'liegt 1 Tag' : 'liegen $days Tage';
-
 int _ceilDays(int minutes) => ((minutes + minutesPerDay - 1) ~/ minutesPerDay) * minutesPerDay;
-
-String _duration(int minutes) {
-  final days = minutes ~/ minutesPerDay;
-  final hours = (minutes % minutesPerDay) ~/ 60;
-  if (days > 0) return hours > 0 ? '${pluralDays(days)} ${hours}h' : pluralDays(days);
-  return '${hours}h';
-}
 
 /// Whole free days between stays (and up to [plannedDays] at the end).
 List<DayGap> findGaps(List<PlanItem> items, {int? plannedDays}) {
@@ -250,7 +312,7 @@ List<PlanItem> chooseOption(List<PlanItem> items, String id, {bool book = false}
   ];
 }
 
-/// The changes for the "Gebucht" toggle of item [id]. Booking goes through
+/// The changes for the "booked" toggle of item [id]. Booking goes through
 /// [chooseOption], so a booked accommodation also wins its nights; un-booking
 /// makes the item planned. Returns only changed items.
 List<PlanItem> setBooked(List<PlanItem> items, String id, bool booked) {

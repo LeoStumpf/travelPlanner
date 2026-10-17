@@ -13,6 +13,8 @@ import 'package:travel_planner/domain/plan_exchange.dart';
 import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/exchange/plan_exchange_ui.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Repository repo;
 
@@ -38,7 +40,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(
       overrides: [repositoryProvider.overrideWithValue(repo)],
-      child: MaterialApp(
+      child: testApp(
         home: Scaffold(
           body: Consumer(
             builder: (context, ref, _) => TextButton(
@@ -55,7 +57,7 @@ void main() {
 
     expect(find.text('Plan übernehmen'), findsOneWidget);
     expect(find.text('• 2 neue Einträge'), findsOneWidget);
-    expect(find.text('1 Hinweise'), findsOneWidget);
+    expect(find.text('1 Hinweis'), findsOneWidget);
     expect(find.text(demo.trip.title), findsOneWidget, reason: 'target preselected');
 
     await tester.tap(find.text('Übernehmen'));

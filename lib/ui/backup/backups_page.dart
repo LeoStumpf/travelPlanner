@@ -1,21 +1,18 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
 import '../../data/auto_backup.dart';
 import '../../data/backup.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 
-/// "17.10.2026, 14:03"
-String formatBackupTime(DateTime t) => DateFormat('dd.MM.yyyy, HH:mm').format(t);
-
-/// "Letztes Backup: …" for the trip list menu.
-String lastBackupLabel(List<BackupFile>? backups) {
+/// "Last backup: …" for the trip list menu.
+String lastBackupLabel(AppLocalizations l, List<BackupFile>? backups) {
   final last = backups?.firstOrNull;
-  return last == null ? 'Noch kein Backup' : 'Letztes Backup: ${formatBackupTime(last.createdAt)}';
+  return last == null ? l.noBackupYet : l.lastBackup(l.dateTime(last.createdAt));
 }
 
 /// The automatic backups: back up now, restore one, or save a copy elsewhere.
@@ -34,12 +31,13 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
     final auto = ref.watch(autoBackupProvider);
     final backups = ref.watch(backupsProvider);
     final theme = Theme.of(context);
+    final l = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Backups'),
+        title: Text(l.backupsTitle),
         actions: [
           IconButton(
-            tooltip: 'Jetzt sichern',
+            tooltip: l.backupNow,
             icon: const Icon(Icons.backup),
             onPressed: auto == null || _busy ? null : _backupNow,
           ),
@@ -51,20 +49,14 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
           if (_busy) const LinearProgressIndicator(),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(lastBackupLabel(backups.value), style: theme.textTheme.titleMedium),
-            subtitle: Text(
-              'Tripboard sichert alle Reisen automatisch, wenn die App startet oder in den Hintergrund geht '
-              'und das letzte Backup älter als einen Tag ist. Die letzten ${AutoBackup.keep} Backups bleiben erhalten.\n'
-              'Sie liegen im App-Ordner${auto == null ? '' : ' (${auto.dir.path})'} und werden beim Deinstallieren '
-              'gelöscht. Für eine dauerhafte Kopie ein Backup „Speichern unter …“ oder '
-              '„Alle Reisen exportieren“ nutzen.',
-            ),
+            title: Text(lastBackupLabel(l, backups.value), style: theme.textTheme.titleMedium),
+            subtitle: Text(l.backupsExplanation(AutoBackup.keep, auto == null ? '' : ' (${auto.dir.path})')),
           ),
           const SizedBox(height: 8),
           ...switch (backups) {
-            AsyncData(:final value) when value.isEmpty => [const _Hint('Noch keine automatischen Backups.')],
+            AsyncData(:final value) when value.isEmpty => [_Hint(l.noAutoBackups)],
             AsyncData(:final value) => [for (final b in value) _tile(b)],
-            AsyncError(:final error) => [_Hint('Fehler: $error')],
+            AsyncError(:final error) => [_Hint(l.errorWith('$error'))],
             _ => [const Center(child: CircularProgressIndicator())],
           },
         ],
@@ -74,22 +66,23 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
 
   Widget _tile(BackupFile b) {
     final size = b.file.existsSync() ? b.file.lengthSync() : 0;
+    final l = context.l10n;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         leading: const Icon(Icons.inventory_2_outlined),
-        title: Text(formatBackupTime(b.createdAt)),
+        title: Text(l.dateTime(b.createdAt)),
         subtitle: Text(_size(size)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: 'Wiederherstellen',
+              tooltip: l.restore,
               icon: const Icon(Icons.settings_backup_restore),
               onPressed: _busy ? null : () => _restore(b),
             ),
             IconButton(
-              tooltip: 'Speichern unter …',
+              tooltip: l.saveAs,
               icon: const Icon(Icons.save_alt),
               onPressed: _busy ? null : () => _saveAs(b),
             ),
@@ -120,20 +113,19 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
   Future<void> _backupNow() => _guard((c) async {
         try {
           await c.read(autoBackupProvider)!.createNow();
-          if (mounted) showSnack(context, 'Backup erstellt');
+          if (mounted) showSnack(context, context.l10n.backupCreated);
         } catch (e) {
-          if (mounted) showSnack(context, 'Backup fehlgeschlagen: $e');
+          if (mounted) showSnack(context, context.l10n.backupFailed(context.l10n.error(e)));
         }
       });
 
   Future<void> _restore(BackupFile b) async {
+    final l = context.l10n;
     final ok = await confirm(
       context,
-      'Backup wiederherstellen?',
-      'Alle Reisen aus dem Backup vom ${formatBackupTime(b.createdAt)} werden auf diesen Stand zurückgesetzt '
-          'oder wieder angelegt. Reisen, die nicht im Backup sind, bleiben unverändert. '
-          'Der aktuelle Stand wird vorher als Backup gesichert.',
-      'Wiederherstellen',
+      l.restoreBackupQuestion,
+      l.restoreBackupBody(l.dateTime(b.createdAt)),
+      l.restore,
     );
     if (!ok || !mounted) return;
     await _guard((c) async {
@@ -149,25 +141,26 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
           undo.forget(id);
         }
         if (mounted) {
-          showSnack(context, ids.length == 1 ? 'Eine Reise wiederhergestellt' : '${ids.length} Reisen wiederhergestellt');
+          showSnack(context, l.tripsRestored(ids.length));
         }
       } catch (e) {
-        if (mounted) showSnack(context, 'Wiederherstellen fehlgeschlagen: $e');
+        if (mounted) showSnack(context, l.restoreFailed(l.error(e)));
       }
     });
   }
 
   Future<void> _saveAs(BackupFile b) async {
+    final l = context.l10n;
     try {
       final uri = await FilePicker.saveFile(
         fileName: p.basename(b.file.path),
         bytes: await b.file.readAsBytes(),
         mimeType: 'application/zip',
-        dialogTitle: 'Backup speichern',
+        dialogTitle: l.saveBackupDialog,
       );
-      if (uri != null && mounted) showSnack(context, 'Backup gespeichert');
+      if (uri != null && mounted) showSnack(context, l.backupSaved);
     } catch (e) {
-      if (mounted) showSnack(context, 'Speichern fehlgeschlagen: $e');
+      if (mounted) showSnack(context, l.saveFailed('$e'));
     }
   }
 }

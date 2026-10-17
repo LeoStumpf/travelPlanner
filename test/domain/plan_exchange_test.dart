@@ -51,10 +51,10 @@ void main() {
       expect(newIds[i.fromId]?.title, demo.item(old.fromId)?.title);
       expect(newIds[i.toId]?.title, demo.item(old.toId)?.title);
     }
-    final note = imp.cards.firstWhere((c) => c.title == 'Zug Kandy → Ella');
+    final note = imp.cards.firstWhere((c) => c.title == 'Train Kandy → Ella');
     expect(newIds[note.itemId]?.title, 'Kandy');
     final list = imp.cards.firstWhere((c) => c.type == CardType.checklist);
-    expect(list.checklist.map((e) => e.text), contains('ETA-Visum beantragen'));
+    expect(list.checklist.map((e) => e.text), contains('Apply for ETA visa'));
   });
 
   test('re-importing an unchanged export into the same trip changes nothing', () {
@@ -67,7 +67,7 @@ void main() {
   test('partial plan updates, adds and removes against an existing trip', () {
     final demo = demoSriLanka();
     final kandy = demo.items.firstWhere((i) => i.title == 'Kandy');
-    final temple = demo.items.firstWhere((i) => i.title == 'Zahntempel');
+    final temple = demo.items.firstWhere((i) => i.title == 'Temple of the Tooth');
     final galle = demo.items.firstWhere((i) => i.title == 'Galle');
     final imp = _apply(
       _plan(
@@ -155,13 +155,38 @@ void main() {
     expect(imp.items.every((i) => !i.isScheduled), isTrue);
     expect(imp.items.first.parentId, isNull);
     expect(imp.warnings, hasLength(8), reason: imp.warnings.join('\n'));
+    // Language-neutral: a type plus the entry, field and value concerned.
+    expect(
+      [for (final w in imp.warnings) (w.type, w.entry, w.field, w.value)],
+      unorderedEquals([
+        (PlanWarningType.removeUnknown, null, null, 'ghost'),
+        (PlanWarningType.duplicateRef, null, null, 'z'),
+        (PlanWarningType.unknownKind, 'X', null, 'castle'),
+        (PlanWarningType.missingTitle, 'y', null, null),
+        (PlanWarningType.refNotFound, 'Z', 'stay', 'nowhere'),
+        (PlanWarningType.endBeforeStart, 'Z', null, null),
+        (PlanWarningType.dateNeedsStartDate, 'D', 'start', null),
+        (PlanWarningType.invalidMoment, 'D', 'end', '{"day":1,"time":"25:00"}'),
+      ]),
+    );
+  });
+
+  test('a new trip without a title gets the given name', () {
+    final doc = PlanExchange.parse(jsonEncode(_plan(const [], trip: const {})));
+    final imp = PlanExchange.apply(doc, now: DateTime(2026, 10, 17), newId: _id, newTripTitle: 'Importierte Reise');
+    expect(imp.trip.title, 'Importierte Reise');
+    expect(PlanExchange.apply(doc, now: DateTime(2026, 10, 17), newId: _id).trip.title, 'Imported trip');
   });
 
   test('rejects non-plans', () {
+    Matcher error(PlanErrorType type, [String? detail]) =>
+        throwsA(isA<PlanFormatException>().having((e) => e.type, 'type', type).having((e) => e.detail, 'detail', detail));
     expect(() => PlanExchange.parse('Hallo'), throwsFormatException);
-    expect(() => PlanExchange.parse('{"format": "other"}'), throwsFormatException);
-    expect(() => PlanExchange.parse('{"foo": 1}'), throwsFormatException);
-    expect(() => PlanExchange.parse('{"format": "tripboard-plan", "version": 9}'), throwsFormatException);
+    expect(() => PlanExchange.parse('Hallo'), throwsA(isA<PlanFormatException>().having((e) => e.type, 'type', PlanErrorType.invalidJson)));
+    expect(() => PlanExchange.parse('[1]'), error(PlanErrorType.notAnObject));
+    expect(() => PlanExchange.parse('{"format": "other"}'), error(PlanErrorType.unknownFormat, 'other'));
+    expect(() => PlanExchange.parse('{"foo": 1}'), error(PlanErrorType.notAPlan));
+    expect(() => PlanExchange.parse('{"format": "tripboard-plan", "version": 9}'), error(PlanErrorType.tooNew, '9'));
   });
 
   test('the example in the format guide imports cleanly', () {

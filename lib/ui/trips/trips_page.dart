@@ -10,6 +10,7 @@ import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../backup/backups_page.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 import '../common/route_line.dart';
 import '../exchange/plan_exchange_ui.dart';
 import '../trip/trip_page.dart';
@@ -24,9 +25,10 @@ class TripsPage extends ConsumerWidget {
     final trips = ref.watch(tripsProvider);
     final hasAutoBackup = ref.watch(autoBackupProvider) != null;
     final backups = ref.watch(backupsProvider).value;
+    final l = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Meine Reisen'),
+        title: Text(l.myTrips),
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
@@ -40,25 +42,25 @@ class TripsPage extends ConsumerWidget {
               _ => null,
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'claude',
                 child: ListTile(
-                  leading: Icon(Icons.auto_fix_high),
-                  title: Text('Mit Claude planen …'),
+                  leading: const Icon(Icons.auto_fix_high),
+                  title: Text(l.planWithClaude),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'exportAll',
                 child: ListTile(
-                  leading: Icon(Icons.archive_outlined),
-                  title: Text('Alle Reisen exportieren'),
+                  leading: const Icon(Icons.archive_outlined),
+                  title: Text(l.exportAllTrips),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'import',
                 child: ListTile(
-                  leading: Icon(Icons.file_open),
-                  title: Text('Backup importieren'),
+                  leading: const Icon(Icons.file_open),
+                  title: Text(l.importBackup),
                 ),
               ),
               if (hasAutoBackup)
@@ -66,29 +68,29 @@ class TripsPage extends ConsumerWidget {
                   value: 'backups',
                   child: ListTile(
                     leading: const Icon(Icons.settings_backup_restore),
-                    title: const Text('Backups & Wiederherstellen'),
-                    subtitle: Text(lastBackupLabel(backups)),
+                    title: Text(l.backupsAndRestore),
+                    subtitle: Text(lastBackupLabel(l, backups)),
                   ),
                 ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'demo',
                 child: ListTile(
-                  leading: Icon(Icons.auto_awesome),
-                  title: Text('Beispielreisen laden'),
+                  leading: const Icon(Icons.auto_awesome),
+                  title: Text(l.loadDemoTrips),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'trash',
                 child: ListTile(
-                  leading: Icon(Icons.delete_outline),
-                  title: Text('Papierkorb'),
+                  leading: const Icon(Icons.delete_outline),
+                  title: Text(l.trashTitle),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'hints',
                 child: ListTile(
-                  leading: Icon(Icons.lightbulb_outline),
-                  title: Text('Tipps wieder anzeigen'),
+                  leading: const Icon(Icons.lightbulb_outline),
+                  title: Text(l.showHintsAgain),
                 ),
               ),
             ],
@@ -98,11 +100,11 @@ class TripsPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _create(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Neue Reise'),
+        label: Text(l.newTrip),
       ),
       body: trips.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Fehler: $e')),
+        error: (e, _) => Center(child: Text(l.errorWith('$e'))),
         data: (list) => list.isEmpty
             ? _Empty(onDemo: () => _loadDemos(context, ref))
             : ListView(
@@ -122,19 +124,21 @@ class TripsPage extends ConsumerWidget {
 
   void _resetHints(BuildContext context, WidgetRef ref) {
     ref.read(hintsProvider.notifier).resetAll();
-    showSnack(context, 'Tipps werden wieder angezeigt');
+    showSnack(context, context.l10n.hintsReset);
   }
 
   Future<void> _loadDemos(BuildContext context, WidgetRef ref) async {
     final repo = ref.read(repositoryProvider);
-    await repo.putTripData(demoSriLanka());
-    await repo.putTripData(demoInterrail());
-    if (context.mounted) showSnack(context, 'Zwei Beispielreisen angelegt');
+    final texts = context.l10n.demoTexts;
+    await repo.putTripData(demoSriLanka(texts));
+    await repo.putTripData(demoInterrail(texts));
+    if (context.mounted) showSnack(context, context.l10n.demoTripsCreated);
   }
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
     final f = await FilePicker.pickFile(
-      dialogTitle: 'Backup wählen',
+      dialogTitle: l.chooseBackup,
       type: FileType.any,
     );
     if (f == null) return;
@@ -146,10 +150,10 @@ class TripsPage extends ConsumerWidget {
       if (ids.length == 1) {
         openTrip(context, ref, ids.single);
       } else {
-        showSnack(context, ids.isEmpty ? 'Keine Reisen im Backup' : '${ids.length} Reisen importiert');
+        showSnack(context, ids.isEmpty ? l.noTripsInBackup : l.tripsImported(ids.length));
       }
     } catch (e) {
-      if (context.mounted) showSnack(context, 'Import fehlgeschlagen: $e');
+      if (context.mounted) showSnack(context, l.importFailed(l.error(e)));
     }
   }
 }
@@ -175,6 +179,7 @@ class _TripTile extends ConsumerWidget {
     stays.sort((a, b) => a.start!.compareTo(b.start!));
     final days = trip.plannedDays ?? (stays.isEmpty ? null : lastDayOf(stays.last.end!) + 1);
     final theme = Theme.of(context);
+    final l = context.l10n;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -191,25 +196,25 @@ class _TripTile extends ConsumerWidget {
                   Expanded(
                     child: Text(trip.title, style: theme.textTheme.titleLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
                   ),
-                  if (days != null) SignalPill(pluralDays(days)),
+                  if (days != null) SignalPill(l.days(days)),
                   PopupMenuButton<String>(
                     onSelected: (v) => _menu(context, ref, v),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Bearbeiten')),
-                      PopupMenuItem(value: 'export', child: Text('Als Backup exportieren')),
-                      PopupMenuItem(value: 'copy', child: Text('Duplizieren')),
-                      PopupMenuItem(value: 'delete', child: Text('Löschen')),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 'edit', child: Text(l.edit)),
+                      PopupMenuItem(value: 'export', child: Text(l.exportAsBackup)),
+                      PopupMenuItem(value: 'copy', child: Text(l.duplicate)),
+                      PopupMenuItem(value: 'delete', child: Text(l.delete)),
                     ],
                   ),
                 ],
               ),
               if (trip.startDate != null)
-                Text(formatDay(trip.startDate, 0), style: theme.textTheme.labelMedium),
+                Text(l.day(trip.startDate, 0), style: theme.textTheme.labelMedium),
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: stays.isEmpty
-                    ? Text('Noch keine Orte geplant', style: theme.textTheme.bodyMedium)
+                    ? Text(l.noPlacesYet, style: theme.textTheme.bodyMedium)
                     : RouteLine(stations: [for (final s in stays) s.title], color: Color(trip.color)),
               ),
             ],
@@ -221,10 +226,11 @@ class _TripTile extends ConsumerWidget {
 
   Future<void> _menu(BuildContext context, WidgetRef ref, String v) async {
     final repo = ref.read(repositoryProvider);
+    final l = context.l10n;
     switch (v) {
       case 'edit':
         final t = await showTripSettingsDialog(context, trip);
-        if (t != null) await ref.read(planActionsProvider).record(t.id, 'Reise bearbeitet', (r) => r.saveTrip(t));
+        if (t != null) await ref.read(planActionsProvider).record(t.id, l.stepTripEdited, (r) => r.saveTrip(t));
       case 'export':
         await exportTrip(context, ref, trip);
       case 'copy':
@@ -235,12 +241,13 @@ class _TripTile extends ConsumerWidget {
         // so no confirmation. The undo history is kept for a restore.
         final messenger = ScaffoldMessenger.of(context);
         await repo.trashTrip(trip.id);
-        showUndoSnack(messenger, 'Reise gelöscht', () => repo.restoreFromTrash(trip.id));
+        showUndoSnack(messenger, l.tripDeleted, () => repo.restoreFromTrash(trip.id));
     }
   }
 }
 
 Future<void> exportTrip(BuildContext context, WidgetRef ref, Trip trip) async {
+  final l = context.l10n;
   try {
     final bytes = await Backup.exportTrip(
       ref.read(repositoryProvider),
@@ -251,36 +258,37 @@ Future<void> exportTrip(BuildContext context, WidgetRef ref, Trip trip) async {
       fileName: '$safe.travelplan.zip',
       bytes: bytes,
       mimeType: 'application/zip',
-      dialogTitle: 'Backup speichern',
+      dialogTitle: l.saveBackupDialog,
     );
     if (uri != null && context.mounted) {
-      showSnack(context, 'Backup gespeichert');
+      showSnack(context, l.backupSaved);
     }
   } catch (e) {
-    if (context.mounted) showSnack(context, 'Export fehlgeschlagen: $e');
+    if (context.mounted) showSnack(context, l.exportFailed('$e'));
   }
 }
 
-/// One ZIP with all trips (not the trash), importable via "Backup importieren".
+/// One ZIP with all trips (not the trash), importable via "Import backup".
 Future<void> exportAllTrips(BuildContext context, WidgetRef ref) async {
+  final l = context.l10n;
   try {
     final repo = ref.read(repositoryProvider);
     if ((await repo.watchTrips().first).isEmpty) {
-      if (context.mounted) showSnack(context, 'Keine Reisen zum Exportieren');
+      if (context.mounted) showSnack(context, l.noTripsToExport);
       return;
     }
     final bytes = await Backup.exportAll(repo);
     final now = DateTime.now();
     String two(int n) => n.toString().padLeft(2, '0');
     final uri = await FilePicker.saveFile(
-      fileName: 'tripboard-alle-reisen-${now.year}${two(now.month)}${two(now.day)}.zip',
+      fileName: '${l.allTripsFileName}-${now.year}${two(now.month)}${two(now.day)}.zip',
       bytes: bytes,
       mimeType: 'application/zip',
-      dialogTitle: 'Alle Reisen speichern',
+      dialogTitle: l.saveAllTripsDialog,
     );
-    if (uri != null && context.mounted) showSnack(context, 'Alle Reisen exportiert');
+    if (uri != null && context.mounted) showSnack(context, l.allTripsExported);
   } catch (e) {
-    if (context.mounted) showSnack(context, 'Export fehlgeschlagen: $e');
+    if (context.mounted) showSnack(context, l.exportFailed('$e'));
   }
 }
 
@@ -302,20 +310,19 @@ class _Empty extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Noch keine Reise geplant',
+            context.l10n.noTripYet,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Lege eine neue Reise an oder schau dir zuerst die Beispiele an '
-            '(Interrail Frankreich/Spanien und Sri Lanka).',
+          Text(
+            context.l10n.emptyTripsBody,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: onDemo,
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('Beispielreisen laden'),
+            label: Text(context.l10n.loadDemoTrips),
           ),
         ],
       ),

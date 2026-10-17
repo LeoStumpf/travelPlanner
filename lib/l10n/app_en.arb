@@ -1,0 +1,1248 @@
+{
+  "@@locale": "en",
+  "appTitle": "Tripboard",
+  "kindStay": "Place",
+  "kindTransport": "Transport",
+  "kindAccommodation": "Accommodation",
+  "kindActivity": "Activity",
+  "statusIdea": "Idea",
+  "statusOption": "Option",
+  "statusPlanned": "Planned",
+  "statusBooked": "Booked",
+  "modeTrain": "Train",
+  "modeBus": "Bus",
+  "modePlane": "Flight",
+  "modeFerry": "Ferry",
+  "modeCar": "Car",
+  "modeTaxi": "Taxi/Tuk-tuk",
+  "modeWalk": "On foot",
+  "modeOther": "Other",
+  "shiftFollowing": "Move everything after",
+  "shiftPush": "Only push when needed",
+  "shiftSingle": "Only this item",
+  "shiftFollowingShort": "Everything after",
+  "shiftPushShort": "Use buffer",
+  "shiftSingleShort": "Only this",
+  "dayPartMorning": "Morning",
+  "dayPartMidday": "Midday",
+  "dayPartAfternoon": "Afternoon",
+  "dayPartEvening": "Evening",
+  "dayPartNight": "Night",
+  "viewCanvas": "Canvas",
+  "viewNotes": "Notes",
+  "viewTimeline": "Schedule",
+  "viewMap": "Map",
+  "dayNumber": "Day {n}",
+  "@dayNumber": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dayWithNumber": "{date} (day {n})",
+  "@dayWithNumber": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dayAndTime": "{day}, {time}",
+  "@dayAndTime": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "daysCount": "{count, plural, =1{1 day} other{{count} days}}",
+  "@daysCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nightsCount": "{count, plural, =1{1 night} other{{count} nights}}",
+  "@nightsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursShort": "{count}h",
+  "@hoursShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesShort": "{count}min",
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "layerLabel": "Layer {n}: {kind}",
+  "@layerLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictStaysOverlap": "“{item}” starts {duration} before “{other}” ends",
+  "@conflictStaysOverlap": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictLodgingOutsideStay": "“{item}” doesn't fit the days in {other}",
+  "@conflictLodgingOutsideStay": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictActivityOutsideStay": "“{item}” is outside the stay in {other}",
+  "@conflictActivityOutsideStay": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictStayEndsAfterDeparture": "“{stay}” ends after “{transport}” departs",
+  "@conflictStayEndsAfterDeparture": {
+    "placeholders": {
+      "stay": {
+        "type": "String"
+      },
+      "transport": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictDaysBeforeDeparture": "{days, plural, =1{1 day} other{{days} days}} without a place between “{stay}” and the departure of “{transport}”",
+  "@conflictDaysBeforeDeparture": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "stay": {
+        "type": "String"
+      },
+      "transport": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictStayStartsBeforeArrival": "“{stay}” starts before “{transport}” arrives",
+  "@conflictStayStartsBeforeArrival": {
+    "placeholders": {
+      "stay": {
+        "type": "String"
+      },
+      "transport": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictDaysAfterArrival": "{days, plural, =1{1 day} other{{days} days}} without a place between the arrival of “{transport}” and “{stay}”",
+  "@conflictDaysAfterArrival": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "transport": {
+        "type": "String"
+      },
+      "stay": {
+        "type": "String"
+      }
+    }
+  },
+  "fixPushLater": "Push “{title}” back",
+  "@fixPushLater": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixFitNightsToStay": "Fit nights to {title}",
+  "@fixFitNightsToStay": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixMoveIntoStay": "Move into {title}",
+  "@fixMoveIntoStay": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixShortenToDeparture": "Shorten “{title}” to the departure",
+  "@fixShortenToDeparture": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixExtendToDeparture": "Extend “{title}” to the departure",
+  "@fixExtendToDeparture": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixStartLaterAtArrival": "Start “{title}” only on arrival",
+  "@fixStartLaterAtArrival": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixStartEarlierAtArrival": "Start “{title}” on arrival",
+  "@fixStartEarlierAtArrival": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "warnRemoveUnknown": "remove: “{value}” does not exist – ignored",
+  "@warnRemoveUnknown": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnDuplicateRef": "ref “{value}” appears more than once – only the first entry counts",
+  "@warnDuplicateRef": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnRefNotFound": "“{entry}”: {field} “{value}” not found – link removed",
+  "@warnRefNotFound": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownKind": "“{entry}”: unknown kind “{value}” – skipped",
+  "@warnUnknownKind": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnMissingKind": "“{entry}”: “kind” missing – skipped",
+  "@warnMissingKind": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "warnMissingTitle": "Entry without a title (ref {entry}) – skipped",
+  "@warnMissingTitle": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownStatus": "“{entry}”: unknown status “{value}” – ignored",
+  "@warnUnknownStatus": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownMode": "“{entry}”: unknown mode “{value}” – using “other”",
+  "@warnUnknownMode": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnSelfReference": "“{entry}”: {field} points to itself – removed",
+  "@warnSelfReference": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "warnStartOrEndOnly": "“{entry}”: only start or end given – stays unscheduled",
+  "@warnStartOrEndOnly": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "warnEndBeforeStart": "“{entry}”: end is before start – time not applied",
+  "@warnEndBeforeStart": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnsupportedNoteType": "“{entry}”: note type “{value}” is not supported – skipped",
+  "@warnUnsupportedNoteType": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnImageTypeFixed": "“{entry}”: image notes can't change their type – type ignored",
+  "@warnImageTypeFixed": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "warnEmptyNote": "Empty note (ref {entry}) – skipped",
+  "@warnEmptyNote": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "warnNotAnInteger": "Trip: {field} “{value}” is not a whole number – ignored",
+  "@warnNotAnInteger": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnInvalidStartDate": "Trip: startDate “{value}” is not a date (YYYY-MM-DD) – ignored",
+  "@warnInvalidStartDate": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnDateNeedsStartDate": "“{entry}”: {field}: a date needs the trip's start date (trip.startDate) – ignored",
+  "@warnDateNeedsStartDate": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "warnInvalidMoment": "“{entry}”: {field}: “{value}” not understood (expected {example}) – ignored",
+  "@warnInvalidMoment": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "example": {
+        "type": "String"
+      }
+    }
+  },
+  "planErrorInvalidJson": "No valid JSON found ({detail})",
+  "@planErrorInvalidJson": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "planErrorNotAnObject": "No plan found (JSON object expected)",
+  "planErrorUnknownFormat": "Unknown format “{detail}” (expected: {expected})",
+  "@planErrorUnknownFormat": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
+    }
+  },
+  "planErrorNotAPlan": "Not a Tripboard plan: “items” or “trip” missing",
+  "planErrorTooNew": "Plan version {detail} is newer than this app (supports {supported})",
+  "@planErrorTooNew": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      },
+      "supported": {
+        "type": "int"
+      }
+    }
+  },
+  "importedTripTitle": "Imported trip",
+  "demoInterrailTitle": "Interrail France & Spain",
+  "demoAvignonNotes": "Might fit into the free days between Lyon and Barcelona",
+  "demoSagradaFamilia": "Sagrada Família (booked)",
+  "demoPaellaCourse": "Paella cooking class",
+  "demoFlightHomeValencia": "Flight home Valencia → Home",
+  "demoPassTitle": "Interrail Pass",
+  "demoPassText": "Global Pass: 7 travel days within 1 month.\nReservations needed for TGV & Euromed!",
+  "demoPackingList": "Packing list",
+  "demoPackingItems": "Passport|Interrail app offline|Adapter|Swimwear|Power bank",
+  "demoReservationsLink": "Interrail reservations",
+  "demoFreeDaysTitle": "Free days 7–8",
+  "demoFreeDaysText": "Ideas: Avignon, Montpellier or Carcassonne?",
+  "demoSriLankaTitle": "Sri Lanka 2.5 weeks",
+  "demoYalaName": "Yala National Park",
+  "demoYalaNotes": "Safari early in the morning – between Ella and Mirissa",
+  "demoFlightOut": "Flight out",
+  "demoTrainKandyElla": "Train Kandy → Ella",
+  "demoFlightHomeColombo": "Flight home from Colombo",
+  "demoLionRock": "Lion Rock",
+  "demoToothTemple": "Temple of the Tooth",
+  "demoTrainNote": "Reserve 2nd class seats – right side for the view!",
+  "demoPreparation": "Preparation",
+  "demoPreparationItems": "Apply for ETA visa|Check vaccinations|Mosquito repellent|Exchange rupees",
+  "demoRailwayTimetable": "Sri Lanka Railways timetable",
+  "demoRoughIdea": "Rough idea",
+  "demoRoughIdeaText": "Cultural triangle → highlands → south/beach.\nThere are free days between Ella and Mirissa – Yala safari?",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "ok": "OK",
+  "save": "Save",
+  "discard": "Discard",
+  "keepEditing": "Keep editing",
+  "undo": "Undo",
+  "unsavedChangesTitle": "Unsaved changes",
+  "unsavedChangesBody": "Do you want to save your changes?",
+  "gotIt": "Got it",
+  "hintTimeline": "Long-press a block and drag to move it. Long-press a day header to add something on that day. Pinch with two fingers to zoom.",
+  "hintMap": "Long-press the map to add a place, an accommodation or an activity there.",
+  "hintCanvas": "Long-press cards and drag to move them. Pinch with two fingers to zoom.",
+  "fixedApplied": "Fixed: {fix}",
+  "@fixedApplied": {
+    "placeholders": {
+      "fix": {
+        "type": "String"
+      }
+    }
+  },
+  "notScheduledYet": "Not scheduled yet",
+  "stepChosen": "“{title}” chosen",
+  "@stepChosen": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepMarkedBooked": "“{title}” marked as booked",
+  "@stepMarkedBooked": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepUnbooked": "“{title}” no longer booked",
+  "@stepUnbooked": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFixed": "“{title}” fixed",
+  "@stepFixed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepUnfixed": "“{title}” no longer fixed",
+  "@stepUnfixed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepShiftedDays": "“{title}” {sign}{days}",
+  "@stepShiftedDays": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "sign": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "stepDeleted": "“{title}” deleted",
+  "@stepDeleted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteQuestion": "Delete “{title}”?",
+  "@deleteQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fixedAppointment": "Fixed appointment",
+  "belongsTo": "Belongs to {title}",
+  "@belongsTo": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "edit": "Edit",
+  "chooseThisOption": "Choose this option",
+  "sectionAccommodations": "Accommodations",
+  "sectionActivities": "Activities",
+  "sectionLinks": "Links",
+  "sectionAttachments": "Tickets & attachments",
+  "checklistProgress": "{done}/{total} done",
+  "@checklistProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "add": "Add",
+  "transportHere": "Transport here",
+  "transportOnward": "Onward transport",
+  "choose": "Choose",
+  "fixedChip": "Fixed",
+  "fixedTooltip": "Fixed items stay put when things move",
+  "fixedNotMoved": "Fixed items are not moved",
+  "minusOneDay": "−1 day",
+  "plusOneDay": "+1 day",
+  "checklistMoreDone": "+ {count} done",
+  "@checklistMoreDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchNotes": "Search notes",
+  "notesEmpty": "Collect ideas, links, screenshots and checklists here.\nTap + to add something.",
+  "notesPinned": "PINNED",
+  "notesOthers": "OTHERS",
+  "placeSearchFailed": "Search not possible (offline?)",
+  "placeSearchHint": "Place, city, sight …",
+  "osmAttribution": "Map data © OpenStreetMap contributors",
+  "timeOfDay": "Time",
+  "exactTime": "Exact time …",
+  "pickDay": "Choose day",
+  "attachmentsTitle": "Attachments & tickets",
+  "takePhoto": "Take photo",
+  "imageFromGallery": "Image from gallery",
+  "attachFileTooltip": "File (PDF ticket …)",
+  "attachmentsEmpty": "Nothing attached yet – e.g. a train ticket as PDF or a screenshot of the booking.",
+  "stepImageAttached": "Image attached",
+  "attachFileDialog": "Attach file",
+  "stepFileAttached": "“{name}” attached",
+  "@stepFileAttached": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeQuestion": "Remove “{name}”?",
+  "@removeQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFileRemoved": "“{name}” removed",
+  "@stepFileRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "newTrip": "New trip",
+  "editTrip": "Edit trip",
+  "tripTitleLabel": "Title",
+  "tripTitleHint": "e.g. Sri Lanka 2.5 weeks",
+  "plannedDaysLabel": "Planned length (days)",
+  "optional": "optional",
+  "startDateOpen": "Start date: not set yet",
+  "startDateValue": "Start: {date}",
+  "@startDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "removeDate": "Remove date",
+  "withoutDateHint": "Without a date you plan with “Day 1, Day 2 …”.",
+  "trashTitle": "Trash",
+  "trashEmptyAction": "Empty",
+  "errorWith": "Error: {error}",
+  "@errorWith": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "trashIsEmpty": "The trash is empty.\nDeleted trips stay here for 30 days, then they are removed for good.",
+  "trashEmptyQuestion": "Empty trash?",
+  "trashEmptyBody": "{count, plural, =1{One trip will be deleted for good} other{{count} trips will be deleted for good}} with all places, notes and attachments.",
+  "@trashEmptyBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteForGood": "Delete for good",
+  "trashPurgeHint": "{days, plural, =0{Will be deleted for good on next start} =1{Will be deleted for good tomorrow} other{Will be deleted for good in {days} days}}",
+  "@trashPurgeHint": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "trashDeletedOn": "Deleted on {date}",
+  "@trashDeletedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "restore": "Restore",
+  "tripRestored": "“{title}” restored",
+  "@tripRestored": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTripForGoodQuestion": "Delete “{title}” for good?",
+  "@deleteTripForGoodQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTripForGoodBody": "All places, notes and attachments of this trip will be removed. This cannot be undone.",
+  "noBackupYet": "No backup yet",
+  "lastBackup": "Last backup: {time}",
+  "@lastBackup": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupsTitle": "Backups",
+  "backupNow": "Back up now",
+  "backupsExplanation": "Tripboard backs up all trips automatically when the app starts or goes to the background and the last backup is older than a day. The last {keep} backups are kept.\nThey are stored in the app folder{path} and are deleted when the app is uninstalled. For a permanent copy use “Save as …” on a backup or “Export all trips”.",
+  "@backupsExplanation": {
+    "placeholders": {
+      "keep": {
+        "type": "int"
+      }
+    }
+  },
+  "noAutoBackups": "No automatic backups yet.",
+  "saveAs": "Save as …",
+  "backupCreated": "Backup created",
+  "backupFailed": "Backup failed: {error}",
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreBackupQuestion": "Restore backup?",
+  "restoreBackupBody": "All trips from the backup of {time} are reset to that state or created again. Trips that are not in the backup stay unchanged. The current state is backed up first.",
+  "@restoreBackupBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tripsRestored": "{count, plural, =1{One trip restored} other{{count} trips restored}}",
+  "@tripsRestored": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreFailed": "Restore failed: {error}",
+  "@restoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "saveBackupDialog": "Save backup",
+  "backupSaved": "Backup saved",
+  "saveFailed": "Saving failed: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorNotABackup": "Not a Tripboard backup",
+  "errorNewerData": "The data is from a newer app version (format {found}, supported: {supported}). Please update Tripboard.",
+  "@errorNewerData": {
+    "placeholders": {
+      "found": {
+        "type": "int"
+      },
+      "supported": {
+        "type": "int"
+      }
+    }
+  },
+  "myTrips": "My trips",
+  "planWithClaude": "Plan with Claude …",
+  "exportAllTrips": "Export all trips",
+  "importBackup": "Import backup",
+  "backupsAndRestore": "Backups & restore",
+  "loadDemoTrips": "Load example trips",
+  "showHintsAgain": "Show tips again",
+  "hintsReset": "Tips will be shown again",
+  "demoTripsCreated": "Two example trips created",
+  "chooseBackup": "Choose backup",
+  "noTripsInBackup": "No trips in the backup",
+  "tripsImported": "{count, plural, =1{One trip imported} other{{count} trips imported}}",
+  "@tripsImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exportAsBackup": "Export as backup",
+  "duplicate": "Duplicate",
+  "noPlacesYet": "No places planned yet",
+  "stepTripEdited": "Trip edited",
+  "tripDeleted": "Trip deleted",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noTripsToExport": "No trips to export",
+  "allTripsFileName": "tripboard-all-trips",
+  "saveAllTripsDialog": "Save all trips",
+  "allTripsExported": "All trips exported",
+  "noTripYet": "No trip planned yet",
+  "emptyTripsBody": "Create a new trip or have a look at the examples first (Interrail France/Spain and Sri Lanka).",
+  "tripNotFound": "Trip not found",
+  "undoWithLabel": "Undo: {label}",
+  "@undoWithLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "exportBackup": "Export backup",
+  "layerOptions": "Options",
+  "layerOptionsTooltip": "Show accommodation options",
+  "addSheetPlan": "Plan",
+  "addSheetCollect": "Collect",
+  "cardNote": "Note",
+  "cardChecklist": "Checklist",
+  "cardLink": "Link",
+  "cardImage": "Image",
+  "stepSharedSaved": "Shared content saved",
+  "saveToWhichTrip": "Save to which trip?",
+  "newTripEllipsis": "New trip …",
+  "tripCreated": "Trip “{title}” created",
+  "@tripCreated": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeSteps": "1. Copy and paste into the Claude app\n2. Add your wishes and let it plan\n3. Copy Claude's answer (or share it to Tripboard) and apply it here",
+  "copyTripForClaude": "Copy trip for Claude",
+  "copyTripForClaudeSub": "Guide + current plan",
+  "copyGuideOnly": "Copy guide only",
+  "copyGuideOnlySub": "For a new trip or as project instructions in Claude",
+  "pastePlan": "Apply plan from clipboard",
+  "openPlanFile": "Open plan file",
+  "copiedForClaude": "Copied – now paste it into the Claude app",
+  "clipboardEmpty": "Clipboard is empty",
+  "choosePlan": "Choose plan",
+  "fileNotReadable": "File not readable: {error}",
+  "@fileNotReadable": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "promptNewTrip": "New trip. My wishes: ",
+  "promptMyWishes": "My wishes: ",
+  "invalidPlan": "Not a valid plan: {error}",
+  "@invalidPlan": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "planApplied": "Plan applied",
+  "applyPlanTitle": "Apply plan",
+  "importTarget": "Target",
+  "newTripNamed": "New trip “{title}”",
+  "@newTripNamed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "planNoChanges": "The plan contains no changes.",
+  "planTripChanged": "• Trip details (title/start/length) change",
+  "planItemsCreated": "• {count, plural, =1{1 new entry} other{{count} new entries}}",
+  "@planItemsCreated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planItemsUpdated": "• {count, plural, =1{1 entry changed} other{{count} entries changed}}",
+  "@planItemsUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planItemsRemoved": "• {count, plural, =1{1 entry deleted} other{{count} entries deleted}}",
+  "@planItemsRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planNotesCreated": "• {count, plural, =1{1 new note} other{{count} new notes}}",
+  "@planNotesCreated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planNotesUpdated": "• {count, plural, =1{1 note changed} other{{count} notes changed}}",
+  "@planNotesUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planNotesRemoved": "• {count, plural, =1{1 note deleted} other{{count} notes deleted}}",
+  "@planNotesRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planFromOtherTrip": "The plan comes from another trip – everything will be created anew.",
+  "findCoordinates": "{count, plural, =1{Find coordinates for 1 entry} other{Find coordinates for {count} entries}}",
+  "@findCoordinates": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "findCoordinatesSub": "Via OpenStreetMap, needs internet",
+  "planWarningsCount": "{count, plural, =1{1 note} other{{count} notes}}",
+  "@planWarningsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "apply": "Apply",
+  "searchingCoordinates": "Searching coordinates …",
+  "saving": "Saving …",
+  "stepPlanImported": "Plan imported",
+  "showAll": "Show all",
+  "withoutPlaceCount": "{count} without a place",
+  "@withoutPlaceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addHere": "Add here",
+  "itemsWithoutPlace": "These items don't have a place yet",
+  "stepNoteCreated": "Note created",
+  "stepCardCreated": "“{title}” created",
+  "@stepCardCreated": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepNoteChanged": "Note changed",
+  "stepCardChanged": "“{title}” changed",
+  "@stepCardChanged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepNoteDiscarded": "Note discarded",
+  "stepNoteDeleted": "Note deleted",
+  "unpin": "Unpin",
+  "pin": "Pin",
+  "addToPlan": "Add to plan …",
+  "convertToNote": "Convert to note",
+  "convertToChecklist": "Convert to checklist",
+  "titleHint": "Title",
+  "belongsToLabel": "Belongs to",
+  "nothingOption": "— nothing —",
+  "urlLabel": "URL",
+  "loadPreview": "Load preview",
+  "open": "Open",
+  "previewFailed": "Preview could not be loaded",
+  "entryHint": "Entry",
+  "doneCount": "{count} done",
+  "@doneCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteNoteQuestion": "Delete note?",
+  "addToPlanAs": "Add to the plan as …",
+  "pickedOnMap": "Picked on the map",
+  "transportTo": "To {title}",
+  "@transportTo": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "transportFrom": "From {title}",
+  "@transportFrom": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "newItemTitle": "New: {kind}",
+  "@newItemTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "titleHintStay": "e.g. Kandy",
+  "titleHintTransport": "e.g. Train Kandy → Ella",
+  "titleHintAccommodation": "e.g. Tree House Ella",
+  "titleHintActivity": "e.g. Safari in Yala NP",
+  "statusLabel": "Status",
+  "fixedSubtitle": "Doesn't move when something before it is moved (e.g. booked tour, flight home)",
+  "inSchedule": "In the schedule",
+  "hasTimes": "Has days/times",
+  "collectedOnly": "Only collected – no date yet",
+  "notesLabel": "Notes",
+  "noTitle": "(no title)",
+  "belongsToPlace": "Belongs to place",
+  "movesWithPlace": "Moves along when the place moves.",
+  "transportMode": "Mode of transport",
+  "fromLabel": "From",
+  "toLabel": "To",
+  "setPlaceOnMap": "Set place on the map",
+  "roughIsEnough": "Rough is fine – the city is enough",
+  "labelArrival": "Arrival",
+  "labelCheckIn": "Check-in",
+  "labelDeparture": "Departure",
+  "labelStart": "Start",
+  "labelLeave": "Departure",
+  "labelCheckOut": "Check-out",
+  "labelEnd": "End",
+  "daysExplanation": "Days count every started day. Arriving early and leaving late = more days for the same number of nights.",
+  "addLink": "Add link",
+  "stepItemCreated": "“{title}” created",
+  "@stepItemCreated": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepItemChanged": "“{title}” changed",
+  "@stepItemChanged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "othersMoved": "{count, plural, =1{1 more item moved} other{{count} more items moved}} ({mode})",
+  "@othersMoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "stepMovedOnCanvas": "“{title}” moved on the canvas",
+  "@stepMovedOnCanvas": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepConnectionRemoved": "Connection removed",
+  "stepConnectionCreated": "Connection created",
+  "connect": "Connect",
+  "connectFirst": "Connect: tap the first item",
+  "connectSecond": "Now tap the second item (same pair again = remove the connection)",
+  "dragging": "Dragging …",
+  "nightTitle": "Night {from} → {to}",
+  "@nightTitle": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "stepMoved": "“{title}” moved",
+  "@stepMoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepEndChanged": "“{title}”: end changed",
+  "@stepEndChanged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepStartChanged": "“{title}”: start changed",
+  "@stepStartChanged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "othersMovedAlong": "{count} more moved along",
+  "@othersMovedAlong": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictsCount": "{count, plural, =1{1 conflict} other{{count} conflicts}}",
+  "@conflictsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "freeDays": "{count, plural, =1{1 day free} other{{count} days free}}",
+  "@freeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noTransportBetween": "No transport from “{from}” to “{to}”",
+  "@noTransportBetween": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "itemIsFixed": "“{title}” is fixed and won't be moved",
+  "@itemIsFixed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "nightsShort": "{count}N",
+  "@nightsShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noAccommodationTonight": "No accommodation for this night yet",
+  "chooseOption": "Choose an option",
+  "newAccommodation": "New accommodation",
+  "noAccommodationOptions": "{count, plural, =0{No accommodation for this night yet} =1{No accommodation yet – 1 option} other{No accommodation yet – {count} options}}",
+  "@noAccommodationOptions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shiftModeTooltip": "Shift mode",
+  "zoomOut": "Zoom out",
+  "zoomIn": "Zoom in",
+  "unscheduledLabel": "Unscheduled:"
+}

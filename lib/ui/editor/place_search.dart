@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../data/geocoding.dart';
+import '../common/l10n.dart';
 
 final _geocoder = Geocoder();
 
@@ -54,10 +55,10 @@ class _PlaceSearchPageState extends State<_PlaceSearchPage> {
       _error = null;
     });
     try {
-      final r = await _geocoder.search(q);
+      final r = await _geocoder.search(q, lang: context.l10n.localeName);
       if (req == _req && mounted) setState(() => _results = r);
     } catch (e) {
-      if (req == _req && mounted) setState(() => _error = 'Suche nicht möglich (offline?)');
+      if (req == _req && mounted) setState(() => _error = context.l10n.placeSearchFailed);
     } finally {
       if (req == _req && mounted) setState(() => _loading = false);
     }
@@ -70,7 +71,7 @@ class _PlaceSearchPageState extends State<_PlaceSearchPage> {
         title: TextField(
           controller: _ctrl,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Ort, Stadt, Sehenswürdigkeit …', border: InputBorder.none),
+          decoration: InputDecoration(hintText: context.l10n.placeSearchHint, border: InputBorder.none),
           onChanged: _onChanged,
           onSubmitted: _search,
         ),
@@ -89,9 +90,9 @@ class _PlaceSearchPageState extends State<_PlaceSearchPage> {
                     subtitle: r.detail.isEmpty ? null : Text(r.detail),
                     onTap: () => Navigator.pop(context, r),
                   ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Kartendaten © OpenStreetMap-Mitwirkende', style: TextStyle(fontSize: 11)),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(context.l10n.osmAttribution, style: const TextStyle(fontSize: 11)),
                 ),
               ],
             ),

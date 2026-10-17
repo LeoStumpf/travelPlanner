@@ -14,6 +14,8 @@ import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/canvas/canvas_view.dart';
 import 'package:travel_planner/ui/timeline/timeline_view.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Repository repo;
   late ProviderContainer container;
@@ -41,7 +43,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(home: Scaffold(body: view(data))),
+        child: testApp(home: Scaffold(body: view(data))),
       ),
     );
     await tester.pump();

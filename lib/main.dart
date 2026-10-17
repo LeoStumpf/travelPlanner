@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +13,7 @@ import 'data/repository.dart';
 import 'state/hints.dart';
 import 'state/providers.dart';
 import 'ui/backup/auto_backup_listener.dart';
+import 'ui/common/l10n.dart';
 import 'ui/common/theme.dart';
 import 'ui/share/share_listener.dart';
 import 'ui/trips/trips_page.dart';
@@ -72,13 +72,14 @@ class TravelPlannerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Tripboard',
+        onGenerateTitle: (context) => context.l10n.appTitle,
         debugShowCheckedModeBanner: false,
         theme: buildTheme(Brightness.light),
         darkTheme: buildTheme(Brightness.dark),
-        locale: const Locale('de'),
-        supportedLocales: const [Locale('de'), Locale('en')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        // Follows the device language; anything but German falls back to
+        // English (the first supported locale).
+        supportedLocales: appLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         navigatorKey: navigatorKey,
         builder: (context, child) => ShareListener(child: AutoBackupListener(child: child!)),
         home: const TripsPage(),

@@ -8,6 +8,7 @@ import '../../data/link_preview.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 import 'attachments_section.dart';
 import 'item_editor_page.dart';
@@ -52,6 +53,8 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
   late String? _storedJson = widget.isNew ? null : jsonEncode(widget.initial.toJson());
   // Saves run one after another so a background save and the save on leaving never overlap.
   Future<void> _saving = Future.value();
+  // Kept from the last build, so saving works while the page is being popped.
+  AppLocalizations? _l;
 
   TextEditingController _entryCtrl(ChecklistEntry e) =>
       _entryCtrls.putIfAbsent(e.id, () => TextEditingController(text: e.text));
@@ -108,17 +111,20 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
     );
     final json = jsonEncode(cleaned.toJson());
     final stored = _storedJson;
-    final name = cleaned.title.isEmpty ? 'Notiz' : '„${cleaned.title}“';
+    final l = _l ?? context.l10n;
+    final t = cleaned.title;
     Future<void> Function()? step;
     if (stored == null) {
       // A new card is only created once it has content.
-      if (!empty) step = () => actions.record(widget.tripId, '$name angelegt', (r) => r.saveCard(cleaned));
+      final label = t.isEmpty ? l.stepNoteCreated : l.stepCardCreated(t);
+      if (!empty) step = () => actions.record(widget.tripId, label, (r) => r.saveCard(cleaned));
     } else if (widget.isNew && empty && data != null) {
       // A new card that was saved in the background and then emptied again goes away.
-      step = () => actions.record(widget.tripId, 'Notiz verworfen', (r) => r.deleteCard(data, cleaned.id));
+      step = () => actions.record(widget.tripId, l.stepNoteDiscarded, (r) => r.deleteCard(data, cleaned.id));
     } else if (json != stored) {
       // Leaving without changes must not add an undo step.
-      step = () => actions.record(widget.tripId, '$name geändert', (r) => r.saveCard(cleaned));
+      final label = t.isEmpty ? l.stepNoteChanged : l.stepCardChanged(t);
+      step = () => actions.record(widget.tripId, label, (r) => r.saveCard(cleaned));
     }
     if (step == null) return _saving;
     _storedJson = widget.isNew && empty ? null : json;
@@ -130,6 +136,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
     final data = ref.watch(tripDataProvider(widget.tripId)).value;
     if (data == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     final linked = data.item(_c.itemId);
+    final l = _l = context.l10n;
 
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
@@ -141,19 +148,19 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
           backgroundColor: Colors.transparent,
           actions: [
             IconButton(
-              tooltip: _c.pinned ? 'Lösen' : 'Anheften',
+              tooltip: _c.pinned ? l.unpin : l.pin,
               icon: Icon(_c.pinned ? Icons.push_pin : Icons.push_pin_outlined),
               onPressed: () => setState(() => _c = _c.copyWith(pinned: !_c.pinned)),
             ),
             PopupMenuButton<String>(
               onSelected: (v) => _menu(v, data),
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'plan', child: Text('In Plan übernehmen …')),
+                PopupMenuItem(value: 'plan', child: Text(l.addToPlan)),
                 PopupMenuItem(
                   value: 'toggle',
-                  child: Text(_c.type == CardType.checklist ? 'In Notiz umwandeln' : 'In Checkliste umwandeln'),
+                  child: Text(_c.type == CardType.checklist ? l.convertToNote : l.convertToChecklist),
                 ),
-                const PopupMenuItem(value: 'delete', child: Text('Löschen')),
+                PopupMenuItem(value: 'delete', child: Text(l.delete)),
               ],
             ),
           ],
@@ -165,7 +172,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
               controller: _title,
               style: Theme.of(context).textTheme.titleLarge,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(hintText: 'Titel', border: InputBorder.none),
+              decoration: InputDecoration(hintText: l.titleHint, border: InputBorder.none),
             ),
             if (_c.type == CardType.link) ..._linkFields(),
             if (_c.type == CardType.checklist) ..._checklistFields() else
@@ -175,7 +182,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
                 minLines: 4,
                 maxLines: null,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(hintText: 'Notiz', border: InputBorder.none),
+                decoration: InputDecoration(hintText: l.cardNote, border: InputBorder.none),
               ),
             const SizedBox(height: 12),
             Wrap(
@@ -196,9 +203,9 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
             DropdownButtonFormField<String?>(
               initialValue: linked?.id,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Gehört zu', prefixIcon: Icon(Icons.link)),
+              decoration: InputDecoration(labelText: l.belongsToLabel, prefixIcon: const Icon(Icons.link)),
               items: [
-                const DropdownMenuItem(value: null, child: Text('— nichts —')),
+                DropdownMenuItem(value: null, child: Text(l.nothingOption)),
                 for (final i in data.items)
                   DropdownMenuItem(
                     value: i.id,
@@ -225,19 +232,19 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
             child: TextField(
               controller: _url,
               keyboardType: TextInputType.url,
-              decoration: const InputDecoration(labelText: 'URL', hintText: 'https://…'),
+              decoration: InputDecoration(labelText: context.l10n.urlLabel, hintText: 'https://…'),
               onSubmitted: (_) => _fetchPreview(),
             ),
           ),
           IconButton(
-            tooltip: 'Vorschau laden',
+            tooltip: context.l10n.loadPreview,
             onPressed: _loadingPreview ? null : _fetchPreview,
             icon: _loadingPreview
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.refresh),
           ),
           IconButton(
-            tooltip: 'Öffnen',
+            tooltip: context.l10n.open,
             onPressed: _url.text.trim().isEmpty
                 ? null
                 : () => launchUrl(Uri.parse(_normalizeUrl(_url.text.trim())), mode: LaunchMode.externalApplication),
@@ -268,7 +275,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
         if (_title.text.trim().isEmpty && p.title != null) _title.text = p.title!;
       });
     } catch (_) {
-      if (mounted) showSnack(context, 'Vorschau konnte nicht geladen werden');
+      if (mounted) showSnack(context, context.l10n.previewFailed);
     } finally {
       if (mounted) setState(() => _loadingPreview = false);
     }
@@ -291,7 +298,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
                 controller: _entryCtrl(e),
                 autofocus: e.text.isEmpty && widget.isNew,
                 style: e.done ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
-                decoration: const InputDecoration(border: InputBorder.none, hintText: 'Eintrag'),
+                decoration: InputDecoration(border: InputBorder.none, hintText: context.l10n.entryHint),
                 onSubmitted: (_) => _addEntry(),
               ),
             ),
@@ -303,9 +310,9 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
         );
     return [
       ...open.map(row),
-      TextButton.icon(onPressed: _addEntry, icon: const Icon(Icons.add), label: const Text('Eintrag')),
+      TextButton.icon(onPressed: _addEntry, icon: const Icon(Icons.add), label: Text(context.l10n.entryHint)),
       if (done.isNotEmpty) ...[
-        Text('${done.length} erledigt', style: Theme.of(context).textTheme.labelMedium),
+        Text(context.l10n.doneCount(done.length), style: Theme.of(context).textTheme.labelMedium),
         ...done.map(row),
       ],
     ];
@@ -319,6 +326,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
       });
 
   Future<void> _menu(String v, TripData data) async {
+    final l = context.l10n;
     switch (v) {
       case 'delete':
         if (widget.isNew && _storedJson == null) {
@@ -326,15 +334,15 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
           for (final a in data.attachmentsOf(_c.id)) {
             await ref.read(repositoryProvider).deleteAttachment(a);
           }
-        } else if (await confirm(context, 'Notiz löschen?')) {
+        } else if (await confirm(context, l.deleteNoteQuestion)) {
           if (!mounted) return;
           _deleted = true;
           final messenger = ScaffoldMessenger.of(context);
           final actions = ref.read(planActionsProvider);
           await _saving;
-          await actions.record(widget.tripId, 'Notiz gelöscht', (r) => r.deleteCard(data, _c.id));
+          await actions.record(widget.tripId, l.stepNoteDeleted, (r) => r.deleteCard(data, _c.id));
           final step = actions.lastStep(widget.tripId);
-          showUndoSnack(messenger, 'Notiz gelöscht', () => actions.undoStep(widget.tripId, step));
+          showUndoSnack(messenger, l.stepNoteDeleted, () => actions.undoStep(widget.tripId, step));
         } else {
           return;
         }
@@ -346,9 +354,9 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
             _text.text = c.checklist.map((e) => e.text).where((t) => t.isNotEmpty).join('\n');
             _c = c.copyWith(type: CardType.note, checklist: const []);
           } else {
-            final lines = c.text.split('\n').where((l) => l.trim().isNotEmpty);
+            final lines = c.text.split('\n').where((line) => line.trim().isNotEmpty);
             _c = c.copyWith(type: CardType.checklist, checklist: [
-              for (final l in lines) ChecklistEntry(id: newId(), text: l.trim()),
+              for (final line in lines) ChecklistEntry(id: newId(), text: line.trim()),
               if (lines.isEmpty) ChecklistEntry(id: newId(), text: ''),
             ]);
             _text.clear();
@@ -358,12 +366,12 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
         final kind = await showDialog<ItemKind>(
           context: context,
           builder: (c) => SimpleDialog(
-            title: const Text('Als … in den Plan übernehmen'),
+            title: Text(l.addToPlanAs),
             children: [
               for (final k in ItemKind.values)
                 SimpleDialogOption(
                   onPressed: () => Navigator.pop(c, k),
-                  child: Row(children: [Icon(kindIcon(k), color: kindColor(k)), const SizedBox(width: 12), Text(k.label)]),
+                  child: Row(children: [Icon(kindIcon(k), color: kindColor(k)), const SizedBox(width: 12), Text(l.kind(k))]),
                 ),
             ],
           ),

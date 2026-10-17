@@ -10,6 +10,8 @@ import 'package:travel_planner/domain/demo.dart';
 import 'package:travel_planner/domain/models.dart';
 import 'package:travel_planner/ui/trips/trash_page.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Directory tmp;
   late Repository repo;
@@ -85,8 +87,8 @@ void main() {
 
   test('purge hint counts the remaining days', () {
     final now = DateTime(2026, 10, 17, 12);
-    expect(purgeHint(DateTime(2026, 10, 27, 12), now), 'Wird in 10 Tagen endgültig gelöscht');
-    expect(purgeHint(DateTime(2026, 10, 18, 13), now), 'Wird morgen endgültig gelöscht');
-    expect(purgeHint(DateTime(2026, 10, 17, 22), now), 'Wird beim nächsten Start endgültig gelöscht');
+    expect(purgeHint(de, DateTime(2026, 10, 27, 12), now), 'Wird in 10 Tagen endgültig gelöscht');
+    expect(purgeHint(de, DateTime(2026, 10, 18, 13), now), 'Wird morgen endgültig gelöscht');
+    expect(purgeHint(de, DateTime(2026, 10, 17, 22), now), 'Wird beim nächsten Start endgültig gelöscht');
   });
 }

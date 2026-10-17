@@ -9,6 +9,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 import '../../domain/plan_exchange.dart';
 import '../editor/card_editor_page.dart';
 import '../exchange/plan_exchange_ui.dart';
@@ -18,7 +19,7 @@ import '../trips/trips_page.dart';
 final navigatorKey = GlobalKey<NavigatorState>();
 
 /// Receives links, text, screenshots and tickets shared from other apps
-/// ("Teilen → Reiseplaner") and stores them as a card in a chosen trip.
+/// ("Share → Tripboard") and stores them as a card in a chosen trip.
 class ShareListener extends ConsumerStatefulWidget {
   final Widget child;
   const ShareListener({super.key, required this.child});
@@ -67,7 +68,8 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
     if (data == null) return;
 
     NoteCard? last;
-    await ref.read(planActionsProvider).record(tripId, 'Geteilte Inhalte gespeichert', (_) async {
+    final label = navigatorKey.currentContext?.l10n.stepSharedSaved ?? '';
+    await ref.read(planActionsProvider).record(tripId, label, (_) async {
       for (final m in media) {
         last = await _store(data, m) ?? last;
       }
@@ -147,6 +149,7 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
   Future<String?> _chooseTrip(BuildContext context) async {
     final trips = await ref.read(repositoryProvider).watchTrips().first;
     if (!context.mounted) return null;
+    final l = context.l10n;
     final choice = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -154,7 +157,7 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const ListTile(title: Text('In welche Reise speichern?')),
+            ListTile(title: Text(l.saveToWhichTrip)),
             for (final t in trips)
               ListTile(
                 leading: CircleAvatar(backgroundColor: Color(t.color), radius: 10),
@@ -163,7 +166,7 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
               ),
             ListTile(
               leading: const Icon(Icons.add),
-              title: const Text('Neue Reise …'),
+              title: Text(l.newTripEllipsis),
               onTap: () => Navigator.pop(c, ''),
             ),
           ],
@@ -174,7 +177,7 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
     final trip = await showTripSettingsDialog(context, null);
     if (trip == null) return null;
     await ref.read(repositoryProvider).saveTrip(trip);
-    if (context.mounted) showSnack(context, 'Reise „${trip.title}“ angelegt');
+    if (context.mounted) showSnack(context, l.tripCreated(trip.title));
     return trip.id;
   }
 

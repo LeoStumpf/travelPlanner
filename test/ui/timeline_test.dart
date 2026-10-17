@@ -13,6 +13,8 @@ import 'package:travel_planner/domain/time.dart';
 import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/timeline/timeline_view.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Repository repo;
 
@@ -30,7 +32,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(ProviderScope(
       overrides: [repositoryProvider.overrideWithValue(repo)],
-      child: MaterialApp(home: Scaffold(body: TimelineView(data: data))),
+      child: testApp(home: Scaffold(body: TimelineView(data: data))),
     ));
     return data;
   }

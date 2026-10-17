@@ -288,7 +288,10 @@ void main() {
       final c = findConflicts(r.items).single;
       expect(c.itemId, 'tgv');
       expect(c.otherId, 'paris');
-      expect(c.message, contains('1 Tag ohne Ort'));
+      expect(c.type, ConflictType.daysBeforeDeparture);
+      expect(c.amount, 1);
+      expect((c.itemTitle, c.otherTitle), ('TGV', 'paris'));
+      expect(c.fix!.type, ConflictFixType.extendToDeparture);
 
       final fixed = applyFix(r.items, c);
       expect(findConflicts(fixed), isEmpty);
@@ -300,14 +303,16 @@ void main() {
       final items = [...trip(), tgv()];
       final r = Scheduler.resizeEnd(items, 'paris', minutesPerDay, ShiftMode.single);
       final c = findConflicts(r.items).firstWhere((c) => c.otherId == 'paris' && c.itemId == 'tgv');
-      expect(c.fix!.label, contains('kürzen'));
+      expect(c.type, ConflictType.stayEndsAfterDeparture);
+      expect(c.fix!.type, ConflictFixType.shortenToDeparture);
       expect(findConflicts(applyFix(r.items, c)).where((c) => c.itemId == 'tgv'), isEmpty);
     });
 
     test('destination starting days after arrival is fixed by starting it on arrival', () {
       final items = [...trip(), tgv(day: 2)];
       final c = findConflicts(items).firstWhere((c) => c.otherId == 'lyon');
-      expect(c.message, contains('ohne Ort'));
+      expect(c.type, ConflictType.daysAfterArrival);
+      expect(c.fix!.type, ConflictFixType.startEarlierAtArrival);
       final fixed = applyFix(items, c);
       expect(fixed.firstWhere((i) => i.id == 'lyon').start, at(2, 13 * 60));
     });

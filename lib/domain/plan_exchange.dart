@@ -15,6 +15,115 @@ import 'time.dart';
 const planFormat = 'tripboard-plan';
 const planFormatVersion = 1;
 
+/// Why a text could not be read as a plan.
+enum PlanErrorType {
+  /// No JSON could be decoded at all; [PlanFormatException.detail] has the
+  /// decoder's message.
+  invalidJson,
+
+  /// The JSON is not an object.
+  notAnObject,
+
+  /// `format` names another format ([PlanFormatException.detail]).
+  unknownFormat,
+
+  /// Neither `format`, `items` nor `trip`.
+  notAPlan,
+
+  /// `version` ([PlanFormatException.detail]) is newer than [planFormatVersion].
+  tooNew,
+}
+
+/// A text that is not a usable plan. Implements [FormatException] so callers
+/// can keep catching that; the UI words it from [type] and [detail].
+class PlanFormatException implements FormatException {
+  final PlanErrorType type;
+  final String? detail;
+  const PlanFormatException(this.type, [this.detail]);
+
+  @override
+  String get message => detail == null ? type.name : '${type.name}: $detail';
+  @override
+  dynamic get source => null;
+  @override
+  int? get offset => null;
+  @override
+  String toString() => 'PlanFormatException($message)';
+}
+
+/// What a [PlanWarning] is about. The entry is named by [PlanWarning.entry],
+/// the offending field and value by [PlanWarning.field] / [PlanWarning.value].
+enum PlanWarningType {
+  /// `remove` names an unknown ref (value).
+  removeUnknown,
+
+  /// A ref (value) is used more than once; only the first entry counts.
+  duplicateRef,
+
+  /// A link field (field) points at an unknown ref (value); link removed.
+  refNotFound,
+
+  /// Unknown `kind` (value); entry skipped.
+  unknownKind,
+
+  /// New entry without `kind`; skipped.
+  missingKind,
+
+  /// New entry without a title; skipped. [PlanWarning.entry] is its ref.
+  missingTitle,
+
+  /// Unknown `status` (value); ignored.
+  unknownStatus,
+
+  /// Unknown transport `mode` (value); "other" is used.
+  unknownMode,
+
+  /// A link field (field) points at the entry itself; removed.
+  selfReference,
+
+  /// Only `start` or only `end`; the entry stays unscheduled.
+  startOrEndOnly,
+
+  /// `end` before `start`; times not taken over.
+  endBeforeStart,
+
+  /// Unsupported note `type` (value); note skipped.
+  unsupportedNoteType,
+
+  /// Image notes can't change their type; type ignored.
+  imageTypeFixed,
+
+  /// New note without content; skipped. [PlanWarning.entry] is its ref.
+  emptyNote,
+
+  /// A trip field (field) is not a whole number (value); ignored.
+  notAnInteger,
+
+  /// `trip.startDate` (value) is not a YYYY-MM-DD date; ignored.
+  invalidStartDate,
+
+  /// A moment field (field) uses a date but the trip has no start date.
+  dateNeedsStartDate,
+
+  /// A moment field (field) can't be read (value, as JSON); ignored.
+  invalidMoment,
+}
+
+/// A problem with one part of a plan that did not stop the import.
+class PlanWarning {
+  final PlanWarningType type;
+
+  /// Title or ref of the entry concerned ('?' / '–' if it has neither); null
+  /// for warnings about the trip or the remove list.
+  final String? entry;
+  final String? field;
+  final String? value;
+  const PlanWarning(this.type, {this.entry, this.field, this.value});
+
+  @override
+  String toString() => 'PlanWarning(${type.name}, entry: $entry, field: $field, value: $value)';
+}
+
 /// A parsed, not yet applied plan document.
 class PlanDoc {
   final Map<String, Object?> trip;
@@ -48,7 +157,7 @@ class PlanImport {
   final int notesCreated;
   final int notesUpdated;
   final bool tripChanged;
-  final List<String> warnings;
+  final List<PlanWarning> warnings;
 
   const PlanImport({
     required this.trip,
@@ -147,18 +256,18 @@ class PlanExchange {
   /// block or surrounded by prose, as chat apps tend to copy it.
   static PlanDoc parse(String text) {
     final json = _extractJson(text);
-    if (json is! Map) throw const FormatException('Kein Plan gefunden (JSON-Objekt erwartet)');
+    if (json is! Map) throw const PlanFormatException(PlanErrorType.notAnObject);
     final j = json.cast<String, Object?>();
     final format = j['format'];
     if (format != null && format != planFormat) {
-      throw FormatException('Unbekanntes Format „$format“ (erwartet: $planFormat)');
+      throw PlanFormatException(PlanErrorType.unknownFormat, '$format');
     }
     if (format == null && j['items'] == null && j['trip'] == null) {
-      throw const FormatException('Kein Tripboard-Plan: „items“ oder „trip“ fehlt');
+      throw const PlanFormatException(PlanErrorType.notAPlan);
     }
     final version = j['version'];
     if (version is num && version > planFormatVersion) {
-      throw FormatException('Plan-Version $version ist neuer als diese App (kann $planFormatVersion)');
+      throw PlanFormatException(PlanErrorType.tooNew, '$version');
     }
     List<Map<String, Object?>> objects(String key) => [
           for (final e in (j[key] as List? ?? const []))
@@ -188,32 +297,34 @@ class PlanExchange {
         error ??= e;
       }
     }
-    throw FormatException('Kein gültiges JSON gefunden (${error?.message ?? 'leer'})');
+    throw PlanFormatException(PlanErrorType.invalidJson, error?.message);
   }
 
   // --- apply -----------------------------------------------------------------
 
   /// Computes what importing [doc] does: into the existing trip [into], or as
-  /// a new trip when [into] is null. Pure; nothing is written.
+  /// a new trip when [into] is null. Pure; nothing is written. A new trip
+  /// without a title is called [newTripTitle].
   static PlanImport apply(
     PlanDoc doc, {
     TripData? into,
     required DateTime now,
     required String Function() newId,
+    String newTripTitle = 'Imported trip',
   }) {
-    final warnings = <String>[];
+    final warnings = <PlanWarning>[];
     final t = doc.trip;
 
     // Trip.
     final Trip trip;
     var tripChanged = false;
     final startDate = t.containsKey('startDate') ? _parseDate(t['startDate'], warnings) : null;
-    final days = t.containsKey('days') ? _parseInt(t['days'], 'Reise: days', warnings) : null;
+    final days = t.containsKey('days') ? _parseInt(t['days'], 'days', warnings) : null;
     if (into == null) {
       final title = (t['title'] as String?)?.trim();
       trip = Trip(
         id: newId(),
-        title: title == null || title.isEmpty ? 'Importierte Reise' : title,
+        title: title == null || title.isEmpty ? newTripTitle : title,
         startDate: startDate?.value,
         plannedDays: days?.value,
         createdAt: now,
@@ -239,7 +350,7 @@ class PlanExchange {
       } else if (oldCards.containsKey(r)) {
         removeCards.add(r);
       } else {
-        warnings.add('remove: „$r“ gibt es nicht – ignoriert');
+        warnings.add(PlanWarning(PlanWarningType.removeUnknown, value: r));
       }
     }
 
@@ -252,7 +363,7 @@ class PlanExchange {
       final rawRef = e['ref'];
       final ref = rawRef is String && rawRef.isNotEmpty ? rawRef : null;
       if (ref != null && ids.containsKey(ref)) {
-        warnings.add('ref „$ref“ kommt mehrfach vor – nur der erste Eintrag zählt');
+        warnings.add(PlanWarning(PlanWarningType.duplicateRef, value: ref));
         return;
       }
       final known = isItem ? oldItems.containsKey(ref) : oldCards.containsKey(ref);
@@ -268,7 +379,10 @@ class PlanExchange {
       register(e, false);
     }
 
-    String label(Map<String, Object?> e) => '„${e['title'] ?? e['ref'] ?? '?'}“';
+    String label(Map<String, Object?> e) => '${e['title'] ?? e['ref'] ?? '?'}';
+    String refOf(Map<String, Object?> e) => '${e['ref'] ?? '–'}';
+    void warn(PlanWarningType type, Map<String, Object?> e, {String? field, Object? value}) =>
+        warnings.add(PlanWarning(type, entry: label(e), field: field, value: value == null ? null : '$value'));
 
     // Item references may point at document refs or at existing items.
     final docItemIds = {for (final (id, _) in itemEntries) id};
@@ -276,7 +390,7 @@ class PlanExchange {
       if (ref == null) return null;
       final id = ids[ref] ?? (ref is String && oldItems.containsKey(ref) ? ref : null);
       if (id == null || !(docItemIds.contains(id) || oldItems.containsKey(id))) {
-        warnings.add('${label(e)}: $field „$ref“ nicht gefunden – Verknüpfung entfernt');
+        warn(PlanWarningType.refNotFound, e, field: field, value: ref);
         return null;
       }
       if (removeItems.contains(id)) return null;
@@ -295,17 +409,17 @@ class PlanExchange {
       if (has('kind')) {
         kind = _byName(ItemKind.values, e['kind']);
         if (kind == null) {
-          warnings.add('${label(e)}: unbekannte Art „${e['kind']}“ – übersprungen');
+          warn(PlanWarningType.unknownKind, e, value: e['kind']);
           continue;
         }
       }
       if (kind == null) {
-        warnings.add('${label(e)}: „kind“ fehlt – übersprungen');
+        warn(PlanWarningType.missingKind, e);
         continue;
       }
       final title = (e['title'] as String?)?.trim();
       if (old == null && (title == null || title.isEmpty)) {
-        warnings.add('Eintrag ohne Titel (ref ${e['ref'] ?? '–'}) – übersprungen');
+        warnings.add(PlanWarning(PlanWarningType.missingTitle, entry: refOf(e)));
         continue;
       }
 
@@ -325,7 +439,7 @@ class PlanExchange {
       if (has('status')) {
         final s = _byName(ItemStatus.values, e['status']);
         if (s == null) {
-          warnings.add('${label(e)}: unbekannter Status „${e['status']}“ – ignoriert');
+          warn(PlanWarningType.unknownStatus, e, value: e['status']);
         } else {
           item = item.copyWith(status: s);
         }
@@ -338,7 +452,7 @@ class PlanExchange {
       if (has('mode')) {
         final m = e['mode'] == null ? null : _byName(TransportMode.values, e['mode']);
         if (e['mode'] != null && m == null) {
-          warnings.add('${label(e)}: unbekanntes Verkehrsmittel „${e['mode']}“ – „other“');
+          warn(PlanWarningType.unknownMode, e, value: e['mode']);
         }
         item = item.copyWith(mode: e['mode'] == null ? null : (m ?? TransportMode.other));
       }
@@ -347,7 +461,7 @@ class PlanExchange {
       if (has('to')) item = item.copyWith(toId: resolveItem(e['to'], 'to', e));
       for (final (field, value) in [('stay', item.parentId), ('from', item.fromId), ('to', item.toId)]) {
         if (value == id) {
-          warnings.add('${label(e)}: $field verweist auf sich selbst – entfernt');
+          warn(PlanWarningType.selfReference, e, field: field);
           item = switch (field) {
             'stay' => item.copyWith(parentId: null),
             'from' => item.copyWith(fromId: null),
@@ -367,21 +481,21 @@ class PlanExchange {
         int? start = item.start, end = item.end;
         var ok = true;
         if (has('start')) {
-          final r = _parseMoment(e['start'], trip.startDate, '${label(e)}: start', warnings);
+          final r = _parseMoment(e['start'], trip.startDate, label(e), 'start', warnings);
           ok &= r != null;
           if (r != null) start = r.value;
         }
         if (has('end')) {
-          final r = _parseMoment(e['end'], trip.startDate, '${label(e)}: end', warnings);
+          final r = _parseMoment(e['end'], trip.startDate, label(e), 'end', warnings);
           ok &= r != null;
           if (r != null) end = r.value;
         }
         if (ok && (start == null) != (end == null)) {
-          warnings.add('${label(e)}: nur start oder end angegeben – bleibt ungeplant');
+          warn(PlanWarningType.startOrEndOnly, e);
           start = end = null;
         }
         if (ok && start != null && end! < start) {
-          warnings.add('${label(e)}: end liegt vor start – Zeit nicht übernommen');
+          warn(PlanWarningType.endBeforeStart, e);
           ok = false;
         }
         if (ok) item = item.copyWith(start: start, end: end);
@@ -408,11 +522,11 @@ class PlanExchange {
       if (has('type')) {
         final t = _byName(CardType.values, e['type']);
         if (t == null || t == CardType.image) {
-          warnings.add('${label(e)}: Notiztyp „${e['type']}“ wird nicht unterstützt – übersprungen');
+          warn(PlanWarningType.unsupportedNoteType, e, value: e['type']);
           continue;
         }
         if (old?.type == CardType.image) {
-          warnings.add('${label(e)}: Bild-Notizen können den Typ nicht wechseln – Typ ignoriert');
+          warn(PlanWarningType.imageTypeFixed, e);
         } else {
           type = t;
         }
@@ -441,7 +555,7 @@ class PlanExchange {
       if (has('item')) card = card.copyWith(itemId: resolveItem(e['item'], 'item', e));
       if (removeItems.contains(card.itemId)) card = card.copyWith(itemId: null);
       if (old == null && card.title.isEmpty && card.text.isEmpty && card.checklist.isEmpty && card.url == null) {
-        warnings.add('Leere Notiz (ref ${e['ref'] ?? '–'}) – übersprungen');
+        warnings.add(PlanWarning(PlanWarningType.emptyNote, entry: refOf(e)));
         continue;
       }
 
@@ -485,10 +599,10 @@ class PlanExchange {
 
   static String? _str(Object? v) => v == null ? null : '$v';
 
-  static ({int? value})? _parseInt(Object? v, String what, List<String> warnings) {
+  static ({int? value})? _parseInt(Object? v, String field, List<PlanWarning> warnings) {
     if (v == null) return (value: null);
     if (v is num && v == v.roundToDouble()) return (value: v.toInt());
-    warnings.add('$what: „$v“ ist keine ganze Zahl – ignoriert');
+    warnings.add(PlanWarning(PlanWarningType.notAnInteger, field: field, value: '$v'));
     return null;
   }
 
@@ -503,11 +617,11 @@ class PlanExchange {
     return d.month == int.parse(m[2]!) && d.day == int.parse(m[3]!) ? d : null;
   }
 
-  static ({DateTime? value})? _parseDate(Object? v, List<String> warnings) {
+  static ({DateTime? value})? _parseDate(Object? v, List<PlanWarning> warnings) {
     if (v == null) return (value: null);
     final d = v is String ? _toDate(v.trim()) : null;
     if (d == null) {
-      warnings.add('Reise: startDate „$v“ ist kein Datum (YYYY-MM-DD) – ignoriert');
+      warnings.add(PlanWarning(PlanWarningType.invalidStartDate, field: 'startDate', value: '$v'));
       return null;
     }
     return (value: d);
@@ -523,7 +637,8 @@ class PlanExchange {
 
   /// Accepts {"day": 3, "time": "14:00"}, {"date": "2027-03-05", "time":
   /// "14:00"} or "2027-03-05T14:00". Dates need the trip's start date.
-  static ({int? value})? _parseMoment(Object? v, DateTime? tripStart, String what, List<String> warnings) {
+  static ({int? value})? _parseMoment(
+      Object? v, DateTime? tripStart, String entry, String field, List<PlanWarning> warnings) {
     if (v == null) return (value: null);
     int? dayIndex;
     int? clock;
@@ -546,12 +661,12 @@ class PlanExchange {
         final s = DateTime.utc(tripStart.year, tripStart.month, tripStart.day);
         dayIndex = DateTime.utc(d.year, d.month, d.day).difference(s).inDays;
       } else if (d != null) {
-        warnings.add('$what: Datum braucht ein Startdatum der Reise (trip.startDate) – ignoriert');
+        warnings.add(PlanWarning(PlanWarningType.dateNeedsStartDate, entry: entry, field: field));
         return null;
       }
     }
     if (dayIndex == null || clock == null) {
-      warnings.add('$what: „${jsonEncode(v)}“ unverständlich (erwartet {"day": 1, "time": "14:00"}) – ignoriert');
+      warnings.add(PlanWarning(PlanWarningType.invalidMoment, entry: entry, field: field, value: jsonEncode(v)));
       return null;
     }
     return (value: at(dayIndex, clock));

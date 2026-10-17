@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/hints.dart';
+import 'l10n.dart';
 
-/// Explains the hidden gestures of a view until the user taps "Verstanden".
+/// Explains the hidden gestures of a view until the user taps "Got it".
 /// [floating] draws a card for overlays on the map and canvas; otherwise a
 /// flat strip that fits between a toolbar and the content.
 class HintBanner extends ConsumerWidget {
   final Hint hint;
-  final String text;
   final IconData icon;
   final bool floating;
 
   const HintBanner({
     super.key,
     required this.hint,
-    required this.text,
     this.icon = Icons.touch_app_outlined,
     this.floating = false,
   });
@@ -24,6 +23,12 @@ class HintBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(hintsProvider).contains(hint)) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
+    final l = context.l10n;
+    final text = switch (hint) {
+      Hint.timeline => l.hintTimeline,
+      Hint.map => l.hintMap,
+      Hint.canvas => l.hintCanvas,
+    };
     final content = Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
       child: Row(children: [
@@ -34,7 +39,7 @@ class HintBanner extends ConsumerWidget {
         ),
         TextButton(
           onPressed: () => ref.read(hintsProvider.notifier).dismiss(hint),
-          child: const Text('Verstanden'),
+          child: Text(l.gotIt),
         ),
       ]),
     );
@@ -48,7 +53,4 @@ class HintBanner extends ConsumerWidget {
   }
 }
 
-const timelineHint = 'Block lange drücken und ziehen, um ihn zu verschieben. '
-    'Tag-Kopf lange drücken, um an diesem Tag etwas hinzuzufügen. Mit zwei Fingern zoomen.';
-const mapHint = 'Lange auf die Karte drücken, um dort einen Ort, eine Unterkunft oder eine Aktivität anzulegen.';
-const canvasHint = 'Karten lange drücken und ziehen, um sie zu verschieben. Mit zwei Fingern zoomen.';
+

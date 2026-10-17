@@ -49,7 +49,7 @@ void main() {
     }));
     final data = (await repo.loadTrip(demo.trip.id))!;
     final imp = PlanExchange.apply(doc, into: data, now: DateTime.now(), newId: newId);
-    await writePlanImport(c.read(planActionsProvider), imp);
+    await writePlanImport(c.read(planActionsProvider), imp, label: 'Plan importiert');
 
     final after = (await repo.loadTrip(demo.trip.id))!;
     expect(after.trip.title, 'Frankreich & Spanien');
@@ -68,7 +68,7 @@ void main() {
     final demo = demoSriLanka();
     final imp = PlanExchange.apply(PlanExchange.parse(PlanExchange.exportText(demo)),
         now: DateTime.now(), newId: newId);
-    await writePlanImport(c.read(planActionsProvider), imp);
+    await writePlanImport(c.read(planActionsProvider), imp, label: 'Plan importiert');
     final loaded = (await repo.loadTrip(imp.trip.id))!;
     expect(loaded.items, hasLength(demo.items.length));
     expect(loaded.cards, hasLength(demo.cards.length));

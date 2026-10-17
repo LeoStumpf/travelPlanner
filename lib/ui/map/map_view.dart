@@ -10,6 +10,7 @@ import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 import '../editor/item_editor_page.dart';
 
@@ -240,7 +241,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
           top: 12,
           child: FloatingActionButton.small(
             heroTag: 'fit',
-            tooltip: 'Alles zeigen',
+            tooltip: context.l10n.showAll,
             onPressed: _fitAll,
             child: const Icon(Icons.zoom_out_map),
           ),
@@ -249,7 +250,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
           left: 12,
           right: 68,
           top: 12,
-          child: HintBanner(hint: Hint.map, text: mapHint, icon: Icons.add_location_alt_outlined, floating: true),
+          child: HintBanner(hint: Hint.map, icon: Icons.add_location_alt_outlined, floating: true),
         ),
         if (unplaced.isNotEmpty)
           Positioned(
@@ -257,7 +258,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
             bottom: 12,
             child: ActionChip(
               avatar: const Icon(Icons.location_off_outlined, size: 18),
-              label: Text('${unplaced.length} ohne Ort'),
+              label: Text(context.l10n.withoutPlaceCount(unplaced.length)),
               onPressed: () => _showUnplaced(unplaced),
             ),
           ),
@@ -271,11 +272,11 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       showDragHandle: true,
       builder: (c) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Hier anlegen')),
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(c.l10n.addHere)),
           for (final k in [ItemKind.stay, ItemKind.accommodation, ItemKind.activity])
             ListTile(
               leading: Icon(kindIcon(k), color: kindColor(k)),
-              title: Text(k.label),
+              title: Text(c.l10n.kind(k)),
               onTap: () => Navigator.pop(c, k),
             ),
         ]),
@@ -293,7 +294,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       builder: (c) => ListView(
         shrinkWrap: true,
         children: [
-          const ListTile(title: Text('Diese Elemente haben noch keinen Ort')),
+          ListTile(title: Text(c.l10n.itemsWithoutPlace)),
           for (final i in items)
             ListTile(
               leading: Icon(itemIcon(i), color: kindColor(i.kind)),

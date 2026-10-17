@@ -7,6 +7,7 @@ import 'package:open_filex/open_filex.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 
 /// Tickets, screenshots and photos attached to an item or card.
 class AttachmentsSection extends ConsumerWidget {
@@ -24,35 +25,35 @@ class AttachmentsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.read(repositoryProvider);
+    final l = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text('Anhänge & Tickets', style: Theme.of(context).textTheme.titleSmall),
+            Text(l.attachmentsTitle, style: Theme.of(context).textTheme.titleSmall),
             const Spacer(),
             IconButton(
-              tooltip: 'Foto aufnehmen',
+              tooltip: l.takePhoto,
               icon: const Icon(Icons.photo_camera_outlined),
               onPressed: () => _addImage(context, ref, ImageSource.camera),
             ),
             IconButton(
-              tooltip: 'Bild aus Galerie',
+              tooltip: l.imageFromGallery,
               icon: const Icon(Icons.image_outlined),
               onPressed: () => _addImage(context, ref, ImageSource.gallery),
             ),
             IconButton(
-              tooltip: 'Datei (PDF-Ticket …)',
+              tooltip: l.attachFileTooltip,
               icon: const Icon(Icons.attach_file),
               onPressed: () => _addFile(context, ref),
             ),
           ],
         ),
         if (attachments.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text('Noch nichts angehängt – z. B. Zugticket als PDF oder Screenshot der Buchung.',
-                style: TextStyle(fontSize: 12)),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(l.attachmentsEmpty, style: const TextStyle(fontSize: 12)),
           ),
         if (attachments.any((a) => a.isImage))
           SizedBox(
@@ -92,27 +93,30 @@ class AttachmentsSection extends ConsumerWidget {
     final x = await ImagePicker().pickImage(source: source, maxWidth: 2400, imageQuality: 85);
     if (x == null) return;
     final bytes = await x.readAsBytes();
-    await ref.read(planActionsProvider).record(tripId, 'Bild angehängt', (repo) async {
+    if (!context.mounted) return;
+    await ref.read(planActionsProvider).record(tripId, context.l10n.stepImageAttached, (repo) async {
       final a = await repo.files.addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: x.name);
       await repo.saveAttachment(a);
     });
   }
 
   Future<void> _addFile(BuildContext context, WidgetRef ref) async {
-    final f = await FilePicker.pickFile(dialogTitle: 'Datei anhängen');
+    final l = context.l10n;
+    final f = await FilePicker.pickFile(dialogTitle: l.attachFileDialog);
     if (f == null) return;
     final bytes = await f.xFile.readAsBytes();
-    await ref.read(planActionsProvider).record(tripId, '„${f.name}“ angehängt', (repo) async {
+    await ref.read(planActionsProvider).record(tripId, l.stepFileAttached(f.name), (repo) async {
       final a = await repo.files.addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: f.name);
       await repo.saveAttachment(a);
     });
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref, Attachment a) async {
-    if (await confirm(context, '„${a.fileName}“ entfernen?')) {
+    final l = context.l10n;
+    if (await confirm(context, l.removeQuestion(a.fileName))) {
       await ref
           .read(planActionsProvider)
-          .record(tripId, '„${a.fileName}“ entfernt', (repo) => repo.deleteAttachment(a));
+          .record(tripId, l.stepFileRemoved(a.fileName), (repo) => repo.deleteAttachment(a));
     }
   }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/time.dart';
+import '../common/l10n.dart';
 
 /// Day + time of day in the trip-relative minute model. The day is shown as
-/// "Tag N" or as a date when the trip has a start date.
+/// "Day N" or as a date when the trip has a start date.
 class MomentField extends StatelessWidget {
   final String label;
   final DateTime? tripStart;
@@ -22,6 +23,7 @@ class MomentField extends StatelessWidget {
   Widget build(BuildContext context) {
     final day = dayOf(value);
     final mod = minuteOfDay(value);
+    final l = context.l10n;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -35,7 +37,7 @@ class MomentField extends StatelessWidget {
           Expanded(
             child: OutlinedButton(
               onPressed: () => _pickDay(context, day, mod),
-              child: Text(formatDay(tripStart, day), overflow: TextOverflow.ellipsis),
+              child: Text(l.day(tripStart, day), overflow: TextOverflow.ellipsis),
             ),
           ),
           IconButton(
@@ -44,7 +46,7 @@ class MomentField extends StatelessWidget {
             icon: const Icon(Icons.chevron_right),
           ),
           PopupMenuButton<int>(
-            tooltip: 'Uhrzeit',
+            tooltip: l.timeOfDay,
             onSelected: (m) async {
               if (m >= 0) {
                 onChanged(at(day, m));
@@ -58,8 +60,8 @@ class MomentField extends StatelessWidget {
             },
             itemBuilder: (_) => [
               for (final p in DayPart.values)
-                PopupMenuItem(value: p.minuteOfDay, child: Text('${p.label} (${formatClock(p.minuteOfDay)})')),
-              const PopupMenuItem(value: -1, child: Text('Genaue Uhrzeit …')),
+                PopupMenuItem(value: p.minuteOfDay, child: Text('${l.dayPart(p)} (${formatClock(p.minuteOfDay)})')),
+              PopupMenuItem(value: -1, child: Text(l.exactTime)),
             ],
             child: Chip(label: Text(formatClock(value))),
           ),
@@ -84,7 +86,7 @@ class MomentField extends StatelessWidget {
       final picked = await showDialog<int>(
         context: context,
         builder: (c) => SimpleDialog(
-          title: const Text('Tag wählen'),
+          title: Text(c.l10n.pickDay),
           children: [
             SizedBox(
               width: 280,

@@ -13,6 +13,8 @@ import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/editor/card_editor_page.dart';
 import 'package:travel_planner/ui/editor/item_editor_page.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Repository repo;
   late ProviderContainer container;
@@ -40,7 +42,7 @@ void main() {
     await tester.runAsync(() => repo.putTripData(demo));
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
+      child: testApp(
         home: Scaffold(
           body: Consumer(builder: (context, ref, _) {
             final data = ref.watch(tripDataProvider(demo.trip.id)).value;

@@ -14,6 +14,7 @@ import '../common/conflict_tile.dart';
 import '../common/dialogs.dart';
 import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 import '../common/theme.dart';
 import '../editor/item_editor_page.dart';
@@ -125,16 +126,15 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     };
   }
 
-  /// "+1 Tag → Mi 12. Mär, 14:00" while dragging.
+  /// "+1 day → Wed, Mar 12, 14:00" while dragging.
   String _dragLabel(ScheduleResult? preview) {
-    if (_dragMinutes == 0) return 'Ziehen …';
-    final m = _dragMinutes.abs();
-    final days = m ~/ minutesPerDay, hours = (m % minutesPerDay) ~/ 60, mins = m % 60;
-    final amount = [if (days > 0) pluralDays(days), if (hours > 0) '${hours}h', if (mins > 0) '${mins}min'].join(' ');
+    final l = context.l10n;
+    if (_dragMinutes == 0) return l.dragging;
+    final amount = l.duration(_dragMinutes.abs(), withMinutes: true);
     final item = preview?.items.where((i) => i.id == _dragId).firstOrNull;
     final at = item == null
         ? ''
-        : ' → ${formatMoment(data.trip.startDate, _dragType == _DragType.resizeEnd ? item.end! : item.start!)}';
+        : ' → ${l.moment(data.trip.startDate, _dragType == _DragType.resizeEnd ? item.end! : item.start!)}';
     return '${_dragMinutes > 0 ? '+' : '−'}$amount$at';
   }
 
@@ -205,7 +205,8 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (c) => _NightOptionsSheet(
-        title: 'Nacht ${formatDay(data.trip.startDate, night)} → ${formatDay(data.trip.startDate, night + 1)}',
+        title: context.l10n
+            .nightTitle(context.l10n.day(data.trip.startDate, night), context.l10n.day(data.trip.startDate, night + 1)),
         options: options,
         tripStart: data.trip.startDate,
         onChoose: (o) {
@@ -233,10 +234,11 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     });
     if (r == null || item == null || r.changedIds.isEmpty) return;
     final actions = ref.read(planActionsProvider);
+    final l = context.l10n;
     final label = switch (_dragType!) {
-      _DragType.move => '„${item.title}“ verschoben',
-      _DragType.resizeEnd => '„${item.title}“: Ende geändert',
-      _DragType.resizeStart => '„${item.title}“: Beginn geändert',
+      _DragType.move => l.stepMoved(item.title),
+      _DragType.resizeEnd => l.stepEndChanged(item.title),
+      _DragType.resizeStart => l.stepStartChanged(item.title),
     };
     await actions.applySchedule(data, r, label);
     if (!mounted) return;
@@ -246,10 +248,10 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       context,
       [
         label,
-        if (others > 0) '$others weitere mitverschoben',
-        if (conflicts > 0) '$conflicts Konflikt${conflicts == 1 ? '' : 'e'}',
+        if (others > 0) l.othersMovedAlong(others),
+        if (conflicts > 0) l.conflictsCount(conflicts),
       ].join(' · '),
-      action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(data.trip.id)),
+      action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(data.trip.id)),
     );
   }
 
@@ -332,7 +334,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               top: _lanePad,
               height: rowH - 6,
               child: _GapBox(
-                label: g.days == 1 ? '1 Tag frei' : '${g.days} Tage frei',
+                label: context.l10n.freeDays(g.days),
                 onTap: () => showAddSheet(context, ref, data, atDay: g.firstDay),
               ),
             ),
@@ -371,8 +373,8 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               top: _lanePad + (lane.rowCount - 1) * rowH,
               height: rowH - 6,
               child: _GapBox(
-                label: 'Transport',
-                tooltip: 'Kein Transport von „${g.from.title}“ nach „${g.to.title}“',
+                label: context.l10n.kindTransport,
+                tooltip: context.l10n.noTransportBetween(g.from.title, g.to.title),
                 onTap: () => openTransportEditor(context, data, from: g.from, to: g.to),
               ),
             ),
@@ -403,7 +405,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               onTap: () => showItemSheet(context, ref, data.trip.id, i.id),
               onLongPressStart: () {
                 if (!draggable) {
-                  showSnack(context, '„${i.title}“ ist fix und wird nicht verschoben');
+                  showSnack(context, context.l10n.itemIsFixed(i.title));
                   return;
                 }
                 if (_pinchStartDist != null) return;
@@ -457,7 +459,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         SizedBox(
           height: h,
           child: Tooltip(
-            message: 'Ebene ${lane.kind.layer}: ${lane.kind.label}',
+            message: context.l10n.layer(lane.kind),
             child: Center(child: Icon(kindIcon(lane.kind), color: kindColor(lane.kind), size: 20)),
           ),
         ),
@@ -473,7 +475,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
           dragLabel: _dragId != null ? _dragLabel(preview) : null,
           onZoom: (f) => _zoomTo(_dayWidth * f, _hScroll.hasClients ? _hScroll.position.viewportDimension / 2 : 0),
         ),
-        const HintBanner(hint: Hint.timeline, text: timelineHint),
+        const HintBanner(hint: Hint.timeline),
         Expanded(
           child: SingleChildScrollView(
             child: Row(
@@ -637,7 +639,7 @@ class _Block extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, c) => rail
               ? _rail(context, c.maxWidth, base, option, ink, nights)
-              : _box(c.maxWidth, fg, nights),
+              : _box(context, c.maxWidth, fg, nights),
         ),
       ),
     );
@@ -679,7 +681,8 @@ class _Block extends StatelessWidget {
               ),
               if (w > 110 && item.fixed) Icon(Icons.lock, size: 13, color: ink),
               if (w > 80 && nights != null)
-                Text('${nights}N', style: TextStyle(color: ink, fontSize: 11, fontWeight: FontWeight.w700)),
+                Text(context.l10n.nightsShort(nights),
+                    style: TextStyle(color: ink, fontSize: 11, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -699,7 +702,7 @@ class _Block extends StatelessWidget {
   }
 
   /// Transport, lodging and activities: a filled block.
-  Widget _box(double w, Color fg, int? nights) {
+  Widget _box(BuildContext context, double w, Color fg, int? nights) {
     // Narrow blocks (short transports, zoomed out) show less detail.
     if (w < 40) return Center(child: Icon(itemIcon(item), size: 14, color: fg));
     return Padding(
@@ -727,7 +730,7 @@ class _Block extends StatelessWidget {
           if (w > 80 && nights != null)
             Padding(
               padding: const EdgeInsets.only(left: 2, right: 8),
-              child: Text('${nights}N', style: TextStyle(color: fg, fontSize: 11)),
+              child: Text(context.l10n.nightsShort(nights), style: TextStyle(color: fg, fontSize: 11)),
             ),
         ],
       ),
@@ -843,6 +846,7 @@ class _NightOptionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
@@ -851,25 +855,25 @@ class _NightOptionsSheet extends StatelessWidget {
         children: [
           Text(title, style: theme.textTheme.titleLarge),
           const SizedBox(height: 4),
-          const Text('Noch keine Unterkunft für diese Nacht'),
+          Text(l.noAccommodationTonight),
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 4),
-            child: Text('Option wählen', style: theme.textTheme.titleSmall),
+            child: Text(l.chooseOption, style: theme.textTheme.titleSmall),
           ),
           for (final o in options)
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(itemIcon(o), color: kindColor(o.kind).withValues(alpha: 0.5)),
               title: Text(o.title, style: const TextStyle(fontStyle: FontStyle.italic)),
-              subtitle: Text(timeSummary(o, tripStart)),
+              subtitle: Text(timeSummary(l, o, tripStart)),
               onTap: () => onDetails(o),
-              trailing: TextButton(onPressed: () => onChoose(o), child: const Text('Wählen')),
+              trailing: TextButton(onPressed: () => onChoose(o), child: Text(l.choose)),
             ),
           const Divider(),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.add),
-            title: const Text('Neue Unterkunft'),
+            title: Text(l.newAccommodation),
             onTap: onCreate,
           ),
         ],
@@ -888,11 +892,7 @@ class _MissingNight extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Tooltip(
-      message: switch (options) {
-        0 => 'Noch keine Unterkunft für diese Nacht',
-        1 => 'Noch keine Unterkunft – 1 Option',
-        _ => 'Noch keine Unterkunft – $options Optionen',
-      },
+      message: context.l10n.noAccommodationOptions(options),
       child: Material(
         color: colors.signal,
         borderRadius: BorderRadius.circular(8),
@@ -985,7 +985,7 @@ class _DayHeader extends StatelessWidget {
                     children: [
                       Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
                       if (tripStart != null && dayWidth > 44)
-                        Text(formatDay(tripStart, d), style: style, maxLines: 1, overflow: TextOverflow.clip),
+                        Text(context.l10n.day(tripStart, d), style: style, maxLines: 1, overflow: TextOverflow.clip),
                     ],
                   ),
                 ),
@@ -1078,6 +1078,7 @@ class _Toolbar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final l = context.l10n;
     return Material(
       color: scheme.surfaceContainerLow,
       child: Padding(
@@ -1085,13 +1086,13 @@ class _Toolbar extends ConsumerWidget {
         child: Row(
           children: [
             PopupMenuButton<ShiftMode>(
-              tooltip: 'Verschiebe-Modus',
+              tooltip: l.shiftModeTooltip,
               initialValue: mode,
               onSelected: ref.read(tripUiProvider.notifier).setShiftMode,
-              itemBuilder: (_) => [for (final m in ShiftMode.values) PopupMenuItem(value: m, child: Text(m.label))],
+              itemBuilder: (_) => [for (final m in ShiftMode.values) PopupMenuItem(value: m, child: Text(l.shiftMode(m)))],
               child: Chip(
                 avatar: const Icon(Icons.swap_horiz, size: 18),
-                label: Text(mode.shortLabel),
+                label: Text(l.shiftModeShort(mode)),
                 visualDensity: VisualDensity.compact,
               ),
             ),
@@ -1109,14 +1110,14 @@ class _Toolbar extends ConsumerWidget {
               if (conflicts.isNotEmpty)
                 ActionChip(
                   avatar: Icon(Icons.warning_amber, color: scheme.error, size: 18),
-                  label: Text('${conflicts.length} Konflikt${conflicts.length == 1 ? '' : 'e'}'),
+                  label: Text(l.conflictsCount(conflicts.length)),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _showConflicts(context, ref),
                 ),
               const Spacer(),
             ],
-            IconButton(tooltip: 'Verkleinern', onPressed: () => onZoom(1 / 1.3), icon: const Icon(Icons.zoom_out)),
-            IconButton(tooltip: 'Vergrößern', onPressed: () => onZoom(1.3), icon: const Icon(Icons.zoom_in)),
+            IconButton(tooltip: l.zoomOut, onPressed: () => onZoom(1 / 1.3), icon: const Icon(Icons.zoom_out)),
+            IconButton(tooltip: l.zoomIn, onPressed: () => onZoom(1.3), icon: const Icon(Icons.zoom_in)),
           ],
         ),
       ),
@@ -1161,8 +1162,8 @@ class _UnscheduledTray extends ConsumerWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         children: [
-          const Center(
-            child: Padding(padding: EdgeInsets.only(right: 8), child: Text('Ohne Termin:')),
+          Center(
+            child: Padding(padding: const EdgeInsets.only(right: 8), child: Text(context.l10n.unscheduledLabel)),
           ),
           for (final i in items)
             Padding(

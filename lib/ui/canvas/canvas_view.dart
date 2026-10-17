@@ -13,6 +13,7 @@ import '../../state/providers.dart';
 import '../common/dialogs.dart';
 import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 import '../editor/card_editor_page.dart';
 import '../keep/card_preview.dart';
@@ -140,8 +141,9 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
     final actions = ref.read(planActionsProvider);
     final item = data.item(id);
     final card = data.card(id);
-    final title = item?.title ?? (card?.title.isNotEmpty == true ? card!.title : 'Notiz');
-    await actions.record(data.trip.id, '„$title“ auf dem Canvas verschoben', (repo) async {
+    final l = context.l10n;
+    final title = item?.title ?? (card?.title.isNotEmpty == true ? card!.title : l.cardNote);
+    await actions.record(data.trip.id, l.stepMovedOnCanvas(title), (repo) async {
       if (item != null) {
         await repo.saveItem(item.copyWith(canvasX: p.dx, canvasY: p.dy));
       } else if (card != null) {
@@ -175,15 +177,16 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
       setState(() => _connectFrom = null);
       final existing = data.edges.where((e) => (e.fromId == a && e.toId == id) || (e.fromId == id && e.toId == a));
       final actions = ref.read(planActionsProvider);
+      final l = context.l10n;
       if (existing.isNotEmpty) {
-        await actions.record(data.trip.id, 'Verbindung entfernt', (repo) async {
+        await actions.record(data.trip.id, l.stepConnectionRemoved, (repo) async {
           for (final e in existing) {
             await repo.deleteEdge(e.id);
           }
         });
-        if (mounted) showSnack(context, 'Verbindung entfernt');
+        if (mounted) showSnack(context, l.stepConnectionRemoved);
       } else {
-        await actions.record(data.trip.id, 'Verbindung erstellt',
+        await actions.record(data.trip.id, l.stepConnectionCreated,
             (repo) => repo.saveEdge(Edge(id: newId(), tripId: data.trip.id, fromId: a, toId: id)));
       }
       return;
@@ -326,14 +329,14 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
             children: [
               FloatingActionButton.small(
                 heroTag: 'canvas-fit',
-                tooltip: 'Alles zeigen',
+                tooltip: context.l10n.showAll,
                 onPressed: _fitAll,
                 child: const Icon(Icons.fit_screen),
               ),
               const SizedBox(height: 8),
               FloatingActionButton.small(
                 heroTag: 'canvas-connect',
-                tooltip: 'Verbinden',
+                tooltip: context.l10n.connect,
                 backgroundColor: _connectMode ? scheme.primary : null,
                 foregroundColor: _connectMode ? scheme.onPrimary : null,
                 onPressed: () => setState(() {
@@ -351,7 +354,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
             left: 12,
             right: 72,
             top: 12,
-            child: HintBanner(hint: Hint.canvas, text: canvasHint, floating: true),
+            child: HintBanner(hint: Hint.canvas, floating: true),
           ),
         if (_connectMode)
           Positioned(
@@ -361,9 +364,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(_connectFrom == null
-                    ? 'Verbinden: tippe auf das erste Element'
-                    : 'Jetzt das zweite Element antippen (gleiches Paar nochmal = Verbindung lösen)'),
+                child: Text(_connectFrom == null ? context.l10n.connectFirst : context.l10n.connectSecond),
               ),
             ),
           ),
@@ -417,8 +418,8 @@ class _ItemNode extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(timeSummary(item, tripStart), style: theme.textTheme.bodySmall, maxLines: 2),
-                  Text(item.status.label, style: theme.textTheme.labelSmall),
+                  Text(timeSummary(context.l10n, item, tripStart), style: theme.textTheme.bodySmall, maxLines: 2),
+                  Text(context.l10n.status(item.status), style: theme.textTheme.labelSmall),
                 ],
               ),
             ),

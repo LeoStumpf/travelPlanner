@@ -19,8 +19,25 @@ typedef DocMigrationStep = Map<String, Object?> Function(String type, Map<String
 /// Released steps, in order. Never edit a step once shipped.
 const List<DocMigrationStep> docMigrationSteps = [];
 
+/// Data written by a newer app version (doc format [found], this app reads up
+/// to [supported]). A [FormatException], worded for the user by the UI.
+class NewerDataException implements FormatException {
+  final int found;
+  final int supported;
+  const NewerDataException(this.found, this.supported);
+
+  @override
+  String get message => 'Data is from a newer app version (format $found, supported: $supported)';
+  @override
+  dynamic get source => null;
+  @override
+  int? get offset => null;
+  @override
+  String toString() => 'NewerDataException: $message';
+}
+
 /// Applies all steps from [from] up to [to] (default [currentDocVersion]).
-/// Throws a [FormatException] for documents newer than this app knows.
+/// Throws a [NewerDataException] for documents newer than this app knows.
 Map<String, Object?> migrateDoc(
   String type,
   Map<String, Object?> json,
@@ -29,7 +46,7 @@ Map<String, Object?> migrateDoc(
   List<DocMigrationStep> steps = docMigrationSteps,
 }) {
   if (from > to) {
-    throw FormatException('Daten stammen aus einer neueren App-Version (Format $from, unterstützt: $to)');
+    throw NewerDataException(from, to);
   }
   var j = json;
   for (var v = from; v < to; v++) {

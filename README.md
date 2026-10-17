@@ -10,6 +10,10 @@ Das Detailblatt eines Elements bietet Schnellaktionen: Gebucht an/aus, Fix an/au
 
 Alle Daten liegen lokal (SQLite über drift). Einzelne Reisen oder alle Reisen auf einmal lassen sich als ZIP exportieren; „Backup importieren“ nimmt beide Varianten an. Zusätzlich schreibt die App beim Start und beim Wechsel in den Hintergrund ein Backup aller Reisen, wenn das letzte älter als 24 Stunden ist. Diese Backups liegen im App-Ordner auf dem externen Speicher (`Android/data/<App>/files/backups`), die letzten 7 bleiben erhalten. Unter ⋮ → Backups & Wiederherstellen sieht man das letzte Backup und kann eines zurückspielen. Die Android-Cloud-Sicherung umfasst Datenbank und Anhänge (`android/app/src/main/res/xml/`). Gelöschte Reisen liegen 30 Tage im Papierkorb (⋮ → Papierkorb) und werden danach beim App-Start endgültig entfernt, samt Anhängen. Inhalte, die man aus anderen Apps „teilt“, landen als Notiz in einer Reise.
 
+## Sprachen
+
+Die App gibt es auf Englisch und Deutsch. Sie folgt der Gerätesprache (unter Android 13+ auch der Sprache, die man in den Systemeinstellungen nur für Tripboard wählt); jede andere Sprache fällt auf Englisch zurück. Alle Texte liegen in `lib/l10n/app_en.arb` (Vorlage) und `lib/l10n/app_de.arb`. Jeder neue Text kommt in beide Dateien, danach erzeugt `flutter gen-l10n` (oder `flutter pub get`/`flutter run`) die Klassen in `lib/l10n/`. Im Code holt man die Texte mit `context.l10n` (`lib/ui/common/l10n.dart`). Dort werden auch die sprachneutralen Werte aus `lib/domain` in Worte gefasst: Arten, Status, Verkehrsmittel, Konflikte (`Conflict` trägt Typ und Werte), Import-Hinweise (`PlanWarning`), Tage und Daten (über `intl` in der jeweiligen Sprache) sowie die Texte der Beispielreisen (`DemoTexts`). `lib/domain` bleibt so frei von Flutter und von deutschen Texten. Ein Test (`test/ui/l10n_test.dart`) prüft, dass beide ARB-Dateien dieselben Schlüssel und Platzhalter haben und dass in `lib/ui`, `lib/domain` und `lib/state` keine deutschen Literale mehr stehen.
+
 ## Mit Claude planen
 
 Über **⋮ → Mit Claude planen …** (in der Reiseliste oder in einer Reise) kopiert die App eine Anleitung zum Austauschformat `tripboard-plan`, auf Wunsch zusammen mit dem aktuellen Plan. Den Text fügt man in der Claude-App ein und lässt Claude mit Websuche planen. Claudes Antwort endet mit einem JSON-Block. Diesen kopiert man und übernimmt ihn in der App über „Plan aus Zwischenablage übernehmen“; alternativ teilt man die Antwort direkt an Tripboard. Vor dem Übernehmen zeigt die App eine Vorschau mit den Änderungen und Hinweisen. Fehlende Koordinaten sucht sie über OpenStreetMap. Der Import in eine bestehende Reise lässt sich als ein Schritt rückgängig machen.
@@ -24,6 +28,7 @@ Das Format ist in [`assets/plan_format.md`](assets/plan_format.md) beschrieben, 
 | `lib/data/` | drift-Datenbank, Repository, Anhänge, Ortssuche (Photon), Link-Vorschau, Backup |
 | `lib/state/` | Riverpod-Provider, gemeinsamer UI-Zustand, Undo |
 | `lib/ui/` | Reiseliste, Reise-Shell, Zeitplan, Karte, Canvas, Notizen, Editoren |
+| `lib/l10n/` | Texte auf Englisch und Deutsch (ARB) und die daraus erzeugten Klassen |
 
 ## Entwickeln
 

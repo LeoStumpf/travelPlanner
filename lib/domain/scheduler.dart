@@ -24,20 +24,6 @@ enum ShiftMode {
   single,
 }
 
-extension ShiftModeX on ShiftMode {
-  String get label => switch (this) {
-        ShiftMode.following => 'Alles danach mitschieben',
-        ShiftMode.push => 'Nur schieben, wenn nötig',
-        ShiftMode.single => 'Nur dieses Element',
-      };
-
-  String get shortLabel => switch (this) {
-        ShiftMode.following => 'Alles danach',
-        ShiftMode.push => 'Puffer nutzen',
-        ShiftMode.single => 'Nur dieses',
-      };
-}
-
 class ScheduleResult {
   final List<PlanItem> items;
   final Set<String> changedIds;

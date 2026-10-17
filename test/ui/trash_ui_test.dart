@@ -14,6 +14,8 @@ import 'package:travel_planner/ui/editor/card_editor_page.dart';
 import 'package:travel_planner/ui/editor/item_editor_page.dart';
 import 'package:travel_planner/ui/trips/trips_page.dart';
 
+import '../l10n_test_utils.dart';
+
 void main() {
   late Repository repo;
   late ProviderContainer container;
@@ -40,7 +42,7 @@ void main() {
     await tester.runAsync(() => repo.putTripData(demo));
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(home: home),
+      child: testApp(home: home),
     ));
     await settle(tester);
   }
@@ -82,7 +84,7 @@ void main() {
 
       await tapAndSettle(tester, find.byTooltip('Wiederherstellen'));
       expect(find.textContaining('Der Papierkorb ist leer.'), findsOneWidget);
-      await tester.pageBack();
+      await tester.tap(find.byType(BackButton));
       await settle(tester);
       expect(find.text(demo.trip.title), findsOneWidget);
     });

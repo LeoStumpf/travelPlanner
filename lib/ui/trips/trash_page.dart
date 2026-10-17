@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repository.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 
 /// Deleted trips: restore them or delete them for good. Trips older than
 /// [Repository.trashRetention] are purged on app start.
@@ -14,23 +15,24 @@ class TrashPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final trash = ref.watch(trashProvider);
     final list = trash.value ?? const <TrashedTrip>[];
+    final l = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Papierkorb'),
+        title: Text(l.trashTitle),
         actions: [
           if (list.isNotEmpty)
-            TextButton(onPressed: () => _emptyAll(context, ref, list), child: const Text('Leeren')),
+            TextButton(onPressed: () => _emptyAll(context, ref, list), child: Text(l.trashEmptyAction)),
         ],
       ),
       body: trash.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Fehler: $e')),
+        error: (e, _) => Center(child: Text(l.errorWith('$e'))),
         data: (list) => list.isEmpty
-            ? const Center(
+            ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(32),
                   child: Text(
-                    'Der Papierkorb ist leer.\nGelöschte Reisen bleiben hier 30 Tage, dann werden sie endgültig entfernt.',
+                    l.trashIsEmpty,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -44,12 +46,8 @@ class TrashPage extends ConsumerWidget {
   }
 
   Future<void> _emptyAll(BuildContext context, WidgetRef ref, List<TrashedTrip> list) async {
-    final ok = await confirm(
-      context,
-      'Papierkorb leeren?',
-      '${list.length == 1 ? 'Eine Reise wird' : '${list.length} Reisen werden'} mit allen Orten, Notizen und Anhängen endgültig gelöscht.',
-      'Endgültig löschen',
-    );
+    final l = context.l10n;
+    final ok = await confirm(context, l.trashEmptyQuestion, l.trashEmptyBody(list.length), l.deleteForGood);
     if (!ok) return;
     for (final t in list) {
       await _deleteForGood(ref, t.trip.id);
@@ -62,13 +60,11 @@ Future<void> _deleteForGood(WidgetRef ref, String tripId) async {
   ref.read(undoProvider.notifier).forget(tripId);
 }
 
-/// "in 3 Tagen" / "morgen" / "heute" until [purgeAt].
-String purgeHint(DateTime purgeAt, DateTime now) {
+/// "in 3 days" / "tomorrow" / "on next start" until [purgeAt].
+String purgeHint(AppLocalizations l, DateTime purgeAt, DateTime now) {
   // Rounded, so a daylight saving switch does not cost a day.
   final days = (purgeAt.difference(now).inMinutes / Duration.minutesPerDay).round();
-  if (days <= 0) return 'Wird beim nächsten Start endgültig gelöscht';
-  if (days == 1) return 'Wird morgen endgültig gelöscht';
-  return 'Wird in $days Tagen endgültig gelöscht';
+  return l.trashPurgeHint(days < 0 ? 0 : days);
 }
 
 class _TrashTile extends ConsumerWidget {
@@ -78,38 +74,37 @@ class _TrashTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trip = entry.trip;
-    final d = entry.deletedAt;
-    String two(int n) => n.toString().padLeft(2, '0');
+    final l = context.l10n;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         title: Text(trip.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-        subtitle: Text('Gelöscht am ${two(d.day)}.${two(d.month)}.${d.year}\n'
-            '${purgeHint(entry.purgeAt, DateTime.now())}'),
+        subtitle: Text('${l.trashDeletedOn(l.date(entry.deletedAt))}\n'
+            '${purgeHint(l, entry.purgeAt, DateTime.now())}'),
         isThreeLine: true,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: 'Wiederherstellen',
+              tooltip: l.restore,
               icon: const Icon(Icons.restore_from_trash),
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 await ref.read(repositoryProvider).restoreFromTrash(trip.id);
                 messenger
                   ..hideCurrentSnackBar()
-                  ..showSnackBar(SnackBar(content: Text('„${trip.title}“ wiederhergestellt')));
+                  ..showSnackBar(SnackBar(content: Text(l.tripRestored(trip.title))));
               },
             ),
             IconButton(
-              tooltip: 'Endgültig löschen',
+              tooltip: l.deleteForGood,
               icon: const Icon(Icons.delete_forever),
               onPressed: () async {
                 final ok = await confirm(
                   context,
-                  '„${trip.title}“ endgültig löschen?',
-                  'Alle Orte, Notizen und Anhänge dieser Reise werden entfernt. Das lässt sich nicht rückgängig machen.',
-                  'Endgültig löschen',
+                  l.deleteTripForGoodQuestion(trip.title),
+                  l.deleteTripForGoodBody,
+                  l.deleteForGood,
                 );
                 if (ok) await _deleteForGood(ref, trip.id);
               },

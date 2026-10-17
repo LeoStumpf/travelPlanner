@@ -30,15 +30,6 @@ String newId() => const Uuid().v4();
 
 enum TripView { canvas, notes, timeline, map }
 
-extension TripViewX on TripView {
-  String get label => switch (this) {
-        TripView.canvas => 'Canvas',
-        TripView.notes => 'Notizen',
-        TripView.timeline => 'Zeitplan',
-        TripView.map => 'Karte',
-      };
-}
-
 /// View state shared by all views of the open trip, so switching views keeps
 /// the selection and the layer filter.
 class TripUi {
@@ -154,10 +145,10 @@ class PlanActions {
   Future<void> applySchedule(TripData data, ScheduleResult r, String label) =>
       saveItems(data, r.changed, label);
 
-  Future<void> deleteItem(TripData data, String id) async {
-    final item = data.item(id);
-    if (item == null) return;
-    await record(data.trip.id, '„${item.title}“ gelöscht', (r) => r.deleteItem(data, id));
+  /// Deletes item [id] as one step named [label] (worded by the UI).
+  Future<void> deleteItem(TripData data, String id, String label) async {
+    if (data.item(id) == null) return;
+    await record(data.trip.id, label, (r) => r.deleteItem(data, id));
   }
 
   /// Reverts the last step of [tripId]. Returns its label, or null.
@@ -172,7 +163,7 @@ class PlanActions {
   UndoEntry? lastStep(String tripId) => ref.read(undoProvider)[tripId]?.lastOrNull;
 
   /// Reverts [step] only while it is still the last step of [tripId], so a
-  /// late tap on a snackbar's "Rückgängig" never reverts another change
+  /// late tap on a snackbar's "Undo" never reverts another change
   /// (or the step before, after the app bar's undo was used already).
   Future<bool> undoStep(String tripId, UndoEntry? step) async {
     if (step == null || !identical(lastStep(tripId), step)) return false;

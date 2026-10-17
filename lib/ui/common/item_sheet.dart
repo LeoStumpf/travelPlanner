@@ -12,15 +12,16 @@ import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
 import 'conflict_tile.dart';
 import 'dialogs.dart';
+import 'l10n.dart';
 import 'style.dart';
 
-String timeSummary(PlanItem i, DateTime? tripStart) {
-  if (!i.isScheduled) return 'Noch nicht eingeplant';
-  final s = formatMoment(tripStart, i.start!);
-  final e = dayOf(i.start!) == dayOf(i.end!) ? formatClock(i.end!) : formatMoment(tripStart, i.end!);
+String timeSummary(AppLocalizations l, PlanItem i, DateTime? tripStart) {
+  if (!i.isScheduled) return l.notScheduledYet;
+  final s = l.moment(tripStart, i.start!);
+  final e = dayOf(i.start!) == dayOf(i.end!) ? formatClock(i.end!) : l.moment(tripStart, i.end!);
   final extra = switch (i.kind) {
-    ItemKind.stay => ' · ${pluralDays(daysTouched(i.start!, i.end!))} · ${pluralNights(nightsIn(i.start!, i.end!))}',
-    ItemKind.accommodation => ' · ${pluralNights(nightsIn(i.start!, i.end!))}',
+    ItemKind.stay => ' · ${l.days(daysTouched(i.start!, i.end!))} · ${l.nights(nightsIn(i.start!, i.end!))}',
+    ItemKind.accommodation => ' · ${l.nights(nightsIn(i.start!, i.end!))}',
     _ => '',
   };
   return '$s → $e$extra';
@@ -28,7 +29,7 @@ String timeSummary(PlanItem i, DateTime? tripStart) {
 
 /// Makes accommodation [item] the chosen one for its nights (see
 /// [chooseOption]) as one undoable step. With [undoSnack] it offers
-/// "Rückgängig" – not from inside the item sheet, which would hide the
+/// "Undo" – not from inside the item sheet, which would hide the
 /// snackbar; the sheet shows the new status itself.
 Future<void> chooseAccommodation(BuildContext context, WidgetRef ref, TripData data, PlanItem item,
     {bool book = false, bool undoSnack = true}) async {
@@ -36,31 +37,32 @@ Future<void> chooseAccommodation(BuildContext context, WidgetRef ref, TripData d
   if (changed.isEmpty) return;
   final messenger = ScaffoldMessenger.of(context);
   final actions = ref.read(planActionsProvider);
-  final label = book ? '„${item.title}“ als gebucht markiert' : '„${item.title}“ gewählt';
+  final l = context.l10n;
+  final label = book ? l.stepMarkedBooked(item.title) : l.stepChosen(item.title);
   await actions.saveItems(data, changed, label);
   if (!undoSnack) return;
   final step = actions.lastStep(data.trip.id);
   showUndoSnack(messenger, label, () => actions.undoStep(data.trip.id, step));
 }
 
-/// The item sheet's "Gebucht" toggle as one undoable step (see [setBooked]).
-Future<void> toggleBooked(WidgetRef ref, TripData data, PlanItem item) {
+/// The item sheet's "Booked" toggle as one undoable step (see [setBooked]).
+Future<void> toggleBooked(AppLocalizations l, WidgetRef ref, TripData data, PlanItem item) {
   final booked = item.status != ItemStatus.booked;
-  final label = booked ? '„${item.title}“ als gebucht markiert' : '„${item.title}“ nicht mehr gebucht';
+  final label = booked ? l.stepMarkedBooked(item.title) : l.stepUnbooked(item.title);
   return ref.read(planActionsProvider).saveItems(data, setBooked(data.items, item.id, booked), label);
 }
 
 /// Fixes or releases [item] as one undoable step.
-Future<void> toggleFixed(WidgetRef ref, TripData data, PlanItem item) {
-  final label = item.fixed ? '„${item.title}“ nicht mehr fix' : '„${item.title}“ fixiert';
+Future<void> toggleFixed(AppLocalizations l, WidgetRef ref, TripData data, PlanItem item) {
+  final label = item.fixed ? l.stepUnfixed(item.title) : l.stepFixed(item.title);
   return ref.read(planActionsProvider).saveItems(data, [item.copyWith(fixed: !item.fixed)], label);
 }
 
 /// Moves [item] by [days] whole days with the scheduler, rippling like a
 /// drag on the timeline in the current shift mode. One undoable step.
-Future<void> shiftItemDays(WidgetRef ref, TripData data, PlanItem item, int days) {
+Future<void> shiftItemDays(AppLocalizations l, WidgetRef ref, TripData data, PlanItem item, int days) {
   final r = Scheduler.move(data.items, item.id, days * minutesPerDay, ref.read(tripUiProvider).shiftMode);
-  final label = '„${item.title}“ ${days > 0 ? '+' : '−'}${pluralDays(days.abs())}';
+  final label = l.stepShiftedDays(item.title, days > 0 ? '+' : '−', l.days(days.abs()));
   return ref.read(planActionsProvider).applySchedule(data, r, label);
 }
 
@@ -105,6 +107,7 @@ class _ItemSheet extends ConsumerWidget {
     final ui = ref.read(tripUiProvider.notifier);
     final view = ref.watch(tripUiProvider.select((u) => u.view));
     final theme = Theme.of(context);
+    final l = context.l10n;
 
     void goto(TripView v) {
       ui.select(id);
@@ -123,22 +126,22 @@ class _ItemSheet extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(item.title, style: theme.textTheme.titleLarge)),
-          if (item.fixed) const Tooltip(message: 'Fixer Termin', child: Icon(Icons.lock)),
+          if (item.fixed) Tooltip(message: l.fixedAppointment, child: const Icon(Icons.lock)),
         ]),
         const SizedBox(height: 8),
         Wrap(spacing: 6, runSpacing: 4, children: [
           Chip(
             avatar: Icon(statusIcon(item.status), size: 16),
-            label: Text(item.status.label),
+            label: Text(l.status(item.status)),
             visualDensity: VisualDensity.compact,
           ),
-          Chip(label: Text('Ebene ${item.kind.layer}: ${item.kind.label}'), visualDensity: VisualDensity.compact),
-          if (item.mode != null) Chip(label: Text(item.mode!.label), visualDensity: VisualDensity.compact),
+          Chip(label: Text(l.layer(item.kind)), visualDensity: VisualDensity.compact),
+          if (item.mode != null) Chip(label: Text(l.mode(item.mode!)), visualDensity: VisualDensity.compact),
         ]),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.schedule),
-          title: Text(timeSummary(item, tripStart)),
+          title: Text(timeSummary(l, item, tripStart)),
         ),
         if (item.kind == ItemKind.transport)
           ListTile(
@@ -150,7 +153,7 @@ class _ItemSheet extends ConsumerWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.subdirectory_arrow_right),
-            title: Text('Gehört zu ${data.item(item.parentId)!.title}'),
+            title: Text(l.belongsTo(data.item(item.parentId)!.title)),
             onTap: () {
               Navigator.pop(context);
               showItemSheet(context, ref, tripId, item.parentId!);
@@ -170,14 +173,14 @@ class _ItemSheet extends ConsumerWidget {
               openItemEditor(context, data, item: item);
             },
             icon: const Icon(Icons.edit),
-            label: const Text('Bearbeiten'),
+            label: Text(l.edit),
           ),
           if (view != TripView.timeline && item.isScheduled)
-            OutlinedButton.icon(onPressed: () => goto(TripView.timeline), icon: const Icon(Icons.view_timeline), label: const Text('Zeitplan')),
+            OutlinedButton.icon(onPressed: () => goto(TripView.timeline), icon: const Icon(Icons.view_timeline), label: Text(l.viewTimeline)),
           if (view != TripView.map && (item.hasLocation || item.kind == ItemKind.transport))
-            OutlinedButton.icon(onPressed: () => goto(TripView.map), icon: const Icon(Icons.map), label: const Text('Karte')),
+            OutlinedButton.icon(onPressed: () => goto(TripView.map), icon: const Icon(Icons.map), label: Text(l.viewMap)),
           if (view != TripView.canvas)
-            OutlinedButton.icon(onPressed: () => goto(TripView.canvas), icon: const Icon(Icons.dashboard), label: const Text('Canvas')),
+            OutlinedButton.icon(onPressed: () => goto(TripView.canvas), icon: const Icon(Icons.dashboard), label: Text(l.viewCanvas)),
         ]),
         if (item.kind == ItemKind.accommodation &&
             item.status != ItemStatus.booked &&
@@ -186,7 +189,7 @@ class _ItemSheet extends ConsumerWidget {
           FilledButton.tonalIcon(
             onPressed: () => chooseAccommodation(context, ref, data, item, undoSnack: false),
             icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Diese Option wählen'),
+            label: Text(l.chooseThisOption),
           ),
         ],
         if (item.notes.trim().isNotEmpty) ...[
@@ -194,24 +197,24 @@ class _ItemSheet extends ConsumerWidget {
           Text(item.notes),
         ],
         if (item.kind == ItemKind.stay) ...[
-          _section(context, 'Unterkünfte', ItemKind.accommodation, data, id),
-          for (final l in lodging) _childTile(context, ref, data, l, options: lodging),
-          _section(context, 'Aktivitäten', ItemKind.activity, data, id),
+          _section(context, l.sectionAccommodations, ItemKind.accommodation, data, id),
+          for (final o in lodging) _childTile(context, ref, data, o, options: lodging),
+          _section(context, l.sectionActivities, ItemKind.activity, data, id),
           for (final a in activities) _childTile(context, ref, data, a),
-          _header(context, 'Transport'),
+          _header(context, l.kindTransport),
           _transportActions(context, data, item),
           for (final t in transports) _childTile(context, ref, data, t),
         ],
-        if (item.links.isNotEmpty) _header(context, 'Links'),
-        for (final l in item.links)
+        if (item.links.isNotEmpty) _header(context, l.sectionLinks),
+        for (final link in item.links)
           ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.link),
-            title: Text(l, maxLines: 1, overflow: TextOverflow.ellipsis),
-            onTap: () => launchUrl(Uri.parse(l), mode: LaunchMode.externalApplication),
+            title: Text(link, maxLines: 1, overflow: TextOverflow.ellipsis),
+            onTap: () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
           ),
-        if (atts.isNotEmpty) _header(context, 'Tickets & Anhänge'),
+        if (atts.isNotEmpty) _header(context, l.sectionAttachments),
         for (final a in atts)
           ListTile(
             dense: true,
@@ -220,14 +223,14 @@ class _ItemSheet extends ConsumerWidget {
             title: Text(a.fileName),
             onTap: () => OpenFilex.open(ref.read(repositoryProvider).files.fileFor(a).path, type: a.mime),
           ),
-        if (cards.isNotEmpty) _header(context, 'Notizen'),
+        if (cards.isNotEmpty) _header(context, l.viewNotes),
         for (final c in cards)
           Card(
             color: noteBackground(context, c.color),
             child: ListTile(
               title: Text(c.title.isEmpty ? (c.text.split('\n').first) : c.title),
               subtitle: c.type == CardType.checklist
-                  ? Text('${c.checklist.where((e) => e.done).length}/${c.checklist.length} erledigt')
+                  ? Text(l.checklistProgress(c.checklist.where((e) => e.done).length, c.checklist.length))
                   : null,
               onTap: () => openCardEditor(context, data, card: c),
             ),
@@ -249,12 +252,12 @@ class _ItemSheet extends ConsumerWidget {
           TextButton.icon(
             onPressed: () => openItemEditor(context, data, newKind: kind, parentHint: parentId),
             icon: const Icon(Icons.add, size: 18),
-            label: Text(kind == ItemKind.accommodation ? 'Option' : 'Hinzufügen'),
+            label: Text(kind == ItemKind.accommodation ? context.l10n.statusOption : context.l10n.add),
           ),
         ]),
       );
 
-  /// "+ Transport hierher" from the previous stay and "+ Transport weiter"
+  /// "+ Transport here" from the previous stay and "+ Onward transport"
   /// to the next one (by [stayChain]); without a neighbour the other end
   /// stays open in the editor.
   Widget _transportActions(BuildContext context, TripData data, PlanItem stay) {
@@ -269,30 +272,31 @@ class _ItemSheet extends ConsumerWidget {
         key: const ValueKey('transport-here'),
         onPressed: () => open(from: prev, to: stay),
         icon: const Icon(Icons.add, size: 18),
-        label: const Text('Transport hierher'),
+        label: Text(context.l10n.transportHere),
       ),
       TextButton.icon(
         key: const ValueKey('transport-onward'),
         onPressed: () => open(from: stay, to: next),
         icon: const Icon(Icons.add, size: 18),
-        label: const Text('Transport weiter'),
+        label: Text(context.l10n.transportOnward),
       ),
     ]);
   }
 
   Widget _childTile(BuildContext context, WidgetRef ref, TripData data, PlanItem i, {List<PlanItem>? options}) {
     final canChoose = options != null && i.isOption;
+    final l = context.l10n;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       leading: Icon(itemIcon(i), color: kindColor(i.kind).withValues(alpha: i.isOption ? 0.5 : 1)),
       title: Text(i.title,
           style: i.isOption ? const TextStyle(fontStyle: FontStyle.italic) : null),
-      subtitle: Text('${i.status.label} · ${timeSummary(i, data.trip.startDate)}'),
+      subtitle: Text('${l.status(i.status)} · ${timeSummary(l, i, data.trip.startDate)}'),
       trailing: canChoose
           ? TextButton(
               onPressed: () => chooseAccommodation(context, ref, data, i, undoSnack: false),
-              child: const Text('Wählen'),
+              child: Text(l.choose),
             )
           : null,
       onTap: () {
@@ -315,49 +319,51 @@ class _QuickActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final canShift = item.isScheduled && !item.fixed;
+    final l = context.l10n;
     return Wrap(spacing: 6, runSpacing: 4, children: [
       FilterChip(
         key: const ValueKey('quick-booked'),
         avatar: Icon(statusIcon(ItemStatus.booked), size: 16),
         showCheckmark: false,
-        label: const Text('Gebucht'),
+        label: Text(l.statusBooked),
         selected: item.status == ItemStatus.booked,
-        onSelected: (_) => toggleBooked(ref, data, item),
+        onSelected: (_) => toggleBooked(l, ref, data, item),
       ),
       FilterChip(
         key: const ValueKey('quick-fixed'),
         avatar: Icon(item.fixed ? Icons.lock : Icons.lock_open, size: 16),
         showCheckmark: false,
-        label: const Text('Fix'),
-        tooltip: 'Fixe Termine bleiben beim Verschieben stehen',
+        label: Text(l.fixedChip),
+        tooltip: l.fixedTooltip,
         selected: item.fixed,
-        onSelected: (_) => toggleFixed(ref, data, item),
+        onSelected: (_) => toggleFixed(l, ref, data, item),
       ),
       if (item.isScheduled) ...[
         ActionChip(
           key: const ValueKey('quick-earlier'),
-          label: const Text('−1 Tag'),
-          tooltip: item.fixed ? 'Fixe Termine werden nicht verschoben' : null,
-          onPressed: canShift ? () => shiftItemDays(ref, data, item, -1) : null,
+          label: Text(l.minusOneDay),
+          tooltip: item.fixed ? l.fixedNotMoved : null,
+          onPressed: canShift ? () => shiftItemDays(l, ref, data, item, -1) : null,
         ),
         ActionChip(
           key: const ValueKey('quick-later'),
-          label: const Text('+1 Tag'),
-          tooltip: item.fixed ? 'Fixe Termine werden nicht verschoben' : null,
-          onPressed: canShift ? () => shiftItemDays(ref, data, item, 1) : null,
+          label: Text(l.plusOneDay),
+          tooltip: item.fixed ? l.fixedNotMoved : null,
+          onPressed: canShift ? () => shiftItemDays(l, ref, data, item, 1) : null,
         ),
       ],
       ActionChip(
         key: const ValueKey('quick-delete'),
         avatar: Icon(Icons.delete_outline, size: 16, color: scheme.error),
-        label: Text('Löschen', style: TextStyle(color: scheme.error)),
+        label: Text(l.delete, style: TextStyle(color: scheme.error)),
         onPressed: () => _delete(context, ref),
       ),
     ]);
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    if (!await confirm(context, '„${item.title}“ löschen?')) return;
+    final l = context.l10n;
+    if (!await confirm(context, l.deleteQuestion(item.title))) return;
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final actions = ref.read(planActionsProvider);
@@ -365,9 +371,10 @@ class _QuickActions extends ConsumerWidget {
     final tripId = data.trip.id;
     // The sheet (and this widget's ref) is gone after the pop.
     Navigator.pop(context);
-    await actions.deleteItem(data, item.id);
+    final label = l.stepDeleted(item.title);
+    await actions.deleteItem(data, item.id, label);
     final step = actions.lastStep(tripId);
     ui.select(null);
-    showUndoSnack(messenger, '„${item.title}“ gelöscht', () => actions.undoStep(tripId, step));
+    showUndoSnack(messenger, label, () => actions.undoStep(tripId, step));
   }
 }

@@ -10,6 +10,7 @@ import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
+import '../common/l10n.dart';
 import '../common/style.dart';
 import 'attachments_section.dart';
 import 'place_search.dart';
@@ -34,7 +35,7 @@ Future<String?> openItemEditor(
         tripId: data.trip.id,
         initial: item ??
             _newItem(data, newKind ?? ItemKind.stay, atDay, parentHint, title)
-                .copyWith(lat: lat, lng: lng, placeName: lat == null ? null : 'Auf der Karte gewählt'),
+                .copyWith(lat: lat, lng: lng, placeName: lat == null ? null : context.l10n.pickedOnMap),
         isNew: item == null,
       ),
     ));
@@ -46,8 +47,8 @@ Future<String?> openTransportEditor(BuildContext context, TripData data, {PlanIt
   final times = suggestTransportTimes(from, to);
   final title = switch ((from, to)) {
     (final f?, final t?) => '${f.title} → ${t.title}',
-    (null, final t?) => 'Nach ${t.title}',
-    (final f?, null) => 'Ab ${f.title}',
+    (null, final t?) => context.l10n.transportTo(t.title),
+    (final f?, null) => context.l10n.transportFrom(f.title),
     _ => '',
   };
   final initial = base.copyWith(
@@ -208,6 +209,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       for (final s in data.items)
         if (s.kind == ItemKind.stay && s.id != _i.id) s,
     ]..sort((a, b) => (a.start ?? 1 << 40).compareTo(b.start ?? 1 << 40));
+    final l = context.l10n;
 
     return PopScope<String>(
       canPop: false,
@@ -216,26 +218,27 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.isNew ? 'Neu: ${_i.kind.label}' : _i.kind.label),
+          title: Text(widget.isNew ? l.newItemTitle(l.kind(_i.kind)) : l.kind(_i.kind)),
           actions: [
             if (!widget.isNew)
               IconButton(
-                tooltip: 'Löschen',
+                tooltip: l.delete,
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
-                  if (await confirm(context, '„${_i.title}“ löschen?')) {
+                  if (await confirm(context, l.deleteQuestion(_i.title))) {
                     if (!context.mounted) return;
                     final messenger = ScaffoldMessenger.of(context);
                     final actions = ref.read(planActionsProvider);
-                    await actions.deleteItem(data, _i.id);
+                    final label = l.stepDeleted(_i.title);
+                    await actions.deleteItem(data, _i.id, label);
                     final step = actions.lastStep(widget.tripId);
                     ref.read(tripUiProvider.notifier).select(null);
-                    showUndoSnack(messenger, '„${_i.title}“ gelöscht', () => actions.undoStep(widget.tripId, step));
+                    showUndoSnack(messenger, label, () => actions.undoStep(widget.tripId, step));
                     if (context.mounted) _leave();
                   }
                 },
               ),
-            TextButton(onPressed: () => _save(data), child: const Text('Speichern')),
+            TextButton(onPressed: () => _save(data), child: Text(l.save)),
           ],
         ),
         body: ListView(
@@ -246,7 +249,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
                 showSelectedIcon: false,
                 segments: [
                   for (final k in ItemKind.values)
-                    ButtonSegment(value: k, icon: Icon(kindIcon(k), size: 18), tooltip: k.label),
+                    ButtonSegment(value: k, icon: Icon(kindIcon(k), size: 18), tooltip: l.kind(k)),
                 ],
                 selected: {_i.kind},
                 onSelectionChanged: (s) => _update((i) => i.copyWith(kind: s.first)),
@@ -257,23 +260,23 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
               autofocus: widget.isNew && _i.title.isEmpty,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                labelText: 'Titel',
+                labelText: l.titleHint,
                 hintText: switch (_i.kind) {
-                  ItemKind.stay => 'z. B. Kandy',
-                  ItemKind.transport => 'z. B. Zug Kandy → Ella',
-                  ItemKind.accommodation => 'z. B. Tree House Ella',
-                  ItemKind.activity => 'z. B. Safari im Yala NP',
+                  ItemKind.stay => l.titleHintStay,
+                  ItemKind.transport => l.titleHintTransport,
+                  ItemKind.accommodation => l.titleHintAccommodation,
+                  ItemKind.activity => l.titleHintActivity,
                 },
                 prefixIcon: Icon(itemIcon(_i), color: kindColor(_i.kind)),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Status', style: Theme.of(context).textTheme.titleSmall),
+            Text(l.statusLabel, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 6),
             SegmentedButton<ItemStatus>(
               segments: [
                 for (final s in ItemStatus.values)
-                  ButtonSegment(value: s, label: Text(s.label, style: const TextStyle(fontSize: 12))),
+                  ButtonSegment(value: s, label: Text(l.status(s), style: const TextStyle(fontSize: 12))),
               ],
               selected: {_i.status},
               showSelectedIcon: false,
@@ -282,8 +285,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: Icon(_i.fixed ? Icons.lock : Icons.lock_open),
-              title: const Text('Fixer Termin'),
-              subtitle: const Text('Bewegt sich nicht, wenn davor etwas verschoben wird (z. B. gebuchte Tour, Rückflug)'),
+              title: Text(l.fixedAppointment),
+              subtitle: Text(l.fixedSubtitle),
               value: _i.fixed,
               onChanged: (v) => _update((i) => i.copyWith(fixed: v)),
             ),
@@ -293,8 +296,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             const Divider(),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Im Zeitplan'),
-              subtitle: Text(_scheduled ? 'Hat Tage/Uhrzeiten' : 'Nur gesammelt – noch ohne Termin'),
+              title: Text(l.inSchedule),
+              subtitle: Text(_scheduled ? l.hasTimes : l.collectedOnly),
               value: _scheduled,
               onChanged: (v) => setState(() => _scheduled = v),
             ),
@@ -305,7 +308,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
               minLines: 3,
               maxLines: 12,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Notizen', alignLabelWithHint: true, border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l.notesLabel, alignLabelWithHint: true, border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 12),
             _linksSection(),
@@ -318,6 +321,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   }
 
   List<Widget> _relationFields(List<PlanItem> stays) {
+    final l = context.l10n;
     DropdownButtonFormField<String?> stayDropdown(String label, String? value, ValueChanged<String?> onChanged) =>
         DropdownButtonFormField<String?>(
           initialValue: stays.any((s) => s.id == value) ? value : null,
@@ -325,7 +329,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           decoration: InputDecoration(labelText: label),
           items: [
             const DropdownMenuItem(value: null, child: Text('—')),
-            for (final s in stays) DropdownMenuItem(value: s.id, child: Text(s.title.isEmpty ? '(ohne Titel)' : s.title)),
+            for (final s in stays) DropdownMenuItem(value: s.id, child: Text(s.title.isEmpty ? l.noTitle : s.title)),
           ],
           onChanged: onChanged,
         );
@@ -336,28 +340,28 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       case ItemKind.accommodation:
       case ItemKind.activity:
         return [
-          stayDropdown('Gehört zu Ort', _i.parentId, (v) => _update((i) => i.copyWith(parentId: v))),
-          const Padding(
-            padding: EdgeInsets.only(top: 4, bottom: 8),
-            child: Text('Wird mitverschoben, wenn sich der Ort verschiebt.', style: TextStyle(fontSize: 12)),
+          stayDropdown(l.belongsToPlace, _i.parentId, (v) => _update((i) => i.copyWith(parentId: v))),
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Text(l.movesWithPlace, style: const TextStyle(fontSize: 12)),
           ),
         ];
       case ItemKind.transport:
         return [
           DropdownButtonFormField<TransportMode>(
             initialValue: _i.mode ?? TransportMode.train,
-            decoration: const InputDecoration(labelText: 'Verkehrsmittel'),
+            decoration: InputDecoration(labelText: l.transportMode),
             items: [
               for (final m in TransportMode.values)
                 DropdownMenuItem(
                   value: m,
-                  child: Row(children: [Icon(modeIcon(m), size: 18), const SizedBox(width: 8), Text(m.label)]),
+                  child: Row(children: [Icon(modeIcon(m), size: 18), const SizedBox(width: 8), Text(l.mode(m))]),
                 ),
             ],
             onChanged: (m) => _update((i) => i.copyWith(mode: m)),
           ),
-          stayDropdown('Von', _i.fromId, (v) => _update((i) => i.copyWith(fromId: v))),
-          stayDropdown('Nach', _i.toId, (v) => _update((i) => i.copyWith(toId: v))),
+          stayDropdown(l.fromLabel, _i.fromId, (v) => _update((i) => i.copyWith(fromId: v))),
+          stayDropdown(l.toLabel, _i.toId, (v) => _update((i) => i.copyWith(toId: v))),
           const SizedBox(height: 8),
         ];
     }
@@ -366,10 +370,10 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   Widget _placeTile() => ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.travel_explore),
-        title: Text(_i.placeName ?? 'Ort auf der Karte festlegen'),
+        title: Text(_i.placeName ?? context.l10n.setPlaceOnMap),
         subtitle: _i.hasLocation
             ? Text('${_i.lat!.toStringAsFixed(4)}, ${_i.lng!.toStringAsFixed(4)}')
-            : const Text('Grob reicht – die Stadt genügt'),
+            : Text(context.l10n.roughIsEnough),
         trailing: _i.hasLocation
             ? IconButton(
                 icon: const Icon(Icons.clear),
@@ -388,6 +392,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     final kind = _i.kind;
     final nights = nightsIn(_start, _end);
     final days = daysTouched(_start, _end);
+    final l = context.l10n;
 
     void setNights(int n) {
       if (n < 0) return;
@@ -395,16 +400,16 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     }
 
     final startLabel = switch (kind) {
-      ItemKind.stay => 'Ankunft',
-      ItemKind.accommodation => 'Check-in',
-      ItemKind.transport => 'Abfahrt',
-      ItemKind.activity => 'Beginn',
+      ItemKind.stay => l.labelArrival,
+      ItemKind.accommodation => l.labelCheckIn,
+      ItemKind.transport => l.labelDeparture,
+      ItemKind.activity => l.labelStart,
     };
     final endLabel = switch (kind) {
-      ItemKind.stay => 'Abreise',
-      ItemKind.accommodation => 'Check-out',
-      ItemKind.transport => 'Ankunft',
-      ItemKind.activity => 'Ende',
+      ItemKind.stay => l.labelLeave,
+      ItemKind.accommodation => l.labelCheckOut,
+      ItemKind.transport => l.labelArrival,
+      ItemKind.activity => l.labelEnd,
     };
 
     return [
@@ -428,8 +433,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       if (kind == ItemKind.stay || kind == ItemKind.accommodation)
         Row(
           children: [
-            Text(kind == ItemKind.stay ? '${pluralDays(days)} · ' : ''),
-            Text(pluralNights(nights), style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(kind == ItemKind.stay ? '${l.days(days)} · ' : ''),
+            Text(l.nights(nights), style: const TextStyle(fontWeight: FontWeight.bold)),
             const Spacer(),
             IconButton.outlined(onPressed: nights > 0 ? () => setNights(nights - 1) : null, icon: const Icon(Icons.remove)),
             const SizedBox(width: 8),
@@ -437,9 +442,9 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           ],
         ),
       if (kind == ItemKind.stay)
-        const Text(
-          'Tage zählen jeden angebrochenen Tag. Früh ankommen und spät abreisen = mehr Tage bei gleich vielen Nächten.',
-          style: TextStyle(fontSize: 12),
+        Text(
+          l.daysExplanation,
+          style: const TextStyle(fontSize: 12),
         ),
     ];
   }
@@ -448,29 +453,30 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('Links', style: Theme.of(context).textTheme.titleSmall),
+            Text(context.l10n.sectionLinks, style: Theme.of(context).textTheme.titleSmall),
             const Spacer(),
             IconButton(
-              tooltip: 'Link hinzufügen',
+              tooltip: context.l10n.addLink,
               icon: const Icon(Icons.add_link),
               onPressed: () async {
-                final url = await promptText(context, 'Link hinzufügen', hint: 'https://…', keyboard: TextInputType.url);
+                final url =
+                    await promptText(context, context.l10n.addLink, hint: 'https://…', keyboard: TextInputType.url);
                 if (url == null || url.trim().isEmpty) return;
                 final u = url.trim().startsWith('http') ? url.trim() : 'https://${url.trim()}';
                 _update((i) => i.copyWith(links: [...i.links, u]));
               },
             ),
           ]),
-          for (final l in _i.links)
+          for (final link in _i.links)
             ListTile(
               contentPadding: EdgeInsets.zero,
               dense: true,
               leading: const Icon(Icons.link),
-              title: Text(l, maxLines: 1, overflow: TextOverflow.ellipsis),
-              onTap: () => launchUrl(Uri.parse(l), mode: LaunchMode.externalApplication),
+              title: Text(link, maxLines: 1, overflow: TextOverflow.ellipsis),
+              onTap: () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
               trailing: IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => _update((i) => i.copyWith(links: [...i.links]..remove(l))),
+                onPressed: () => _update((i) => i.copyWith(links: [...i.links]..remove(link))),
               ),
             ),
         ],
@@ -489,8 +495,9 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   Future<void> _store(TripData data) async {
     final mode = ref.read(tripUiProvider).shiftMode;
     final actions = ref.read(planActionsProvider);
+    final l = context.l10n;
     var item = _i.copyWith(
-      title: _title.text.trim().isEmpty ? _i.kind.label : _title.text.trim(),
+      title: _title.text.trim().isEmpty ? l.kind(_i.kind) : _title.text.trim(),
       notes: _notes.text,
       start: _scheduled ? _start : null,
       end: _scheduled ? _end : null,
@@ -511,7 +518,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     final changed = r == null ? [item] : [item, ...r.changed.where((c) => c.id != item.id)];
     final finalItem = r?.items.firstWhere((x) => x.id == item.id) ?? item;
     changed[0] = finalItem;
-    await actions.saveItems(data, changed, widget.isNew ? '„${item.title}“ angelegt' : '„${item.title}“ geändert');
+    await actions.saveItems(data, changed, widget.isNew ? l.stepItemCreated(item.title) : l.stepItemChanged(item.title));
     _saved = true;
     ref.read(tripUiProvider.notifier).select(item.id);
     if (!mounted) return;
@@ -519,8 +526,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     if (moved > 0) {
       showSnack(
         context,
-        '${moved == 1 ? '1 weiteres Element' : '$moved weitere Elemente'} verschoben (${mode.shortLabel})',
-        action: SnackBarAction(label: 'Rückgängig', onPressed: () => actions.undo(widget.tripId)),
+        l.othersMoved(moved, l.shiftModeShort(mode)),
+        action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(widget.tripId)),
       );
     }
     _leave(item.id);

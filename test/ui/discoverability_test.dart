@@ -15,10 +15,12 @@ import 'package:travel_planner/domain/time.dart';
 import 'package:travel_planner/state/hints.dart';
 import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/canvas/canvas_view.dart';
-import 'package:travel_planner/ui/common/hint_banner.dart';
 import 'package:travel_planner/ui/common/item_sheet.dart';
+import 'package:travel_planner/ui/common/l10n.dart';
 import 'package:travel_planner/ui/timeline/timeline_view.dart';
 import 'package:travel_planner/ui/trip/trip_page.dart';
+
+import '../l10n_test_utils.dart';
 
 void main() {
   late Repository repo;
@@ -54,7 +56,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
+      child: testApp(
         home: Scaffold(
           body: Consumer(builder: (context, ref, _) {
             final data = ref.watch(tripDataProvider(demo.trip.id)).value;
@@ -86,24 +88,24 @@ void main() {
 
     testWidgets('the timeline explains its gestures until "Verstanden"', (tester) async {
       await pumpHost(tester, (context, ref, data) => TimelineView(data: data));
-      expect(find.text(timelineHint), findsOneWidget);
+      expect(find.text(de.hintTimeline), findsOneWidget);
       await tester.tap(find.text('Verstanden'));
       await tester.pump();
-      expect(find.text(timelineHint), findsNothing);
+      expect(find.text(de.hintTimeline), findsNothing);
       expect(container.read(hintsProvider), {Hint.timeline});
 
       // Reset (trip list menu) shows it again.
       container.read(hintsProvider.notifier).resetAll();
       await tester.pump();
-      expect(find.text(timelineHint), findsOneWidget);
+      expect(find.text(de.hintTimeline), findsOneWidget);
     });
 
     testWidgets('the canvas hint gives way to the connect instructions', (tester) async {
       await pumpHost(tester, (context, ref, data) => CanvasView(data: data));
-      expect(find.text(canvasHint), findsOneWidget);
+      expect(find.text(de.hintCanvas), findsOneWidget);
       await tester.tap(find.byTooltip('Verbinden'));
       await tester.pump();
-      expect(find.text(canvasHint), findsNothing);
+      expect(find.text(de.hintCanvas), findsNothing);
       expect(find.textContaining('Verbinden: tippe'), findsOneWidget);
     });
   });
@@ -120,7 +122,7 @@ void main() {
         Expanded(child: TimelineView(data: data)),
       ]),
     );
-    expect(find.text(timelineHint), findsOneWidget);
+    expect(find.text(de.hintTimeline), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('open'));
     await settle(tester);
@@ -176,7 +178,8 @@ void main() {
       expect(byTitle(after, 'Lyon').start, byTitle(before, 'Lyon').start! + minutesPerDay);
       // "Alles danach": Barcelona follows, the fixed flight home stays.
       expect(byTitle(after, 'Barcelona').start, byTitle(before, 'Barcelona').start! + minutesPerDay);
-      expect(byTitle(after, 'Rückflug Valencia → Zuhause').start, byTitle(before, 'Rückflug Valencia → Zuhause').start);
+      const flight = DemoTexts();
+      expect(byTitle(after, flight.flightHomeValencia).start, byTitle(before, flight.flightHomeValencia).start);
       expect(undoLabels(), ['„Lyon“ +1 Tag']);
 
       // One undo step reverts the whole ripple.
@@ -239,8 +242,8 @@ void main() {
     testWidgets('labels carry no layer digits; the state is visible', (tester) async {
       await pumpHost(tester, (context, ref, data) => LayerBar(data: data));
       for (final k in ItemKind.values) {
-        expect(find.text(k.label), findsOneWidget);
-        expect(find.text('${k.layer} ${k.label}'), findsNothing);
+        expect(find.text(de.kind(k)), findsOneWidget);
+        expect(find.text('${k.layer} ${de.kind(k)}'), findsNothing);
       }
       FilterChip chip() => tester.widget<FilterChip>(find.byKey(const ValueKey('layer-transport')));
       expect(chip().selected, isTrue);
