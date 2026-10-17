@@ -77,9 +77,15 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(onResume: () {
-      if (widget.active) _probe();
-    });
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        if (!widget.active) return;
+        _probe();
+        if (_me != null) _watchMe();
+      },
+      // No GPS while the app is in the background.
+      onPause: _stopWatchingMe,
+    );
     _startStyleTimer();
     _probe();
   }
@@ -133,10 +139,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       if (_me != null) _watchMe();
     }
     // No position updates while another view shows.
-    if (old.active && !widget.active) {
-      _meUpdates?.cancel();
-      _meUpdates = null;
-    }
+    if (old.active && !widget.active) _stopWatchingMe();
   }
 
   void _scheduleRedraw() {
@@ -321,17 +324,28 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
     }
     setState(() => _me = LatLng(p.$1, p.$2));
     await _drawMe();
-    _watchMe();
+    if (!mounted) return;
+    // The user may have switched views while the fix was coming.
+    if (widget.active) _watchMe();
     // Close enough to see the streets around, but never zoom out.
     await _map?.animateCamera(_zoom >= 13 ? CameraUpdate.newLatLng(_me!) : CameraUpdate.newLatLngZoom(_me!, 14));
   }
 
   void _watchMe() {
-    _meUpdates ??= ref.read(locationSourceProvider).watch().listen((p) {
-      if (!mounted) return;
-      setState(() => _me = LatLng(p.$1, p.$2));
-      _drawMe();
-    });
+    _meUpdates ??= ref.read(locationSourceProvider).watch().listen(
+      (p) {
+        if (!mounted) return;
+        setState(() => _me = LatLng(p.$1, p.$2));
+        _drawMe();
+      },
+      // A stream that ended (e.g. permission revoked) is restarted next time.
+      onDone: () => _meUpdates = null,
+    );
+  }
+
+  void _stopWatchingMe() {
+    _meUpdates?.cancel();
+    _meUpdates = null;
   }
 
   /// Slightly curved line so overlapping connections stay distinguishable.

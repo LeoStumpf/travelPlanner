@@ -27,10 +27,13 @@ class FakeLocation implements LocationSource {
   int locates = 0, appSettings = 0, locationSettings = 0;
   final updates = StreamController<(double, double)>.broadcast();
 
+  /// When set, [locate] waits for it (a slow fix).
+  Completer<LocateResult>? pending;
+
   @override
   Future<LocateResult> locate() async {
     locates++;
-    return result;
+    return pending?.future ?? result;
   }
 
   @override
@@ -145,6 +148,34 @@ void main() {
       expect(location.updates.hasListener, isTrue);
       await unmount(tester);
       expect(location.updates.hasListener, isFalse);
+    });
+
+    testWidgets('stops following while the app is in the background', (tester) async {
+      await pump(tester);
+      await tapMyLocation(tester);
+      expect(location.updates.hasListener, isTrue);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      expect(location.updates.hasListener, isFalse);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      expect(location.updates.hasListener, isTrue);
+      await unmount(tester);
+    });
+
+    testWidgets('a fix arriving after switching views does not start following', (tester) async {
+      final pending = Completer<LocateResult>();
+      location.pending = pending;
+      await pump(tester);
+      await tapMyLocation(tester);
+      await pump(tester, active: false);
+      pending.complete(const LocateResult.at(48.85, 2.35));
+      await tester.pump();
+      await tester.pump();
+      expect(location.updates.hasListener, isFalse);
+      await unmount(tester);
     });
 
     testWidgets('location switched off: says so and links the system settings', (tester) async {

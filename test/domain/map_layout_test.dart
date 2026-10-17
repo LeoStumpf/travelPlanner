@@ -142,6 +142,7 @@ void main() {
       item('TGV', ItemKind.transport, from: 'Paris', to: 'Lyon'),
       item('TGV2', ItemKind.transport, from: 'Paris', to: 'Lyon', station: 'Gare de Lyon'),
       item('Idea', ItemKind.activity),
+      item('Hotel', ItemKind.accommodation, parent: 'Paris', place: 'Rue Cler 12, Paris'),
     ]);
 
     test('coordinates first: a geo: URI, then Google Maps directions', () {
@@ -159,6 +160,12 @@ void main() {
       final uris = navigationUris(t);
       expect(uris.first.toString(), 'geo:0,0?q=Rue%20de%20Rivoli%2099%2C%20Paris');
       expect(uris.last.queryParameters['destination'], 'Rue de Rivoli 99, Paris');
+    });
+
+    test("an address of its own beats the stay's coordinates", () {
+      final t = navigationTarget(data, data.item('Hotel')!)!;
+      expect(t.at, isNull);
+      expect(t.query, 'Rue Cler 12, Paris');
     });
 
     test('a transport leads to its departure: the station, else the origin', () {

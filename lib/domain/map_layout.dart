@@ -97,8 +97,9 @@ List<(double, double)> focusPoints(TripData data, PlanItem item) {
   return p == null ? const [] : [p];
 }
 
-/// Where "Navigation" leads for [item]: its coordinates (own or its stay's),
-/// otherwise its address as a search. A transport leads to its departure,
+/// Where "Navigation" leads for [item]: its own coordinates, else its own
+/// address as a search (a hotel's street beats its city's centre), else its
+/// stay's coordinates. A transport leads to its departure,
 /// where one has to get to: the departure station as a search when given
 /// (more precise than the city's coordinates, "station, city"), else its
 /// origin stay. Null when nothing is known.
@@ -115,10 +116,11 @@ List<(double, double)> focusPoints(TripData data, PlanItem item) {
     }
     return from == null ? null : navigationTarget(data, from);
   }
-  final at = itemPosition(data, item);
+  if (item.hasLocation) return (at: (item.lat!, item.lng!), query: null, label: item.title);
   final place = item.placeName?.trim();
-  if (at == null && (place == null || place.isEmpty)) return null;
-  return (at: at, query: at == null ? place : null, label: item.title);
+  if (place != null && place.isNotEmpty) return (at: null, query: place, label: item.title);
+  final at = itemPosition(data, item);
+  return at == null ? null : (at: at, query: null, label: item.title);
 }
 
 /// URIs to try in order for navigating to [target]: a geo: URI, which
