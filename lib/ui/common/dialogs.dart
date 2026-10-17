@@ -5,7 +5,7 @@ import 'l10n.dart';
 void showSnack(BuildContext context, String text, {SnackBarAction? action}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(text), action: action));
+    ..showSnackBar(SnackBar(content: Text(text), action: action, persist: false));
 }
 
 /// Shows [text] with an "Undo" action. Takes the messenger instead of a
@@ -16,6 +16,7 @@ void showUndoSnack(ScaffoldMessengerState messenger, String text, VoidCallback o
     ..showSnackBar(SnackBar(
       content: Text(text),
       action: SnackBarAction(label: messenger.context.l10n.undo, onPressed: onUndo),
+      persist: false,
     ));
 }
 

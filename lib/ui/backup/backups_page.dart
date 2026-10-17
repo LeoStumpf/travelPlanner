@@ -72,7 +72,7 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
       child: ListTile(
         leading: const Icon(Icons.inventory_2_outlined),
         title: Text(l.dateTime(b.createdAt)),
-        subtitle: Text(_size(size)),
+        subtitle: Text(formatBytes(size, l.localeName)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -92,7 +92,6 @@ class _BackupsPageState extends ConsumerState<BackupsPage> {
     );
   }
 
-  static String _size(int bytes) => formatBytes(bytes);
 
   /// Runs [job] with the progress bar. [job] gets the provider container,
   /// which stays usable when the user leaves the page while it runs (`ref`

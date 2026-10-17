@@ -145,7 +145,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('offline-map-button')));
     await tester.pumpAndSettle();
     expect(find.text(de.offlineMapTitle), findsOneWidget);
-    expect(find.text(de.offlineMapEstimate(plan.tiles, formatBytes(plan.estimatedBytes))), findsOneWidget);
+    expect(find.text(de.offlineMapEstimate(plan.tiles, formatBytes(plan.estimatedBytes, de.localeName))), findsOneWidget);
 
     store.gate = Completer();
     store.bytesPerRegion = 2 * 1024 * 1024;
@@ -154,13 +154,13 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('offline-progress')), findsOneWidget);
     expect(find.text(de.cancel), findsOneWidget);
-    expect(find.textContaining('1.0 MB'), findsOneWidget);
+    expect(find.textContaining('1,0 MB'), findsOneWidget);
 
     store.gate!.complete();
     await tester.pumpAndSettle();
     expect(find.text(de.offlineMapSaved), findsOneWidget);
     final s = container.read(offlineMapProvider(demo.trip.id));
-    expect(find.text(de.offlineMapSavedInfo(de.dateTime(s.savedAt!), formatBytes(s.bytes))), findsOneWidget);
+    expect(find.text(de.offlineMapSavedInfo(de.dateTime(s.savedAt!), formatBytes(s.bytes, de.localeName))), findsOneWidget);
     expect(find.text(de.offlineMapSaveAgain), findsOneWidget);
     expect(find.byIcon(Icons.offline_pin), findsWidgets);
 

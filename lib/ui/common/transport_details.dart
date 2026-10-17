@@ -7,10 +7,13 @@ import '../../domain/models.dart';
 import 'l10n.dart';
 
 /// Route text of transport [t]: the linked stays, falling back to the
-/// departure / arrival station for open ends (flight out and home).
-String transportRoute(TripData data, PlanItem t) =>
-    '${data.item(t.fromId)?.title ?? t.departureStation ?? '?'} → '
-    '${data.item(t.toId)?.title ?? t.arrivalStation ?? '?'}';
+/// departure / arrival station for open ends (flight out and home). An
+/// unknown end is left out ("→ Colombo") rather than shown as "?".
+String transportRoute(TripData data, PlanItem t) {
+  final from = data.item(t.fromId)?.title ?? t.departureStation;
+  final to = data.item(t.toId)?.title ?? t.arrivalStation;
+  return [?from, if (from != null || to != null) '→', ?to].join(' ');
+}
 
 /// The ticket details of a transport like on a boarding pass: from / to
 /// station, number, seat and the booking reference, which is copied with

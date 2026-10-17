@@ -323,6 +323,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(text),
         action: settings == null ? null : SnackBarAction(label: l.locationSettings, onPressed: settings),
+        persist: false,
       ));
       return;
     }

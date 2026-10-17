@@ -196,7 +196,7 @@ class _ItemSheet extends ConsumerWidget {
             leading: const Icon(Icons.public),
             title: Text(l.localTimeIn('$zone (${zones.startOffsetLabel(item)})')),
           ),
-        if (item.kind == ItemKind.transport)
+        if (item.kind == ItemKind.transport && transportRoute(data, item).isNotEmpty)
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.route),

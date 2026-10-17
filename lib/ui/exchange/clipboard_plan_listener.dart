@@ -51,6 +51,7 @@ class _ClipboardPlanListenerState extends ConsumerState<ClipboardPlanListener> {
         ..showSnackBar(SnackBar(
           content: Text(l.clipboardPlanFound),
           duration: const Duration(seconds: 10),
+          persist: false,
           action: SnackBarAction(
             label: l.apply,
             onPressed: () {

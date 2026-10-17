@@ -42,7 +42,7 @@ class OfflineMapPanel extends ConsumerWidget {
       children.addAll([
         LinearProgressIndicator(key: const ValueKey('offline-progress'), value: s.progress),
         const SizedBox(height: 8),
-        Text(l.offlineMapProgress((s.progress! * 100).round(), formatBytes(s.downloadedBytes))),
+        Text(l.offlineMapProgress((s.progress! * 100).round(), formatBytes(s.downloadedBytes, l.localeName))),
         const SizedBox(height: 4),
         Text(l.offlineMapProgressHint, style: theme.textTheme.bodySmall),
         const SizedBox(height: 12),
@@ -57,7 +57,7 @@ class OfflineMapPanel extends ConsumerWidget {
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.offline_pin, color: theme.colorScheme.primary),
           title: Text(l.offlineMapSaved),
-          subtitle: Text(l.offlineMapSavedInfo(s.savedAt == null ? '–' : l.dateTime(s.savedAt!), formatBytes(s.bytes))),
+          subtitle: Text(l.offlineMapSavedInfo(s.savedAt == null ? '–' : l.dateTime(s.savedAt!), formatBytes(s.bytes, l.localeName))),
         ),
       );
       if (!covers) {
@@ -73,7 +73,7 @@ class OfflineMapPanel extends ConsumerWidget {
     } else if (plan == null) {
       children.add(Text(l.mapNoPlaces));
     } else {
-      children.add(Text(l.offlineMapEstimate(plan.tiles, formatBytes(plan.estimatedBytes))));
+      children.add(Text(l.offlineMapEstimate(plan.tiles, formatBytes(plan.estimatedBytes, l.localeName))));
     }
 
     if (s.error != null && !s.downloading) {
