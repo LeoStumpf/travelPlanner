@@ -46,9 +46,10 @@ void main() {
   List<String> undoLabels() => [for (final e in container.read(undoProvider)[demo.trip.id] ?? const []) e.label];
 
   /// Hosts [body] (built from the live trip data) on a big screen.
-  Future<void> pumpHost(WidgetTester tester, Widget Function(BuildContext, WidgetRef, TripData) body) async {
+  Future<void> pumpHost(WidgetTester tester, Widget Function(BuildContext, WidgetRef, TripData) body,
+      {Size size = const Size(1600, 1000)}) async {
     await tester.runAsync(() => repo.putTripData(demo));
-    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(UncontrolledProviderScope(
@@ -105,6 +106,26 @@ void main() {
       expect(find.text(canvasHint), findsNothing);
       expect(find.textContaining('Verbinden: tippe'), findsOneWidget);
     });
+  });
+
+  testWidgets('hint banners and quick actions fit a 360 dp phone', (tester) async {
+    await pumpHost(
+      tester,
+      size: const Size(360, 740),
+      (context, ref, data) => Column(children: [
+        TextButton(
+          onPressed: () => showItemSheet(context, ref, demo.trip.id, byTitle(data, 'Louvre').id),
+          child: const Text('open'),
+        ),
+        Expanded(child: TimelineView(data: data)),
+      ]),
+    );
+    expect(find.text(timelineHint), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('open'));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('quick-delete')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   group('item sheet quick actions', () {
