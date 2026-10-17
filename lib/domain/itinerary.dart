@@ -62,7 +62,7 @@ class Itinerary {
   /// Text, checklist and link notes linked to a shared item, by item id.
   final Map<String, List<NoteCard>> cardsByItem;
 
-  /// The other notes worth sharing (not linked to a shared item).
+  /// The other notes worth sharing (linked to no item, or to a deleted one).
   final List<NoteCard> notes;
 
   const Itinerary({
@@ -149,7 +149,9 @@ Itinerary buildItinerary(TripData data) {
   for (final c in cards) {
     if (c.itemId != null && sharedIds.contains(c.itemId)) {
       (byItem[c.itemId!] ??= []).add(c);
-    } else {
+    } else if (data.item(c.itemId) == null) {
+      // Unlinked (or the item is gone). Notes on an option, idea or
+      // unscheduled item stay private with it.
       notes.add(c);
     }
   }

@@ -134,6 +134,22 @@ void main() {
       expect(bytes.length, greaterThan(2000));
     });
 
+    test('a paragraph longer than a page does not break the export', () async {
+      final data = sharedTrip();
+      final long = data.item('temple')!.copyWith(notes: List.filled(1500, 'word').join(' '));
+      final items = [for (final i in data.items) i.id == 'temple' ? long : i];
+      final fonts = await PdfFonts.load();
+      final bytes =
+          await itineraryPdf(ItineraryWriter(en, TripData(trip: data.trip, items: items)).document(now: now), en, fonts);
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    });
+
+    test('long lines are cut at spaces into page-sized pieces', () {
+      expect(pdfChunks('short'), ['short']);
+      expect(pdfChunks('aaa bbb ccc', max: 7), ['aaa bbb', 'ccc']);
+      expect(pdfChunks('a' * 12, max: 5), ['aaaaa', 'aaaaa', 'aa']);
+    });
+
     test('a long trip breaks across pages', () async {
       final data = sharedTrip(startDate: DateTime(2027, 3, 10));
       final many = <PlanItem>[
@@ -183,9 +199,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<void> openSheet(WidgetTester tester, TripData data) async {
+    Future<void> openSheet(WidgetTester tester, TripData data, {Size size = const Size(800, 1600)}) async {
       await tester.runAsync(() => repo.putTripData(data));
-      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(UncontrolledProviderScope(
@@ -214,6 +230,20 @@ void main() {
       expect(find.text(de.shareCalendar), findsOneWidget);
       expect(find.textContaining(de.shareNoStartDate), findsOneWidget);
       expect(find.textContaining(de.shareCalendarNeedsDate), findsOneWidget);
+    });
+
+    testWidgets('fits a small phone, also in landscape', (tester) async {
+      for (final size in const [Size(360, 640), Size(640, 360)]) {
+        await openSheet(tester, sharedTrip(), size: size);
+        expect(tester.takeException(), isNull);
+        await tester.scrollUntilVisible(find.byKey(const ValueKey('share-ics')), 50,
+            scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+        await tester.tap(find.byKey(const ValueKey('share-ics')));
+        await settle(tester);
+        expect(find.text(de.shareStartDateTitle), findsOneWidget);
+        await tester.tap(find.text(de.cancel));
+        await settle(tester);
+      }
     });
 
     testWidgets('text goes to the share sheet', (tester) async {

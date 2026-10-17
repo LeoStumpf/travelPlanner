@@ -32,8 +32,28 @@ class PdfFonts {
   }
 }
 
-/// Lines under an entry start where its title starts.
-pw.Widget _indented(pw.Widget child) => pw.Padding(padding: const pw.EdgeInsets.only(left: 101), child: child);
+/// Lines under an entry start where its title starts. The padding keeps
+/// MultiPage from splitting a text across pages, so a long paragraph (a
+/// pasted booking mail) is cut into pieces that each fit on a page.
+List<pw.Widget> _indented(String text, pw.TextStyle style) => [
+      for (final piece in pdfChunks(text))
+        pw.Padding(padding: const pw.EdgeInsets.only(left: 101), child: pw.Text(piece, style: style)),
+    ];
+
+/// [text] in pieces of at most [max] characters, cut at spaces where
+/// possible.
+List<String> pdfChunks(String text, {int max = 500}) {
+  final out = <String>[];
+  var rest = text;
+  while (rest.length > max) {
+    var cut = rest.lastIndexOf(' ', max);
+    if (cut <= 0) cut = max;
+    out.add(rest.substring(0, cut).trimRight());
+    rest = rest.substring(cut).trimLeft();
+  }
+  out.add(rest);
+  return out;
+}
 
 PdfColor _kindColor(ItemKind k) => PdfColor.fromInt(kindColor(k).toARGB32());
 
@@ -79,8 +99,8 @@ Future<Uint8List> itineraryPdf(ItineraryDoc doc, AppLocalizations l, PdfFonts fo
             ),
           ]),
         ),
-        for (final d in e.details) _indented(pw.Text(d, style: const pw.TextStyle(fontSize: 9.5))),
-        for (final n in e.notes) _indented(pw.Text(n, style: const pw.TextStyle(fontSize: 9, color: grey))),
+        for (final d in e.details) ..._indented(d, const pw.TextStyle(fontSize: 9.5)),
+        for (final n in e.notes) ..._indented(n, const pw.TextStyle(fontSize: 9, color: grey)),
       ];
 
   List<pw.Widget> day(DocDay d) => [

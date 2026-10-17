@@ -68,6 +68,16 @@ void main() {
     expect([for (final c in it.notes) c.id], ['c2']); // the empty image card is left out
   });
 
+  test('notes on options, ideas and unscheduled items stay private', () {
+    final data = sharedTrip();
+    NoteCard card(String id, String? itemId) =>
+        NoteCard(id: id, tripId: 't', type: CardType.note, text: 'Text $id', itemId: itemId, createdAt: DateTime(2026));
+    final cards = [...data.cards, card('o', 'option'), card('i', 'idea'), card('l', 'later'), card('g', 'gone')];
+    final it = buildItinerary(TripData(trip: data.trip, items: data.items, cards: cards));
+    expect([for (final c in it.notes) c.id], ['c2', 'g']);
+    expect(it.cardsByItem.keys, ['temple']);
+  });
+
   test('an overnight transport is listed on its departure day only', () {
     final data = sharedTrip();
     final night = data.item('train')!.copyWith(start: at(1, 22 * 60), end: at(2, 6 * 60));

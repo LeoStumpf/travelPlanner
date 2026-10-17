@@ -22,50 +22,54 @@ Future<void> showShareSheet(BuildContext context, WidgetRef ref, TripData data) 
   final format = await showModalBottomSheet<ShareFormat>(
     context: context,
     showDragHandle: true,
+    // As tall as its content; scrolls on small phones and in landscape.
+    isScrollControlled: true,
     builder: (c) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text(l.shareSheetTitle, style: Theme.of(c).textTheme.titleMedium),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              noDate ? '${l.shareSheetHint}\n${l.shareNoStartDate}' : l.shareSheetHint,
-              style: Theme.of(c).textTheme.bodySmall,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Text(l.shareSheetTitle, style: Theme.of(c).textTheme.titleMedium),
             ),
-          ),
-          ListTile(
-            key: const ValueKey('share-text'),
-            leading: const Icon(Icons.notes),
-            title: Text(l.shareAsText),
-            subtitle: Text(l.shareAsTextSub),
-            onTap: () => Navigator.pop(c, ShareFormat.text),
-            trailing: IconButton(
-              key: const ValueKey('share-copy'),
-              tooltip: l.shareCopyText,
-              icon: const Icon(Icons.copy),
-              onPressed: () => Navigator.pop(c, ShareFormat.copy),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                noDate ? '${l.shareSheetHint}\n${l.shareNoStartDate}' : l.shareSheetHint,
+                style: Theme.of(c).textTheme.bodySmall,
+              ),
             ),
-          ),
-          ListTile(
-            key: const ValueKey('share-pdf'),
-            leading: const Icon(Icons.picture_as_pdf_outlined),
-            title: Text(l.shareAsPdf),
-            subtitle: Text(l.shareAsPdfSub),
-            onTap: () => Navigator.pop(c, ShareFormat.pdf),
-          ),
-          ListTile(
-            key: const ValueKey('share-ics'),
-            leading: const Icon(Icons.event_outlined),
-            title: Text(l.shareCalendar),
-            subtitle: Text(noDate ? '${l.shareCalendarSub} · ${l.shareCalendarNeedsDate}' : l.shareCalendarSub),
-            onTap: () => Navigator.pop(c, ShareFormat.calendar),
-          ),
-        ],
+            ListTile(
+              key: const ValueKey('share-text'),
+              leading: const Icon(Icons.notes),
+              title: Text(l.shareAsText),
+              subtitle: Text(l.shareAsTextSub),
+              onTap: () => Navigator.pop(c, ShareFormat.text),
+              trailing: IconButton(
+                key: const ValueKey('share-copy'),
+                tooltip: l.shareCopyText,
+                icon: const Icon(Icons.copy),
+                onPressed: () => Navigator.pop(c, ShareFormat.copy),
+              ),
+            ),
+            ListTile(
+              key: const ValueKey('share-pdf'),
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: Text(l.shareAsPdf),
+              subtitle: Text(l.shareAsPdfSub),
+              onTap: () => Navigator.pop(c, ShareFormat.pdf),
+            ),
+            ListTile(
+              key: const ValueKey('share-ics'),
+              leading: const Icon(Icons.event_outlined),
+              title: Text(l.shareCalendar),
+              subtitle: Text(noDate ? '${l.shareCalendarSub} · ${l.shareCalendarNeedsDate}' : l.shareCalendarSub),
+              onTap: () => Navigator.pop(c, ShareFormat.calendar),
+            ),
+          ],
+        ),
       ),
     ),
   );
