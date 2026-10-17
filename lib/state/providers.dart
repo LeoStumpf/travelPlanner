@@ -5,6 +5,7 @@ import '../data/auto_backup.dart';
 import '../data/db.dart';
 import '../data/geocoding.dart';
 import '../data/repository.dart';
+import '../data/sharing.dart';
 import '../domain/models.dart';
 import '../domain/places.dart';
 import '../domain/scheduler.dart';
@@ -35,6 +36,9 @@ final geocoderProvider = Provider<Geocoder>((ref) => Geocoder());
 final placeUsesProvider = FutureProvider.autoDispose<List<PlaceUse>>(
   (ref) => ref.watch(repositoryProvider).loadPlaceUses(),
 );
+
+/// The system share sheet; overridden in tests.
+final sharerProvider = Provider<Sharer>((ref) => const Sharer());
 
 String newId() => const Uuid().v4();
 

@@ -2229,4 +2229,127 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get colorGrey => 'Grau';
+
+  @override
+  String get shareMenu => 'Teilen …';
+
+  @override
+  String get shareSheetTitle => 'Mit Mitreisenden teilen';
+
+  @override
+  String get shareSheetHint =>
+      'Nur Geplantes und Gebuchtes; Optionen und Ideen bleiben privat.';
+
+  @override
+  String get shareAsText => 'Reiseplan als Text';
+
+  @override
+  String get shareAsTextSub => 'Tag für Tag, für Messenger und E-Mail';
+
+  @override
+  String get shareAsPdf => 'Reiseplan als PDF';
+
+  @override
+  String get shareAsPdfSub => 'Zum Drucken oder Verschicken';
+
+  @override
+  String get shareCalendar => 'Kalender (ICS)';
+
+  @override
+  String get shareCalendarSub => 'Geplante und gebuchte Elemente als Termine';
+
+  @override
+  String get shareCalendarNeedsDate => 'Fragt zuerst nach dem Startdatum';
+
+  @override
+  String get shareCopyText => 'Text kopieren';
+
+  @override
+  String get shareTextCopied => 'Reiseplan kopiert';
+
+  @override
+  String get shareNoStartDate =>
+      'Ohne Startdatum zeigt der Reiseplan Reisetage (Tag 1, Tag 2 …).';
+
+  @override
+  String get shareStartDateTitle => 'Wann beginnt die Reise?';
+
+  @override
+  String get shareStartDateBody =>
+      'Ein Kalender braucht echte Daten. Wähle das Datum von Tag 1; es wird in der Reise gespeichert.';
+
+  @override
+  String get sharePickDate => 'Datum wählen';
+
+  @override
+  String get stepStartDateSet => 'Startdatum gesetzt';
+
+  @override
+  String get shareNothingToExport =>
+      'Noch nichts mit Termin geplant oder gebucht.';
+
+  @override
+  String shareFailed(String error) {
+    return 'Teilen fehlgeschlagen: $error';
+  }
+
+  @override
+  String shareSubject(String title) {
+    return 'Reiseplan: $title';
+  }
+
+  @override
+  String get shareRoute => 'Route';
+
+  @override
+  String get shareDayByDay => 'Tag für Tag';
+
+  @override
+  String get shareFreeDay => 'Nichts geplant';
+
+  @override
+  String shareNight(String title) {
+    return 'Übernachtung: $title';
+  }
+
+  @override
+  String get shareNoBed => 'Noch keine Unterkunft';
+
+  @override
+  String shareCheckIn(String title) {
+    return 'Check-in: $title';
+  }
+
+  @override
+  String shareCheckOut(String title) {
+    return 'Check-out: $title';
+  }
+
+  @override
+  String get shareBooked => 'gebucht';
+
+  @override
+  String shareNightsUntil(String nights, String day) {
+    return '$nights, bis $day';
+  }
+
+  @override
+  String shareStayLine(String place, String nights, String from, String to) {
+    return '$place – $nights ($from – $to)';
+  }
+
+  @override
+  String shareDuration(String duration) {
+    return 'Dauer $duration';
+  }
+
+  @override
+  String shareGeneratedBy(String date) {
+    return 'Erstellt mit Tripboard am $date';
+  }
+
+  @override
+  String sharePdfPage(String page, String pages) {
+    return 'Seite $page von $pages';
+  }
 }

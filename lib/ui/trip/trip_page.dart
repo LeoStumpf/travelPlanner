@@ -16,6 +16,7 @@ import '../editor/item_editor_page.dart';
 import '../exchange/plan_exchange_ui.dart';
 import '../keep/notes_view.dart';
 import '../map/map_view.dart';
+import '../share/share_trip.dart';
 import '../timeline/timeline_view.dart';
 import '../trips/trip_settings_dialog.dart';
 import '../trips/trips_page.dart';
@@ -67,11 +68,14 @@ class _TripPageState extends ConsumerState<TripPage> {
                     if (context.mounted) await exportTrip(context, ref, data.trip);
                   } else if (v == 'budget') {
                     if (context.mounted) await openBudget(context, data.trip.id);
+                  } else if (v == 'share') {
+                    if (context.mounted) await showShareSheet(context, ref, data);
                   } else if (v == 'claude') {
                     if (context.mounted) await showPlanExchangeSheet(context, ref, data);
                   }
                 },
                 itemBuilder: (_) => [
+                  PopupMenuItem(value: 'share', child: Text(l.shareMenu)),
                   PopupMenuItem(value: 'claude', child: Text(l.planWithClaude)),
                   PopupMenuItem(value: 'budget', child: Text(l.budget)),
                   PopupMenuItem(value: 'settings', child: Text(l.editTrip)),

@@ -3480,6 +3480,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Grey'**
   String get colorGrey;
+
+  /// No description provided for @shareMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Share…'**
+  String get shareMenu;
+
+  /// No description provided for @shareSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with fellow travellers'**
+  String get shareSheetTitle;
+
+  /// No description provided for @shareSheetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned and booked items only; options and ideas stay private.'**
+  String get shareSheetHint;
+
+  /// No description provided for @shareAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary as text'**
+  String get shareAsText;
+
+  /// No description provided for @shareAsTextSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Day by day, for messengers and email'**
+  String get shareAsTextSub;
+
+  /// No description provided for @shareAsPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary as PDF'**
+  String get shareAsPdf;
+
+  /// No description provided for @shareAsPdfSub.
+  ///
+  /// In en, this message translates to:
+  /// **'To print or send'**
+  String get shareAsPdfSub;
+
+  /// No description provided for @shareCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar (ICS)'**
+  String get shareCalendar;
+
+  /// No description provided for @shareCalendarSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned and booked items as calendar events'**
+  String get shareCalendarSub;
+
+  /// No description provided for @shareCalendarNeedsDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for the start date first'**
+  String get shareCalendarNeedsDate;
+
+  /// No description provided for @shareCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get shareCopyText;
+
+  /// No description provided for @shareTextCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary copied'**
+  String get shareTextCopied;
+
+  /// No description provided for @shareNoStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Without a start date the itinerary shows trip days (Day 1, Day 2 …).'**
+  String get shareNoStartDate;
+
+  /// No description provided for @shareStartDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When does the trip start?'**
+  String get shareStartDateTitle;
+
+  /// No description provided for @shareStartDateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A calendar needs real dates. Pick the date of day 1; it is saved with the trip.'**
+  String get shareStartDateBody;
+
+  /// No description provided for @sharePickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get sharePickDate;
+
+  /// No description provided for @stepStartDateSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date set'**
+  String get stepStartDateSet;
+
+  /// No description provided for @shareNothingToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing with a date is planned or booked yet.'**
+  String get shareNothingToExport;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing failed: {error}'**
+  String shareFailed(String error);
+
+  /// No description provided for @shareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary: {title}'**
+  String shareSubject(String title);
+
+  /// No description provided for @shareRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get shareRoute;
+
+  /// No description provided for @shareDayByDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day by day'**
+  String get shareDayByDay;
+
+  /// No description provided for @shareFreeDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing planned'**
+  String get shareFreeDay;
+
+  /// No description provided for @shareNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Night: {title}'**
+  String shareNight(String title);
+
+  /// No description provided for @shareNoBed.
+  ///
+  /// In en, this message translates to:
+  /// **'No accommodation yet'**
+  String get shareNoBed;
+
+  /// No description provided for @shareCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in: {title}'**
+  String shareCheckIn(String title);
+
+  /// No description provided for @shareCheckOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-out: {title}'**
+  String shareCheckOut(String title);
+
+  /// No description provided for @shareBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'booked'**
+  String get shareBooked;
+
+  /// No description provided for @shareNightsUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'{nights}, until {day}'**
+  String shareNightsUntil(String nights, String day);
+
+  /// No description provided for @shareStayLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{place} – {nights} ({from} – {to})'**
+  String shareStayLine(String place, String nights, String from, String to);
+
+  /// No description provided for @shareDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration {duration}'**
+  String shareDuration(String duration);
+
+  /// No description provided for @shareGeneratedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Created with Tripboard on {date}'**
+  String shareGeneratedBy(String date);
+
+  /// No description provided for @sharePdfPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {pages}'**
+  String sharePdfPage(String page, String pages);
 }
 
 class _AppLocalizationsDelegate

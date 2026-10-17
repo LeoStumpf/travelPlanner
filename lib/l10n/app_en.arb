@@ -1830,5 +1830,123 @@
   "colorPink": "Pink",
   "colorBrown": "Brown",
   "colorTeal": "Teal",
-  "colorGrey": "Grey"
+  "colorGrey": "Grey",
+  "shareMenu": "Share…",
+  "shareSheetTitle": "Share with fellow travellers",
+  "shareSheetHint": "Planned and booked items only; options and ideas stay private.",
+  "shareAsText": "Itinerary as text",
+  "shareAsTextSub": "Day by day, for messengers and email",
+  "shareAsPdf": "Itinerary as PDF",
+  "shareAsPdfSub": "To print or send",
+  "shareCalendar": "Calendar (ICS)",
+  "shareCalendarSub": "Planned and booked items as calendar events",
+  "shareCalendarNeedsDate": "Asks for the start date first",
+  "shareCopyText": "Copy text",
+  "shareTextCopied": "Itinerary copied",
+  "shareNoStartDate": "Without a start date the itinerary shows trip days (Day 1, Day 2 …).",
+  "shareStartDateTitle": "When does the trip start?",
+  "shareStartDateBody": "A calendar needs real dates. Pick the date of day 1; it is saved with the trip.",
+  "sharePickDate": "Pick date",
+  "stepStartDateSet": "Start date set",
+  "shareNothingToExport": "Nothing with a date is planned or booked yet.",
+  "shareFailed": "Sharing failed: {error}",
+  "@shareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSubject": "Itinerary: {title}",
+  "@shareSubject": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareRoute": "Route",
+  "shareDayByDay": "Day by day",
+  "shareFreeDay": "Nothing planned",
+  "shareNight": "Night: {title}",
+  "@shareNight": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareNoBed": "No accommodation yet",
+  "shareCheckIn": "Check-in: {title}",
+  "@shareCheckIn": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareCheckOut": "Check-out: {title}",
+  "@shareCheckOut": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareBooked": "booked",
+  "shareNightsUntil": "{nights}, until {day}",
+  "@shareNightsUntil": {
+    "placeholders": {
+      "nights": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "shareStayLine": "{place} – {nights} ({from} – {to})",
+  "@shareStayLine": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "nights": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "shareDuration": "Duration {duration}",
+  "@shareDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "shareGeneratedBy": "Created with Tripboard on {date}",
+  "@shareGeneratedBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "sharePdfPage": "Page {page} of {pages}",
+  "@sharePdfPage": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      },
+      "pages": {
+        "type": "String"
+      }
+    }
+  }
 }
