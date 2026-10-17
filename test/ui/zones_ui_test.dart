@@ -192,6 +192,44 @@ void main() {
       expect(saved.item('lh')!.endTz, 'Asia/Kolkata');
       expect(saved.item('lh')!.tz, isNull);
     });
+    testWidgets('a zone change that puts the arrival before the departure moves the end', (tester) async {
+      await openWith(tester, fraToCmb(), (c, ref, d) => openItemEditor(c, d, item: d.item('lh')));
+      // 10:30 on Kiritimati (UTC+14) is 20:30 UTC of day 1 – the moment the
+      // flight leaves Berlin (21:30 UTC+1). The end becomes an hour later.
+      await tester.tap(find.byKey(const ValueKey('field-end-tz')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('zone-search')), 'kiritimati');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('zone-Pacific/Kiritimati')));
+      await tester.pumpAndSettle();
+      expect(find.text(de.realDuration(de.duration(60, withMinutes: true))), findsOneWidget);
+      await tester.tap(find.text(de.save));
+      await settle(tester);
+      final saved = (await tester.runAsync(() => repo.loadTrip('zt')))!;
+      expect(saved.item('lh')!.endTz, 'Pacific/Kiritimati');
+      expect(saved.item('lh')!.end, at(2, 11 * 60 + 30));
+    });
+  });
+
+  group('zone picker on a small phone', () {
+    testWidgets('fits 360 dp with the keyboard open', (tester) async {
+      await pumpHost(
+        tester,
+        fraToCmb(),
+        (c, ref, d) => TextButton(
+          onPressed: () => pickTimeZone(c, noneLabel: de.zoneNone, suggestions: [berlin, colombo]),
+          child: const Text('open'),
+        ),
+      );
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('zone-search')), findsOneWidget);
+    });
   });
 
   group('item sheet and agenda', () {

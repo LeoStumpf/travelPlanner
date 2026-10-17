@@ -219,6 +219,16 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   TripZones _zonesWith(TripData data, PlanItem item) =>
       TripZones.of(data.trip, [for (final i in data.items) if (i.id != item.id) i, item]);
 
+  /// After a transport's zones or stays changed, its end may lie before its
+  /// start in real time; then it is moved to an hour after the start, like
+  /// the time fields do.
+  void _keepEndAfterStart(TripData data) {
+    if (!_scheduled || _i.kind != ItemKind.transport) return;
+    final zones = _zonesWith(data, _i);
+    final probe = _i.copyWith(start: _start, end: _end);
+    if (zones.absEnd(probe) < zones.absStart(probe) + 60) _end = zones.earliestEnd(probe, 60);
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = ref.watch(tripDataProvider(widget.tripId)).value;
@@ -420,7 +430,10 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             zone: _i.tz,
             noneLabel: auto(depAuto),
             suggestions: data.usedZones,
-            onChanged: (z) => _update((i) => i.copyWith(tz: z)),
+            onChanged: (z) => setState(() {
+              _i = _i.copyWith(tz: z);
+              _keepEndAfterStart(data);
+            }),
           ),
           ZoneTile(
             key: const ValueKey('field-end-tz'),
@@ -429,7 +442,10 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             noneLabel: auto(arrAuto),
             subtitle: l.transportZoneHint,
             suggestions: data.usedZones,
-            onChanged: (z) => _update((i) => i.copyWith(endTz: z)),
+            onChanged: (z) => setState(() {
+              _i = _i.copyWith(endTz: z);
+              _keepEndAfterStart(data);
+            }),
           ),
         ];
       case ItemKind.accommodation:
@@ -625,6 +641,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     final mode = ref.read(tripUiProvider).shiftMode;
     final actions = ref.read(planActionsProvider);
     final l = context.l10n;
+    _keepEndAfterStart(data);
     var item = _i.copyWith(
       title: _title.text.trim().isEmpty ? l.kind(_i.kind) : _title.text.trim(),
       notes: _notes.text,
