@@ -1079,43 +1079,50 @@ class _Toolbar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final l = context.l10n;
+    final shiftChip = PopupMenuButton<ShiftMode>(
+      tooltip: l.shiftModeTooltip,
+      initialValue: mode,
+      onSelected: ref.read(tripUiProvider.notifier).setShiftMode,
+      itemBuilder: (_) => [for (final m in ShiftMode.values) PopupMenuItem(value: m, child: Text(l.shiftMode(m)))],
+      child: Chip(
+        avatar: const Icon(Icons.swap_horiz, size: 18),
+        label: Text(l.shiftModeShort(mode), maxLines: 1, overflow: TextOverflow.ellipsis),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
     return Material(
       color: scheme.surfaceContainerLow,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         child: Row(
           children: [
-            PopupMenuButton<ShiftMode>(
-              tooltip: l.shiftModeTooltip,
-              initialValue: mode,
-              onSelected: ref.read(tripUiProvider.notifier).setShiftMode,
-              itemBuilder: (_) => [for (final m in ShiftMode.values) PopupMenuItem(value: m, child: Text(l.shiftMode(m)))],
-              child: Chip(
-                avatar: const Icon(Icons.swap_horiz, size: 18),
-                label: Text(l.shiftModeShort(mode)),
-                visualDensity: VisualDensity.compact,
+            // The chips sit in their own row; the mode chip shrinks (ellipsis)
+            // so longer wordings still leave room for the zoom buttons on a
+            // 360 dp phone.
+            Expanded(
+              child: Row(
+                children: [
+                  if (dragLabel == null) Flexible(child: shiftChip) else shiftChip,
+                  const SizedBox(width: 8),
+                  if (dragLabel != null)
+                    Expanded(
+                      child: Text(
+                        dragLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: scheme.primary, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  else if (conflicts.isNotEmpty)
+                    ActionChip(
+                      avatar: Icon(Icons.warning_amber, color: scheme.error, size: 18),
+                      label: Text(l.conflictsCount(conflicts.length)),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _showConflicts(context, ref),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            if (dragLabel != null)
-              Expanded(
-                child: Text(
-                  dragLabel!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: scheme.primary, fontWeight: FontWeight.bold),
-                ),
-              )
-            else ...[
-              if (conflicts.isNotEmpty)
-                ActionChip(
-                  avatar: Icon(Icons.warning_amber, color: scheme.error, size: 18),
-                  label: Text(l.conflictsCount(conflicts.length)),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _showConflicts(context, ref),
-                ),
-              const Spacer(),
-            ],
             IconButton(tooltip: l.zoomOut, onPressed: () => onZoom(1 / 1.3), icon: const Icon(Icons.zoom_out)),
             IconButton(tooltip: l.zoomIn, onPressed: () => onZoom(1.3), icon: const Icon(Icons.zoom_in)),
           ],
