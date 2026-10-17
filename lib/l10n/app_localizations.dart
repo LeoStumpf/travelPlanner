@@ -3898,7 +3898,7 @@ abstract class AppLocalizations {
   /// No description provided for @packingEntryCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} entries'**
+  /// **'{count, plural, =1{1 entry} other{{count} entries}}'**
   String packingEntryCount(int count);
 
   /// No description provided for @packingFromOtherTrip.
@@ -3916,7 +3916,7 @@ abstract class AppLocalizations {
   /// No description provided for @packingSource.
   ///
   /// In en, this message translates to:
-  /// **'{trip} · {count} entries'**
+  /// **'{trip} · {count, plural, =1{1 entry} other{{count} entries}}'**
   String packingSource(String trip, int count);
 
   /// No description provided for @packingAddFrom.
@@ -3928,7 +3928,7 @@ abstract class AppLocalizations {
   /// No description provided for @packingEntriesAdded.
   ///
   /// In en, this message translates to:
-  /// **'{count} entries added'**
+  /// **'{count, plural, =1{1 entry added} other{{count} entries added}}'**
   String packingEntriesAdded(int count);
 
   /// No description provided for @packingNothingNew.

@@ -186,6 +186,16 @@ class PlanActions {
     await record(data.trip.id, label, (r) => r.deleteItem(data, id));
   }
 
+  Future<void> _queue = Future.value();
+
+  /// Runs [task] once the tasks queued before it are done, for quick
+  /// successive taps that each read, change and record the stored state.
+  Future<T> queued<T>(Future<T> Function() task) {
+    final next = _queue.then((_) => task());
+    _queue = next.then((_) {}, onError: (Object _) {});
+    return next;
+  }
+
   /// Reverts the last step of [tripId]. Returns its label, or null.
   Future<String?> undo(String tripId) async {
     final e = ref.read(undoProvider.notifier).pop(tripId);

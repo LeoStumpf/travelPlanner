@@ -2486,7 +2486,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String packingEntryCount(int count) {
-    return '$count Einträge';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge',
+      one: '1 Eintrag',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2498,7 +2504,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String packingSource(String trip, int count) {
-    return '$trip · $count Einträge';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge',
+      one: '1 Eintrag',
+    );
+    return '$trip · $_temp0';
   }
 
   @override
@@ -2506,7 +2518,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String packingEntriesAdded(int count) {
-    return '$count Einträge hinzugefügt';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge hinzugefügt',
+      one: '1 Eintrag hinzugefügt',
+    );
+    return '$_temp0';
   }
 
   @override

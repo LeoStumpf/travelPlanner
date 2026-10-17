@@ -89,6 +89,29 @@ void main() {
       expect(find.text('Adapter'), findsOneWidget);
     });
 
+    testWidgets('quick taps on two entries keep both ticks, each its own step', (tester) async {
+      await pumpHost(tester, (_, _, data) => NotesView(data: data));
+      final open = [for (final e in packing.checklist) if (!e.done) e.text];
+      final first = open[0], second = open[1];
+
+      // Second tap before the preview rebuilt from the first save.
+      await tester.tap(find.text(first));
+      await tester.tap(find.text(second));
+      await settle(tester);
+      await settle(tester);
+
+      final card = (await tester.runAsync(() => stored(packing.id)))!;
+      expect(card.checklist.firstWhere((e) => e.text == first).done, isTrue);
+      expect(card.checklist.firstWhere((e) => e.text == second).done, isTrue);
+      expect(undoLabels(), ['„$first“ abgehakt', '„$second“ abgehakt']);
+
+      // Undoing the second step keeps the first tick.
+      await tester.runAsync(() => container.read(planActionsProvider).undo(demo.trip.id));
+      final after = (await tester.runAsync(() => stored(packing.id)))!;
+      expect(after.checklist.firstWhere((e) => e.text == first).done, isTrue);
+      expect(after.checklist.firstWhere((e) => e.text == second).done, isFalse);
+    });
+
     testWidgets('entries are announced as unchecked checkboxes', (tester) async {
       final handle = tester.ensureSemantics();
       await pumpHost(tester, (_, _, data) => NotesView(data: data));

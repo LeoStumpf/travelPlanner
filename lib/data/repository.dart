@@ -126,6 +126,12 @@ class Repository {
     return uses;
   }
 
+  /// The stored card [id], or null when it does not exist (any more).
+  Future<NoteCard?> loadCard(String id) async {
+    final row = await (db.select(db.docs)..where((d) => d.id.equals(id))).getSingleOrNull();
+    return row == null || row.type != 'card' ? null : NoteCard.fromJson(_decode(row.json));
+  }
+
   /// The checklist cards of all trips outside the trash, with their trip's
   /// title: the sources for "copy list from another trip".
   Future<List<ChecklistSource>> loadChecklists() async {

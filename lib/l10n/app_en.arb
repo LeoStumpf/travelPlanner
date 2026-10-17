@@ -2043,7 +2043,7 @@
   "packingTemplateCityItems": "Comfortable shoes|Day bag|Offline maps|Public transport ticket|Umbrella|Smart outfit|Reusable water bottle|Museum tickets",
   "packingCreate": "Create list",
   "packingAdd": "Add entries",
-  "packingEntryCount": "{count} entries",
+  "packingEntryCount": "{count, plural, =1{1 entry} other{{count} entries}}",
   "@packingEntryCount": {
     "placeholders": {
       "count": {
@@ -2053,7 +2053,7 @@
   },
   "packingFromOtherTrip": "Copy list from another trip",
   "packingNoOtherLists": "There are no checklists in other trips yet.",
-  "packingSource": "{trip} · {count} entries",
+  "packingSource": "{trip} · {count, plural, =1{1 entry} other{{count} entries}}",
   "@packingSource": {
     "placeholders": {
       "trip": {
@@ -2065,7 +2065,7 @@
     }
   },
   "packingAddFrom": "Add from template or trip …",
-  "packingEntriesAdded": "{count} entries added",
+  "packingEntriesAdded": "{count, plural, =1{1 entry added} other{{count} entries added}}",
   "@packingEntriesAdded": {
     "placeholders": {
       "count": {

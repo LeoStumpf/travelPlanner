@@ -27,14 +27,25 @@ class CardPreview extends ConsumerWidget {
     this.tickable = false,
   });
 
-  Future<void> _tick(BuildContext context, WidgetRef ref, ChecklistEntry e) async {
+  Future<void> _tick(BuildContext context, WidgetRef ref, ChecklistEntry e) {
     final label = context.l10n.stepEntryTicked(e.text);
     final messenger = ScaffoldMessenger.of(context);
     final actions = ref.read(planActionsProvider);
-    await actions.record(card.tripId, label, (r) => r.saveCard(setEntryDone(card, e.id, true)));
-    final step = actions.lastStep(card.tripId);
-    // The entry leaves the preview, so a mistap needs a quick way back.
-    showUndoSnack(messenger, label, () => actions.undoStep(card.tripId, step));
+    final repo = ref.read(repositoryProvider);
+    Future<void> run() async {
+      // The preview may still show the card from before an earlier tick.
+      final fresh = await repo.loadCard(card.id);
+      final entry = fresh?.checklist.where((x) => x.id == e.id).firstOrNull;
+      if (fresh == null || entry == null || entry.done) return;
+      await actions.record(card.tripId, label, (r) => r.saveCard(setEntryDone(fresh, e.id, true)));
+      final step = actions.lastStep(card.tripId);
+      // The entry leaves the preview, so a mistap needs a quick way back.
+      showUndoSnack(messenger, label, () => actions.undoStep(card.tripId, step));
+    }
+
+    // Ticks run one after another, so quick taps on several entries neither
+    // overwrite each other nor share one undo snapshot.
+    return actions.queued(run);
   }
 
   @override
