@@ -1468,5 +1468,31 @@
   "locationDenied": "Tripboard isn't allowed to use your location.",
   "locationDeniedForever": "Location access is blocked. Allow it in the app settings.",
   "locationUnavailable": "Your location couldn't be determined.",
-  "locationSettings": "Settings"
+  "locationSettings": "Settings",
+  "placeNoResults": "No places found for “{query}”",
+  "@placeNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "placeNoResultsHint": "Check the spelling, try the city, or paste a map link or coordinates.",
+  "placeOfflineHint": "Recently used places, map links and coordinates work without a connection.",
+  "placeShortLinkOffline": "Short links need a connection",
+  "placeRecent": "Recently used",
+  "placeUseCoordinates": "Use these coordinates",
+  "placeFromLink": "From the link",
+  "placeLinkNoCoordinates": "This link has no coordinates",
+  "placePasteHint": "Tip: paste a Google Maps, OpenStreetMap or geo: link, or coordinates like 48.8584, 2.2945.",
+  "placeSaveWithoutCoordinates": "Save “{name}” without coordinates",
+  "@placeSaveWithoutCoordinates": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeSaveWithoutCoordinatesHint": "Not shown on the map – you can set the spot later.",
+  "placeNoCoordinates": "No coordinates – not on the map"
 }

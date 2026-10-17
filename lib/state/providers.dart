@@ -3,8 +3,10 @@ import 'package:uuid/uuid.dart';
 
 import '../data/auto_backup.dart';
 import '../data/db.dart';
+import '../data/geocoding.dart';
 import '../data/repository.dart';
 import '../domain/models.dart';
+import '../domain/places.dart';
 import '../domain/scheduler.dart';
 
 /// Overridden in main() with the initialised repository.
@@ -24,6 +26,14 @@ final trashProvider = StreamProvider<List<TrashedTrip>>((ref) => ref.watch(repos
 
 final tripDataProvider = StreamProvider.family<TripData?, String>(
   (ref, tripId) => ref.watch(repositoryProvider).watchTrip(tripId),
+);
+
+/// Online place search; overridden in tests.
+final geocoderProvider = Provider<Geocoder>((ref) => Geocoder());
+
+/// Located items of all trips, for the place search's recently used places.
+final placeUsesProvider = FutureProvider.autoDispose<List<PlaceUse>>(
+  (ref) => ref.watch(repositoryProvider).loadPlaceUses(),
 );
 
 String newId() => const Uuid().v4();

@@ -448,5 +448,17 @@
   "locationDenied": "Tripboard darf den Standort nicht verwenden.",
   "locationDeniedForever": "Der Standortzugriff ist gesperrt. Erlaube ihn in den App-Einstellungen.",
   "locationUnavailable": "Der Standort konnte nicht ermittelt werden.",
-  "locationSettings": "Einstellungen"
+  "locationSettings": "Einstellungen",
+  "placeNoResults": "Keine Treffer für „{query}“",
+  "placeNoResultsHint": "Schreibweise prüfen, die Stadt versuchen oder einen Kartenlink bzw. Koordinaten einfügen.",
+  "placeOfflineHint": "Zuletzt verwendete Orte, Kartenlinks und Koordinaten gehen auch ohne Verbindung.",
+  "placeShortLinkOffline": "Kurzlinks brauchen eine Verbindung",
+  "placeRecent": "Zuletzt verwendet",
+  "placeUseCoordinates": "Diese Koordinaten übernehmen",
+  "placeFromLink": "Aus dem Link",
+  "placeLinkNoCoordinates": "Der Link enthält keine Koordinaten",
+  "placePasteHint": "Tipp: Google-Maps-, OpenStreetMap- oder geo:-Link oder Koordinaten wie 48.8584, 2.2945 einfügen.",
+  "placeSaveWithoutCoordinates": "„{name}“ ohne Koordinaten speichern",
+  "placeSaveWithoutCoordinatesHint": "Erscheint nicht auf der Karte – die genaue Lage kannst du später setzen.",
+  "placeNoCoordinates": "Ohne Koordinaten – nicht auf der Karte"
 }

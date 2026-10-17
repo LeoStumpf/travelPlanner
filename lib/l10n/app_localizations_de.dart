@@ -1790,4 +1790,48 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get locationSettings => 'Einstellungen';
+
+  @override
+  String placeNoResults(String query) {
+    return 'Keine Treffer für „$query“';
+  }
+
+  @override
+  String get placeNoResultsHint =>
+      'Schreibweise prüfen, die Stadt versuchen oder einen Kartenlink bzw. Koordinaten einfügen.';
+
+  @override
+  String get placeOfflineHint =>
+      'Zuletzt verwendete Orte, Kartenlinks und Koordinaten gehen auch ohne Verbindung.';
+
+  @override
+  String get placeShortLinkOffline => 'Kurzlinks brauchen eine Verbindung';
+
+  @override
+  String get placeRecent => 'Zuletzt verwendet';
+
+  @override
+  String get placeUseCoordinates => 'Diese Koordinaten übernehmen';
+
+  @override
+  String get placeFromLink => 'Aus dem Link';
+
+  @override
+  String get placeLinkNoCoordinates => 'Der Link enthält keine Koordinaten';
+
+  @override
+  String get placePasteHint =>
+      'Tipp: Google-Maps-, OpenStreetMap- oder geo:-Link oder Koordinaten wie 48.8584, 2.2945 einfügen.';
+
+  @override
+  String placeSaveWithoutCoordinates(String name) {
+    return '„$name“ ohne Koordinaten speichern';
+  }
+
+  @override
+  String get placeSaveWithoutCoordinatesHint =>
+      'Erscheint nicht auf der Karte – die genaue Lage kannst du später setzen.';
+
+  @override
+  String get placeNoCoordinates => 'Ohne Koordinaten – nicht auf der Karte';
 }

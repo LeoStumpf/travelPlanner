@@ -2796,6 +2796,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get locationSettings;
+
+  /// No description provided for @placeNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No places found for “{query}”'**
+  String placeNoResults(String query);
+
+  /// No description provided for @placeNoResultsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the spelling, try the city, or paste a map link or coordinates.'**
+  String get placeNoResultsHint;
+
+  /// No description provided for @placeOfflineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently used places, map links and coordinates work without a connection.'**
+  String get placeOfflineHint;
+
+  /// No description provided for @placeShortLinkOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Short links need a connection'**
+  String get placeShortLinkOffline;
+
+  /// No description provided for @placeRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently used'**
+  String get placeRecent;
+
+  /// No description provided for @placeUseCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these coordinates'**
+  String get placeUseCoordinates;
+
+  /// No description provided for @placeFromLink.
+  ///
+  /// In en, this message translates to:
+  /// **'From the link'**
+  String get placeFromLink;
+
+  /// No description provided for @placeLinkNoCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'This link has no coordinates'**
+  String get placeLinkNoCoordinates;
+
+  /// No description provided for @placePasteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: paste a Google Maps, OpenStreetMap or geo: link, or coordinates like 48.8584, 2.2945.'**
+  String get placePasteHint;
+
+  /// No description provided for @placeSaveWithoutCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Save “{name}” without coordinates'**
+  String placeSaveWithoutCoordinates(String name);
+
+  /// No description provided for @placeSaveWithoutCoordinatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not shown on the map – you can set the spot later.'**
+  String get placeSaveWithoutCoordinatesHint;
+
+  /// No description provided for @placeNoCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'No coordinates – not on the map'**
+  String get placeNoCoordinates;
 }
 
 class _AppLocalizationsDelegate

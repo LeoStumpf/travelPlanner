@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 
 import '../domain/models.dart';
+import '../domain/places.dart';
 import 'attachment_store.dart';
 import 'db.dart';
 import 'doc_migrations.dart';
@@ -103,6 +104,25 @@ class Repository {
     items.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     cards.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return TripData(trip: trip, items: items, cards: cards, edges: edges, attachments: attachments);
+  }
+
+  /// Every located item of the trips outside the trash, with its trip's
+  /// title and when it was last saved: the place search's "recently used".
+  Future<List<PlaceUse>> loadPlaceUses() async {
+    final rows = await (db.select(db.docs)..where((d) => d.type.isIn(['trip', 'item', _trashType]))).get();
+    final trashed = {for (final r in rows) if (r.type == _trashType) r.tripId};
+    final titles = {
+      for (final r in rows)
+        if (r.type == 'trip' && !trashed.contains(r.tripId)) r.tripId: Trip.fromJson(_decode(r.json)).title,
+    };
+    final uses = <PlaceUse>[];
+    for (final r in rows) {
+      final title = titles[r.tripId];
+      if (r.type != 'item' || title == null) continue;
+      final item = PlanItem.fromJson(_decode(r.json));
+      if (item.hasLocation) uses.add(PlaceUse(item, title, DateTime.fromMillisecondsSinceEpoch(r.updatedAt)));
+    }
+    return uses;
   }
 
   static Map<String, Object?> _decode(String s) => (jsonDecode(s) as Map).cast<String, Object?>();

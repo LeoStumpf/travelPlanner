@@ -1787,4 +1787,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationSettings => 'Settings';
+
+  @override
+  String placeNoResults(String query) {
+    return 'No places found for “$query”';
+  }
+
+  @override
+  String get placeNoResultsHint =>
+      'Check the spelling, try the city, or paste a map link or coordinates.';
+
+  @override
+  String get placeOfflineHint =>
+      'Recently used places, map links and coordinates work without a connection.';
+
+  @override
+  String get placeShortLinkOffline => 'Short links need a connection';
+
+  @override
+  String get placeRecent => 'Recently used';
+
+  @override
+  String get placeUseCoordinates => 'Use these coordinates';
+
+  @override
+  String get placeFromLink => 'From the link';
+
+  @override
+  String get placeLinkNoCoordinates => 'This link has no coordinates';
+
+  @override
+  String get placePasteHint =>
+      'Tip: paste a Google Maps, OpenStreetMap or geo: link, or coordinates like 48.8584, 2.2945.';
+
+  @override
+  String placeSaveWithoutCoordinates(String name) {
+    return 'Save “$name” without coordinates';
+  }
+
+  @override
+  String get placeSaveWithoutCoordinatesHint =>
+      'Not shown on the map – you can set the spot later.';
+
+  @override
+  String get placeNoCoordinates => 'No coordinates – not on the map';
 }

@@ -2,12 +2,19 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+/// A place picked in the search. [lat]/[lng] are null when it is saved by
+/// name only ("save without coordinates").
 class PlaceResult {
   final String name;
   final String detail;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   const PlaceResult(this.name, this.detail, this.lat, this.lng);
+
+  bool get hasLocation => lat != null && lng != null;
+
+  /// The name as saved on the item ("name, detail").
+  String get label => detail.isEmpty ? name : '$name, $detail';
 }
 
 /// Place search via Photon (OpenStreetMap data, no API key).
@@ -29,6 +36,23 @@ class Geocoder {
       throw Exception('Place search failed (${res.statusCode})');
     }
     return parsePhoton(res.body);
+  }
+
+  /// Follows the redirects of a short map link (maps.app.goo.gl/…) to the
+  /// full link, which carries the coordinates. Needs a connection.
+  Future<String> expand(String link) async {
+    var uri = Uri.parse(link.trim());
+    for (var hop = 0; hop < 6; hop++) {
+      final req = http.Request('GET', uri)
+        ..followRedirects = false
+        ..headers['User-Agent'] = 'TravelPlanner/1.0 (Flutter app)';
+      final res = await _client.send(req).timeout(const Duration(seconds: 10));
+      final location = res.headers['location'];
+      await res.stream.drain<void>();
+      if (res.statusCode < 300 || res.statusCode >= 400 || location == null) break;
+      uri = uri.resolve(location);
+    }
+    return uri.toString();
   }
 
   static List<PlaceResult> parsePhoton(String body) {

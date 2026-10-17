@@ -488,13 +488,14 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   }
 
   Widget _placeTile() => ListTile(
+        key: const ValueKey('place-tile'),
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.travel_explore),
         title: Text(_i.placeName ?? context.l10n.setPlaceOnMap),
         subtitle: _i.hasLocation
             ? Text('${_i.lat!.toStringAsFixed(4)}, ${_i.lng!.toStringAsFixed(4)}')
-            : Text(context.l10n.roughIsEnough),
-        trailing: _i.hasLocation
+            : Text(_i.placeName != null ? context.l10n.placeNoCoordinates : context.l10n.roughIsEnough),
+        trailing: _i.hasLocation || _i.placeName != null
             ? IconButton(
                 icon: const Icon(Icons.clear),
                 onPressed: () => _update((i) => i.copyWith(lat: null, lng: null, placeName: null)),
@@ -503,7 +504,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         onTap: () async {
           final r = await searchPlace(context, initial: _title.text.trim());
           if (r == null) return;
-          _update((i) => i.copyWith(lat: r.lat, lng: r.lng, placeName: r.detail.isEmpty ? r.name : '${r.name}, ${r.detail}'));
+          // A place without coordinates keeps its name but leaves the map.
+          _update((i) => i.copyWith(lat: r.lat, lng: r.lng, placeName: r.label));
           if (_title.text.trim().isEmpty) _title.text = r.name;
         },
       );
