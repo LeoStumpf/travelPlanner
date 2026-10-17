@@ -80,6 +80,19 @@ class Repository {
     return _assemble(await q.get());
   }
 
+  /// Everything of all trips outside the trash, newest trip first: the
+  /// global search's corpus. Updates with every change.
+  Stream<List<TripData>> watchAllTrips() => db.select(db.docs).watch().map((rows) {
+        final trashed = {for (final r in rows) if (r.type == _trashType) r.tripId};
+        final byTrip = <String, List<DocRow>>{};
+        for (final r in rows) {
+          if (!trashed.contains(r.tripId)) (byTrip[r.tripId] ??= []).add(r);
+        }
+        final trips = [for (final rs in byTrip.values) ?_assemble(rs)];
+        trips.sort((a, b) => b.trip.createdAt.compareTo(a.trip.createdAt));
+        return trips;
+      });
+
   TripData? _assemble(List<DocRow> rows) {
     Trip? trip;
     final items = <PlanItem>[];

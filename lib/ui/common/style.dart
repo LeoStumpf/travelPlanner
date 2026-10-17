@@ -33,6 +33,13 @@ IconData modeIcon(TransportMode? m) => switch (m) {
       _ => Icons.commute,
     };
 
+IconData cardIcon(CardType t) => switch (t) {
+      CardType.note => Icons.notes,
+      CardType.checklist => Icons.checklist,
+      CardType.link => Icons.link,
+      CardType.image => Icons.image,
+    };
+
 IconData itemIcon(PlanItem i) => i.kind == ItemKind.transport ? modeIcon(i.mode) : kindIcon(i.kind);
 
 /// Options and ideas are only tentative; they are drawn with a dashed

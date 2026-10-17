@@ -644,5 +644,20 @@
   "entryMoveUp": "Nach oben",
   "entryMoveDown": "Nach unten",
   "entryDragHandle": "Ziehen zum Sortieren",
-  "entryDelete": "Eintrag löschen"
+  "entryDelete": "Eintrag löschen",
+  "search": "Suchen",
+  "searchHint": "Titel, Orte, Notizen … suchen",
+  "searchScopeTrip": "Diese Reise",
+  "searchScopeAll": "Alle Reisen",
+  "searchIntro": "Durchsucht Titel, Orte, Notizen, Links, Ticketdaten, Checklisten und Anhänge deiner Reisen.",
+  "searchNoResults": "Keine Treffer für „{query}“",
+  "searchNoResultsHint": "Prüfe die Schreibweise oder versuche ein kürzeres Wort.",
+  "searchNoResultsTrip": "Nichts in dieser Reise – in allen Reisen suchen?",
+  "searchHitCount": "{n, plural, =1{1 Treffer} other{{n} Treffer}}",
+  "searchClear": "Suche leeren",
+  "searchFieldPlace": "Ort",
+  "searchFieldText": "Text",
+  "searchFieldAttachment": "Anhang",
+  "searchFieldLinks": "Link",
+  "searchOpenTrip": "Reise öffnen"
 }

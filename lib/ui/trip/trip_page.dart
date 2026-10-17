@@ -18,6 +18,7 @@ import '../keep/notes_view.dart';
 import '../keep/packing_sheet.dart';
 import '../map/map_view.dart';
 import '../reminders/reminder_sheet.dart';
+import '../search/search_page.dart';
 import '../share/share_trip.dart';
 import '../timeline/timeline_view.dart';
 import '../trips/trip_settings_dialog.dart';
@@ -54,6 +55,11 @@ class _TripPageState extends ConsumerState<TripPage> {
           appBar: AppBar(
             title: Text(data.trip.title),
             actions: [
+              IconButton(
+                tooltip: l.search,
+                onPressed: () => openSearch(context, tripId: widget.tripId),
+                icon: const Icon(Icons.search),
+              ),
               IconButton(
                 tooltip: undoLabel == null ? l.undo : l.undoWithLabel(undoLabel),
                 onPressed: undoLabel != null ? _undo : null,

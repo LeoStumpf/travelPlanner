@@ -2551,4 +2551,63 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get entryDelete => 'Eintrag löschen';
+
+  @override
+  String get search => 'Suchen';
+
+  @override
+  String get searchHint => 'Titel, Orte, Notizen … suchen';
+
+  @override
+  String get searchScopeTrip => 'Diese Reise';
+
+  @override
+  String get searchScopeAll => 'Alle Reisen';
+
+  @override
+  String get searchIntro =>
+      'Durchsucht Titel, Orte, Notizen, Links, Ticketdaten, Checklisten und Anhänge deiner Reisen.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'Keine Treffer für „$query“';
+  }
+
+  @override
+  String get searchNoResultsHint =>
+      'Prüfe die Schreibweise oder versuche ein kürzeres Wort.';
+
+  @override
+  String get searchNoResultsTrip =>
+      'Nichts in dieser Reise – in allen Reisen suchen?';
+
+  @override
+  String searchHitCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Treffer',
+      one: '1 Treffer',
+      zero: 'Reisetitel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchClear => 'Suche leeren';
+
+  @override
+  String get searchFieldPlace => 'Ort';
+
+  @override
+  String get searchFieldText => 'Text';
+
+  @override
+  String get searchFieldAttachment => 'Anhang';
+
+  @override
+  String get searchFieldLinks => 'Link';
+
+  @override
+  String get searchOpenTrip => 'Reise öffnen';
 }

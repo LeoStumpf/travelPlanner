@@ -30,6 +30,11 @@ final tripDataProvider = StreamProvider.family<TripData?, String>(
   (ref, tripId) => ref.watch(repositoryProvider).watchTrip(tripId),
 );
 
+/// All trips outside the trash with their content, for the global search.
+final searchCorpusProvider = StreamProvider.autoDispose<List<TripData>>(
+  (ref) => ref.watch(repositoryProvider).watchAllTrips(),
+);
+
 /// Online place search; overridden in tests.
 final geocoderProvider = Provider<Geocoder>((ref) => Geocoder());
 

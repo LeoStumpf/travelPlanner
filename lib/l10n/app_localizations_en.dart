@@ -2552,4 +2552,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get entryDelete => 'Delete entry';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get searchHint => 'Search titles, places, notes …';
+
+  @override
+  String get searchScopeTrip => 'This trip';
+
+  @override
+  String get searchScopeAll => 'All trips';
+
+  @override
+  String get searchIntro =>
+      'Searches titles, places, notes, links, ticket details, checklists and attachments of your trips.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'No results for “$query”';
+  }
+
+  @override
+  String get searchNoResultsHint => 'Check the spelling or try a shorter word.';
+
+  @override
+  String get searchNoResultsTrip => 'Nothing in this trip – search all trips?';
+
+  @override
+  String searchHitCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n results',
+      one: '1 result',
+      zero: 'trip title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String get searchFieldPlace => 'Place';
+
+  @override
+  String get searchFieldText => 'Text';
+
+  @override
+  String get searchFieldAttachment => 'Attachment';
+
+  @override
+  String get searchFieldLinks => 'Link';
+
+  @override
+  String get searchOpenTrip => 'Open trip';
 }

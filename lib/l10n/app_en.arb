@@ -2093,5 +2093,34 @@
   "entryMoveUp": "Move up",
   "entryMoveDown": "Move down",
   "entryDragHandle": "Drag to reorder",
-  "entryDelete": "Delete entry"
+  "entryDelete": "Delete entry",
+  "search": "Search",
+  "searchHint": "Search titles, places, notes …",
+  "searchScopeTrip": "This trip",
+  "searchScopeAll": "All trips",
+  "searchIntro": "Searches titles, places, notes, links, ticket details, checklists and attachments of your trips.",
+  "searchNoResults": "No results for “{query}”",
+  "@searchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNoResultsHint": "Check the spelling or try a shorter word.",
+  "searchNoResultsTrip": "Nothing in this trip – search all trips?",
+  "searchHitCount": "{n, plural, =1{1 result} other{{n} results}}",
+  "@searchHitCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "searchClear": "Clear search",
+  "searchFieldPlace": "Place",
+  "searchFieldText": "Text",
+  "searchFieldAttachment": "Attachment",
+  "searchFieldLinks": "Link",
+  "searchOpenTrip": "Open trip"
 }

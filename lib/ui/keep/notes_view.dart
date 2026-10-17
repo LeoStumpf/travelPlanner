@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../../domain/models.dart';
+import '../../domain/search.dart';
 import '../common/l10n.dart';
 import '../editor/card_editor_page.dart';
 import 'card_preview.dart';
@@ -21,14 +22,11 @@ class _NotesViewState extends ConsumerState<NotesView> {
 
   @override
   Widget build(BuildContext context) {
-    final q = _query.toLowerCase();
-    bool matches(NoteCard c) =>
-        q.isEmpty ||
-        c.title.toLowerCase().contains(q) ||
-        c.text.toLowerCase().contains(q) ||
-        (c.url ?? '').toLowerCase().contains(q) ||
-        c.checklist.any((e) => e.text.toLowerCase().contains(q));
-    final cards = widget.data.cards.where(matches).toList();
+    final terms = searchTerms(_query);
+    final cards = [
+      for (final c in widget.data.cards)
+        if (cardMatches(c, terms, files: widget.data.attachmentsOf(c.id))) c,
+    ];
     final pinned = cards.where((c) => c.pinned).toList();
     final others = cards.where((c) => !c.pinned).toList();
 
@@ -73,7 +71,10 @@ class _NotesViewState extends ConsumerState<NotesView> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  context.l10n.notesEmpty,
+                  // An empty result while searching is not an empty trip.
+                  terms.isEmpty || widget.data.cards.isEmpty
+                      ? context.l10n.notesEmpty
+                      : context.l10n.searchNoResults(_query.trim()),
                   textAlign: TextAlign.center,
                 ),
               ),

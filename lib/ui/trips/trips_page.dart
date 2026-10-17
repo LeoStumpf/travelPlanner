@@ -13,6 +13,7 @@ import '../common/dialogs.dart';
 import '../common/l10n.dart';
 import '../common/route_line.dart';
 import '../exchange/plan_exchange_ui.dart';
+import '../search/search_page.dart';
 import '../trip/trip_page.dart';
 import 'trash_page.dart';
 import 'trip_settings_dialog.dart';
@@ -30,6 +31,11 @@ class TripsPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l.myTrips),
         actions: [
+          IconButton(
+            tooltip: l.search,
+            icon: const Icon(Icons.search),
+            onPressed: () => openSearch(context),
+          ),
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
               'import' => _import(context, ref),

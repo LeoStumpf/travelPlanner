@@ -12,6 +12,7 @@ import '../../domain/models.dart';
 import '../../domain/packing.dart';
 import '../../domain/plan_exchange.dart';
 import '../../domain/scheduler.dart';
+import '../../domain/search.dart';
 import '../../domain/time.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/providers.dart';
@@ -36,6 +37,29 @@ extension DomainL10n on AppLocalizations {
 
   /// "Ebene 2: Transport".
   String layer(ItemKind k) => layerLabel(k.layer, kind(k));
+
+  String cardType(CardType t) => switch (t) {
+        CardType.note => cardNote,
+        CardType.checklist => cardChecklist,
+        CardType.link => cardLink,
+        CardType.image => cardImage,
+      };
+
+  /// Label of the field a search hit was found in.
+  String searchField(SearchField f) => switch (f) {
+        SearchField.title => planFieldTitle,
+        SearchField.place => searchFieldPlace,
+        SearchField.notes => notesLabel,
+        SearchField.link => searchFieldLinks,
+        SearchField.departureStation => departureStationLabel,
+        SearchField.arrivalStation => arrivalStationLabel,
+        SearchField.transportNumber => transportNumberLabel,
+        SearchField.seat => seatLabel,
+        SearchField.bookingRef => bookingRefLabel,
+        SearchField.text => searchFieldText,
+        SearchField.checklistEntry => cardChecklist,
+        SearchField.attachment => searchFieldAttachment,
+      };
 
   String status(ItemStatus s) => switch (s) {
         ItemStatus.idea => statusIdea,

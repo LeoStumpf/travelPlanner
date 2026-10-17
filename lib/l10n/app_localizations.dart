@@ -3972,6 +3972,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete entry'**
   String get entryDelete;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search titles, places, notes …'**
+  String get searchHint;
+
+  /// No description provided for @searchScopeTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'This trip'**
+  String get searchScopeTrip;
+
+  /// No description provided for @searchScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All trips'**
+  String get searchScopeAll;
+
+  /// No description provided for @searchIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Searches titles, places, notes, links, ticket details, checklists and attachments of your trips.'**
+  String get searchIntro;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results for “{query}”'**
+  String searchNoResults(String query);
+
+  /// No description provided for @searchNoResultsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the spelling or try a shorter word.'**
+  String get searchNoResultsHint;
+
+  /// No description provided for @searchNoResultsTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in this trip – search all trips?'**
+  String get searchNoResultsTrip;
+
+  /// No description provided for @searchHitCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =0{trip title} =1{1 result} other{{n} results}}'**
+  String searchHitCount(int n);
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
+
+  /// No description provided for @searchFieldPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get searchFieldPlace;
+
+  /// No description provided for @searchFieldText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get searchFieldText;
+
+  /// No description provided for @searchFieldAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get searchFieldAttachment;
+
+  /// No description provided for @searchFieldLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get searchFieldLinks;
+
+  /// No description provided for @searchOpenTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open trip'**
+  String get searchOpenTrip;
 }
 
 class _AppLocalizationsDelegate
