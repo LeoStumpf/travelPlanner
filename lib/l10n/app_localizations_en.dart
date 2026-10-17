@@ -1831,4 +1831,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get placeNoCoordinates => 'No coordinates – not on the map';
+
+  @override
+  String stepScheduled(String title, String day) {
+    return '“$title” scheduled on $day';
+  }
+
+  @override
+  String scheduleOnDay(String day) {
+    return 'Schedule on $day';
+  }
+
+  @override
+  String get scheduleOnEllipsis => 'Schedule on …';
+
+  @override
+  String get scheduleOtherDay => 'Or on another day';
+
+  @override
+  String scheduleDefaultsHint(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'stay': 'Arrival 14:00, two nights – you can adjust it afterwards.',
+      'accommodation': 'Check-in 15:00 until check-out when its place ends.',
+      'activity': '10:00–12:00 – you can adjust it afterwards.',
+      'other': 'When its origin place ends, else 10:00–13:00.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get timelineEmptyTitle => 'No places yet';
+
+  @override
+  String get timelineEmptyBody =>
+      'Start with the first place of your trip – lodging, transport and activities build on it.';
+
+  @override
+  String get timelineEmptyAction => 'Add first place';
 }

@@ -16,6 +16,7 @@ import 'conflict_tile.dart';
 import 'dialogs.dart';
 import 'l10n.dart';
 import 'navigation.dart';
+import 'schedule_sheet.dart';
 import 'style.dart';
 import 'transport_details.dart';
 
@@ -367,6 +368,14 @@ class _QuickActions extends ConsumerWidget {
         selected: item.fixed,
         onSelected: (_) => toggleFixed(l, ref, data, item),
       ),
+      if (!item.isScheduled)
+        ActionChip(
+          key: const ValueKey('quick-schedule'),
+          avatar: const Icon(Icons.event_available, size: 16),
+          label: Text(l.scheduleOnEllipsis),
+          // Stacks on top; the item sheet then shows the new time.
+          onPressed: () => showScheduleSheet(context, ref, data, item, withDetails: false),
+        ),
       if (item.isScheduled) ...[
         ActionChip(
           key: const ValueKey('quick-earlier'),

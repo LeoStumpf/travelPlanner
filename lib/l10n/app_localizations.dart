@@ -2868,6 +2868,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No coordinates – not on the map'**
   String get placeNoCoordinates;
+
+  /// No description provided for @stepScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” scheduled on {day}'**
+  String stepScheduled(String title, String day);
+
+  /// No description provided for @scheduleOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule on {day}'**
+  String scheduleOnDay(String day);
+
+  /// No description provided for @scheduleOnEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule on …'**
+  String get scheduleOnEllipsis;
+
+  /// No description provided for @scheduleOtherDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Or on another day'**
+  String get scheduleOtherDay;
+
+  /// No description provided for @scheduleDefaultsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, stay{Arrival 14:00, two nights – you can adjust it afterwards.} accommodation{Check-in 15:00 until check-out when its place ends.} activity{10:00–12:00 – you can adjust it afterwards.} other{When its origin place ends, else 10:00–13:00.}}'**
+  String scheduleDefaultsHint(String kind);
+
+  /// No description provided for @details.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// No description provided for @timelineEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No places yet'**
+  String get timelineEmptyTitle;
+
+  /// No description provided for @timelineEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with the first place of your trip – lodging, transport and activities build on it.'**
+  String get timelineEmptyBody;
+
+  /// No description provided for @timelineEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add first place'**
+  String get timelineEmptyAction;
 }
 
 class _AppLocalizationsDelegate

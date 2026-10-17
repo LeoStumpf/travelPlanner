@@ -1494,5 +1494,38 @@
     }
   },
   "placeSaveWithoutCoordinatesHint": "Not shown on the map – you can set the spot later.",
-  "placeNoCoordinates": "No coordinates – not on the map"
+  "placeNoCoordinates": "No coordinates – not on the map",
+  "stepScheduled": "“{title}” scheduled on {day}",
+  "@stepScheduled": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleOnDay": "Schedule on {day}",
+  "@scheduleOnDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleOnEllipsis": "Schedule on …",
+  "scheduleOtherDay": "Or on another day",
+  "scheduleDefaultsHint": "{kind, select, stay{Arrival 14:00, two nights – you can adjust it afterwards.} accommodation{Check-in 15:00 until check-out when its place ends.} activity{10:00–12:00 – you can adjust it afterwards.} other{When its origin place ends, else 10:00–13:00.}}",
+  "@scheduleDefaultsHint": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "details": "Details",
+  "timelineEmptyTitle": "No places yet",
+  "timelineEmptyBody": "Start with the first place of your trip – lodging, transport and activities build on it.",
+  "timelineEmptyAction": "Add first place"
 }

@@ -9,6 +9,7 @@ import '../../domain/models.dart';
 import '../../domain/zones.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
+import '../../domain/timeline.dart';
 import '../../state/hints.dart';
 import '../../state/providers.dart';
 import '../common/conflict_tile.dart';
@@ -16,6 +17,7 @@ import '../common/dialogs.dart';
 import '../common/hint_banner.dart';
 import '../common/item_sheet.dart';
 import '../common/l10n.dart';
+import '../common/schedule_sheet.dart';
 import '../common/style.dart';
 import '../common/theme.dart';
 import '../editor/item_editor_page.dart';
@@ -30,6 +32,20 @@ const _handleW = 24.0;
 
 /// Minimum width of a "+ Transport" marker, so it stays tappable.
 const _transportGapMinW = 84.0;
+
+/// Blocks narrower than this show their title next to them when the row
+/// has room there.
+const _spillBelowW = 56.0;
+
+/// Minimum free space for a title next to a block.
+const _spillMinW = 30.0;
+
+/// Widest title next to a block.
+const _spillMaxW = 180.0;
+
+/// Row heights grow with the system text size (up to 2×), so titles keep
+/// fitting their blocks.
+double _textScale(BuildContext context) => (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0);
 
 double _rowHeight(ItemKind k) => switch (k) {
   ItemKind.stay => 48,
@@ -317,11 +333,16 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     ];
 
     double x(int minute) => (minute - firstDay * minutesPerDay) * _pxPerMin;
+    final scale = _textScale(context);
+    final headerH = _headerH * scale;
+    final hasStays = data.items.any((i) => i.kind == ItemKind.stay);
+    final hasScheduled = data.items.any((i) => i.isScheduled);
 
     final laneWidgets = <Widget>[];
     final labelWidgets = <Widget>[];
     for (final lane in lanes) {
-      final rowH = _rowHeight(lane.kind);
+      final rowH = _rowHeight(lane.kind) * scale;
+      final room = labelRoom(lane.items, lane.rows);
       final h = (lane.rowCount < 1 ? 1 : lane.rowCount) * rowH + 2 * _lanePad;
       final children = <Widget>[];
 
@@ -389,6 +410,23 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         final width = math.max(i.duration * _pxPerMin, 26.0);
         final row = lane.rows[i.id] ?? 0;
         final draggable = !i.fixed;
+        // Free space until the next block in this row (or the end).
+        final roomPx = room[i.id] == null ? totalW - left : room[i.id]! * _pxPerMin;
+        final spillW = math.min(roomPx - width - 6, _spillMaxW);
+        final spill =
+            lane.kind != ItemKind.stay && width < _spillBelowW && spillW >= _spillMinW && i.title.trim().isNotEmpty;
+        if (spill) {
+          children.add(
+            Positioned(
+              key: ValueKey('label-${i.id}'),
+              left: left + width + 3,
+              width: spillW,
+              top: _lanePad + row * rowH,
+              height: rowH - 6,
+              child: _SpillLabel(item: i, onTap: () => showItemSheet(context, ref, data.trip.id, i.id)),
+            ),
+          );
+        }
         children.add(
           Positioned(
             key: ValueKey(i.id),
@@ -398,6 +436,9 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
             height: rowH - 6,
             child: _Block(
               titleInset: (_scrollX - left).clamp(0, math.max(0, width - 90)),
+              // A place's name may run on above the line up to the next place.
+              titleWidth: lane.kind == ItemKind.stay ? math.max(width, roomPx - 6) : width,
+              titleOutside: spill,
               item: i,
               tripStart: data.trip.startDate,
               selected: ui.selectedId == i.id,
@@ -477,72 +518,77 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
           onZoom: (f) => _zoomTo(_dayWidth * f, _hScroll.hasClients ? _hScroll.position.viewportDimension / 2 : 0),
         ),
         const HintBanner(hint: Hint.timeline),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: _labelW,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: _headerH),
-                      ...labelWidgets,
-                    ],
+        if (!hasStays && hasScheduled) _EmptyTimeline(data: data, compact: true),
+        if (!hasStays && !hasScheduled)
+          Expanded(child: _EmptyTimeline(data: data))
+        else
+          Expanded(
+            child: SingleChildScrollView(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: _labelW,
+                    child: Column(
+                      children: [
+                        SizedBox(height: headerH),
+                        ...labelWidgets,
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: Listener(
-                    onPointerDown: _onPointerDown,
-                    onPointerMove: _onPointerMove,
-                    onPointerUp: _onPointerUp,
-                    onPointerCancel: _onPointerUp,
-                    child: SingleChildScrollView(
-                      controller: _hScroll,
-                      scrollDirection: Axis.horizontal,
-                      physics: _pinchStartDist != null ? const NeverScrollableScrollPhysics() : null,
-                      child: SizedBox(
-                        width: totalW,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: CustomPaint(
-                                painter: _GridPainter(
-                                  firstDay: firstDay,
-                                  dayWidth: _dayWidth,
-                                  headerH: _headerH,
-                                  tripStart: data.trip.startDate,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                  nightColor: AppColors.of(context).night,
-                                  today: _todayIndex(),
+                  Expanded(
+                    child: Listener(
+                      onPointerDown: _onPointerDown,
+                      onPointerMove: _onPointerMove,
+                      onPointerUp: _onPointerUp,
+                      onPointerCancel: _onPointerUp,
+                      child: SingleChildScrollView(
+                        controller: _hScroll,
+                        scrollDirection: Axis.horizontal,
+                        physics: _pinchStartDist != null ? const NeverScrollableScrollPhysics() : null,
+                        child: SizedBox(
+                          width: totalW,
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: _GridPainter(
+                                    firstDay: firstDay,
+                                    dayWidth: _dayWidth,
+                                    headerH: headerH,
+                                    tripStart: data.trip.startDate,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    nightColor: AppColors.of(context).night,
+                                    today: _todayIndex(),
+                                  ),
                                 ),
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _DayHeader(
-                                  firstDay: firstDay,
-                                  lastDay: lastDay,
-                                  dayWidth: _dayWidth,
-                                  tripStart: data.trip.startDate,
-                                  onLongPress: (d) => showAddSheet(context, ref, data, atDay: d),
-                                ),
-                                ...laneWidgets,
-                                const SizedBox(height: 24),
-                              ],
-                            ),
-                          ],
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _DayHeader(
+                                    firstDay: firstDay,
+                                    lastDay: lastDay,
+                                    dayWidth: _dayWidth,
+                                    height: headerH,
+                                    tripStart: data.trip.startDate,
+                                    onLongPress: (d) => showAddSheet(context, ref, data, atDay: d),
+                                  ),
+                                  ...laneWidgets,
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        if (unscheduled.isNotEmpty) _UnscheduledTray(items: unscheduled, tripId: data.trip.id),
+        if (unscheduled.isNotEmpty) _UnscheduledTray(items: unscheduled, data: data),
       ],
     );
   }
@@ -584,6 +630,13 @@ class _Block extends StatelessWidget {
   /// Pushes the title right when the block starts left of the viewport.
   final double titleInset;
 
+  /// Space for the title; wider than the block for places, whose name may
+  /// run on above the line.
+  final double? titleWidth;
+
+  /// The title is drawn next to the block ([_SpillLabel]); show the icon.
+  final bool titleOutside;
+
   const _Block({
     required this.item,
     required this.tripStart,
@@ -595,6 +648,8 @@ class _Block extends StatelessWidget {
     required this.onLongPressMove,
     required this.onLongPressEnd,
     this.titleInset = 0,
+    this.titleWidth,
+    this.titleOutside = false,
   });
 
   @override
@@ -646,7 +701,8 @@ class _Block extends StatelessWidget {
     );
   }
 
-  /// A stay: name above a thick line with a station at each end.
+  /// A stay: name above a thick line with a station at each end; the
+  /// number of nights sits on the line itself.
   Widget _rail(BuildContext context, double w, Color base, bool option, Color ink, int? nights) {
     final line = option ? base.withValues(alpha: 0.45) : base;
     final station = Container(
@@ -658,19 +714,21 @@ class _Block extends StatelessWidget {
         border: Border.all(color: line, width: 4),
       ),
     );
+    final textW = math.max(0.0, (titleWidth ?? w) - 8 - titleInset);
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         Positioned(
           left: 4 + titleInset,
-          right: 4,
+          width: textW,
           top: 2,
           child: Row(
             children: [
-              Expanded(
+              Flexible(
                 child: Text(
                   item.title,
                   maxLines: 1,
-                  overflow: TextOverflow.clip,
+                  overflow: TextOverflow.ellipsis,
                   softWrap: false,
                   style: TextStyle(
                     color: ink,
@@ -680,10 +738,11 @@ class _Block extends StatelessWidget {
                   ),
                 ),
               ),
-              if (w > 110 && item.fixed) Icon(Icons.lock, size: 13, color: ink),
-              if (w > 80 && nights != null)
-                Text(context.l10n.nightsShort(nights),
-                    style: TextStyle(color: ink, fontSize: 11, fontWeight: FontWeight.w700)),
+              if (w > 110 && item.fixed)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Icon(Icons.lock, size: 13, color: ink),
+                ),
             ],
           ),
         ),
@@ -698,42 +757,174 @@ class _Block extends StatelessWidget {
         ),
         Positioned(left: 0, bottom: 4, child: station),
         Positioned(right: 0, bottom: 4, child: station),
+        // Between the stations, so it clearly belongs to this place.
+        if (nights != null && nights > 0 && w >= 52)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 5,
+            child: Center(
+              child: _NightsBadge(
+                key: ValueKey('nights-${item.id}'),
+                nights: nights,
+                color: line,
+                textColor: option ? ink : Colors.white,
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  /// Transport, lodging and activities: a filled block.
+  /// Transport, lodging and activities: a filled block. Narrow ones show the
+  /// title whenever it still fits a few letters, else only the icon (the
+  /// title then runs next to the block, see [titleOutside]).
   Widget _box(BuildContext context, double w, Color fg, int? nights) {
-    // Narrow blocks (short transports, zoomed out) show less detail.
-    if (w < 40) return Center(child: Icon(itemIcon(item), size: 14, color: fg));
+    final icon = Icon(itemIcon(item), size: 15, color: fg);
+    final title = Text(
+      item.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+      style: TextStyle(
+        color: fg,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        fontStyle: item.isOption ? FontStyle.italic : null,
+      ),
+    );
+    if (titleOutside || w < 30 || item.title.trim().isEmpty) return Center(child: icon);
+    // Too narrow for icon and title: the title wins.
+    if (w < 64) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Align(alignment: Alignment.centerLeft, child: title),
+      );
+    }
     return Padding(
       padding: EdgeInsets.only(left: 6 + titleInset, right: 6),
       child: Row(
         children: [
-          Icon(itemIcon(item), size: 15, color: fg),
+          icon,
           const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              item.title,
-              maxLines: 1,
-              overflow: TextOverflow.clip,
-              softWrap: false,
-              style: TextStyle(
-                color: fg,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                fontStyle: item.isOption ? FontStyle.italic : null,
-              ),
-            ),
-          ),
+          Expanded(child: title),
           if (w > 110 && item.fixed) Icon(Icons.lock, size: 13, color: fg),
           if (w > 110 && item.status == ItemStatus.booked) Icon(Icons.verified, size: 13, color: fg),
-          if (w > 80 && nights != null)
+          if (w > 96 && nights != null && nights > 0)
             Padding(
-              padding: const EdgeInsets.only(left: 2, right: 8),
-              child: Text(context.l10n.nightsShort(nights), style: TextStyle(color: fg, fontSize: 11)),
+              padding: const EdgeInsets.only(left: 4, right: 8),
+              child: _NightsBadge(
+                key: ValueKey('nights-${item.id}'),
+                nights: nights,
+                color: fg.withValues(alpha: 0.2),
+                textColor: fg,
+              ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// "2N" as a small pill on its place's line / inside its lodging block.
+class _NightsBadge extends StatelessWidget {
+  final int nights;
+  final Color color;
+  final Color textColor;
+  const _NightsBadge({super.key, required this.nights, required this.color, required this.textColor});
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: context.l10n.nights(nights),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(7)),
+      child: Text(
+        context.l10n.nightsShort(nights),
+        maxLines: 1,
+        softWrap: false,
+        style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w800, height: 1.4),
+      ),
+    ),
+  );
+}
+
+/// The title of a narrow block, drawn in the free space right of it.
+class _SpillLabel extends StatelessWidget {
+  final PlanItem item;
+  final VoidCallback onTap;
+  const _SpillLabel({required this.item, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    behavior: HitTestBehavior.translucent,
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          fontStyle: item.isOption || item.status == ItemStatus.idea ? FontStyle.italic : null,
+        ),
+      ),
+    ),
+  );
+}
+
+/// No places yet: explains the timeline and offers to add the first one.
+/// [compact] = a banner above a timeline that already has other items.
+class _EmptyTimeline extends StatelessWidget {
+  final TripData data;
+  final bool compact;
+  const _EmptyTimeline({required this.data, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final action = FilledButton.icon(
+      key: const ValueKey('timeline-add-first-stay'),
+      onPressed: () => openItemEditor(context, data, newKind: ItemKind.stay, atDay: 0),
+      icon: const Icon(Icons.add_location_alt),
+      label: Text(l.timelineEmptyAction),
+    );
+    if (compact) {
+      return Material(
+        color: theme.colorScheme.secondaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          child: Row(
+            children: [
+              Icon(kindIcon(ItemKind.stay), color: kindColor(ItemKind.stay)),
+              const SizedBox(width: 12),
+              Expanded(child: Text(l.timelineEmptyTitle, style: theme.textTheme.titleSmall)),
+              action,
+            ],
+          ),
+        ),
+      );
+    }
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.view_timeline_outlined, size: 56, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(l.timelineEmptyTitle, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(l.timelineEmptyBody, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            action,
+          ],
+        ),
       ),
     );
   }
@@ -948,6 +1139,7 @@ class _DayHeader extends StatelessWidget {
   final int firstDay;
   final int lastDay;
   final double dayWidth;
+  final double height;
   final DateTime? tripStart;
   final ValueChanged<int> onLongPress;
 
@@ -955,6 +1147,7 @@ class _DayHeader extends StatelessWidget {
     required this.firstDay,
     required this.lastDay,
     required this.dayWidth,
+    required this.height,
     required this.tripStart,
     required this.onLongPress,
   });
@@ -971,7 +1164,7 @@ class _DayHeader extends StatelessWidget {
       color: Theme.of(context).colorScheme.onSurface,
     );
     return SizedBox(
-      height: _headerH,
+      height: height,
       child: Row(
         children: [
           for (var d = firstDay; d <= lastDay; d++)
@@ -986,7 +1179,13 @@ class _DayHeader extends StatelessWidget {
                     children: [
                       Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
                       if (tripStart != null && dayWidth > 44)
-                        Text(context.l10n.day(tripStart, d), style: style, maxLines: 1, overflow: TextOverflow.clip),
+                        Text(
+                          context.l10n.day(tripStart, d),
+                          style: style,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),
@@ -1158,14 +1357,14 @@ class _Toolbar extends ConsumerWidget {
 
 class _UnscheduledTray extends ConsumerWidget {
   final List<PlanItem> items;
-  final String tripId;
-  const _UnscheduledTray({required this.items, required this.tripId});
+  final TripData data;
+  const _UnscheduledTray({required this.items, required this.data});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Material(
     color: Theme.of(context).colorScheme.surfaceContainerLow,
     child: SizedBox(
-      height: 52,
+      height: 52 * _textScale(context),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -1177,10 +1376,13 @@ class _UnscheduledTray extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: ActionChip(
+                key: ValueKey('tray-${i.id}'),
                 avatar: Icon(itemIcon(i), size: 16, color: kindColor(i.kind)),
                 label: Text(i.title),
+                tooltip: context.l10n.scheduleOnEllipsis,
                 visualDensity: VisualDensity.compact,
-                onPressed: () => showItemSheet(context, ref, tripId, i.id),
+                // "Schedule on …" with the details one tap further.
+                onPressed: () => showScheduleSheet(context, ref, data, i),
               ),
             ),
         ],

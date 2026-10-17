@@ -460,5 +460,14 @@
   "placePasteHint": "Tipp: Google-Maps-, OpenStreetMap- oder geo:-Link oder Koordinaten wie 48.8584, 2.2945 einfügen.",
   "placeSaveWithoutCoordinates": "„{name}“ ohne Koordinaten speichern",
   "placeSaveWithoutCoordinatesHint": "Erscheint nicht auf der Karte – die genaue Lage kannst du später setzen.",
-  "placeNoCoordinates": "Ohne Koordinaten – nicht auf der Karte"
+  "placeNoCoordinates": "Ohne Koordinaten – nicht auf der Karte",
+  "stepScheduled": "„{title}“ eingeplant am {day}",
+  "scheduleOnDay": "Einplanen am {day}",
+  "scheduleOnEllipsis": "Einplanen am …",
+  "scheduleOtherDay": "Oder an einem anderen Tag",
+  "scheduleDefaultsHint": "{kind, select, stay{Ankunft 14:00, zwei Nächte – danach anpassbar.} accommodation{Check-in 15:00 bis zum Check-out am Ende des Orts.} activity{10:00–12:00 – danach anpassbar.} other{Wenn der Ort davor endet, sonst 10:00–13:00.}}",
+  "details": "Details",
+  "timelineEmptyTitle": "Noch keine Orte",
+  "timelineEmptyBody": "Beginne mit dem ersten Ort deiner Reise – Unterkünfte, Transporte und Aktivitäten bauen darauf auf.",
+  "timelineEmptyAction": "Ersten Ort anlegen"
 }
