@@ -2,11 +2,11 @@
 <!-- Android Auto Backup up to Android 11 (android:fullBackupContent).
      Backs up the drift database and the attachment files, both live in
      app_flutter/ (getApplicationDocumentsDirectory). Excluded: the undo trash
-     of attachments and the app's own ZIP backups in external storage, which
-     would only duplicate the data and eat the 25 MB quota. -->
+     of attachments. The app's own ZIP backups in external storage are never
+     backed up because only the included paths are (an explicit exclude for
+     them fails lint: "not in an included path"). -->
 <full-backup-content>
     <include domain="root" path="app_flutter/" />
     <include domain="sharedpref" path="." />
     <exclude domain="root" path="app_flutter/attachments/.trash/" />
-    <exclude domain="external" path="backups/" />
 </full-backup-content>
