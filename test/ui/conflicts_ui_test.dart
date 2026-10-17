@@ -129,6 +129,29 @@ void main() {
     });
   });
 
+  testWidgets('360 dp: long titles fit the app bar, the conflict list and the trip card', (tester) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const long = 'Sehr lange Bezeichnung für ein Hotel mitten in der Altstadt von Paris';
+    final data = TripData(
+      trip: Trip(id: 'fr', title: 'Frankreich-Rundreise mit dem Zug im Frühling 2026', createdAt: _t0),
+      items: [
+        for (final i in _france.items)
+          i.id == 'Hilton' || i.id == 'Food-Tour' ? i.copyWith(title: '$long (${i.id})') : i,
+      ],
+    );
+    await pump(tester, data, const TripPage(tripId: 'fr'));
+    expect(tester.takeException(), isNull);
+    await tap(tester, badge());
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('conflict-no-fix')), findsOneWidget);
+
+    await pump(tester, data, const TripsPage());
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('trip-conflicts')), findsOneWidget);
+  });
+
   testWidgets('the trip card in the list warns about conflicts', (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.runAsync(() => repo.putTripData(demoInterrail()));
