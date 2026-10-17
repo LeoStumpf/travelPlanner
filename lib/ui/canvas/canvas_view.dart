@@ -3,6 +3,7 @@ import 'dart:ui' show PointMode;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/analysis.dart';
@@ -17,6 +18,10 @@ import '../keep/card_preview.dart';
 /// Half the size of the canvas world; node coordinates range ±_half.
 const _half = 5000.0;
 const _itemW = 200.0;
+
+/// On-screen distance (px) a node must be dragged before its new position
+/// is saved (and an undo step recorded).
+const canvasMoveThreshold = 4.0;
 
 /// Default positions for nodes that were never moved: stays left-to-right in
 /// trip order with their lodging/activities below; loose cards above.
@@ -67,6 +72,7 @@ class CanvasView extends ConsumerStatefulWidget {
 class _CanvasViewState extends ConsumerState<CanvasView> {
   final _tc = TransformationController();
   final Map<String, Offset> _dragPos = {};
+  final Map<String, Offset> _dragOrigin = {};
   final Map<String, Size> _sizes = {};
   bool _connectMode = false;
   String? _connectFrom;
@@ -140,6 +146,17 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
         await repo.saveCard(card.copyWith(canvasX: p.dx, canvasY: p.dy));
       }
     });
+  }
+
+  /// Saves a long-press drag, but only if the node really moved: a press
+  /// without movement must not create an undo step.
+  Future<void> _endDrag(String id) async {
+    final origin = _dragOrigin.remove(id);
+    final p = _dragPos[id];
+    if (origin == null || p == null) return;
+    final movedPx = (p - origin).distance * _tc.value.getMaxScaleOnAxis();
+    if (movedPx >= canvasMoveThreshold) await _savePosition(id, p);
+    if (mounted) setState(() => _dragPos.remove(id));
   }
 
   Future<void> _tapNode(String id) async {
@@ -227,18 +244,23 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
           onChange: (s) {
             if (_sizes[id] != s) setState(() => _sizes[id] = s);
           },
+          // A plain swipe pans the canvas (InteractiveViewer); nodes only
+          // move after a long press, like blocks on the timeline.
           child: GestureDetector(
             onTap: () => _tapNode(id),
-            onPanStart: (_) => setState(() => _dragPos[id] = pos[id]!),
-            onPanUpdate: (d) {
+            onLongPressStart: (_) {
+              HapticFeedback.mediumImpact();
+              _dragOrigin[id] = pos[id]!;
+              setState(() => _dragPos[id] = pos[id]!);
+            },
+            onLongPressMoveUpdate: (d) {
+              final origin = _dragOrigin[id];
+              if (origin == null) return;
               final scale = _tc.value.getMaxScaleOnAxis();
-              setState(() => _dragPos[id] = _dragPos[id]! + d.delta / scale);
+              setState(() => _dragPos[id] = origin + d.offsetFromOrigin / scale);
             },
-            onPanEnd: (_) async {
-              final p = _dragPos[id]!;
-              await _savePosition(id, p);
-              if (mounted) setState(() => _dragPos.remove(id));
-            },
+            onLongPressEnd: (_) => _endDrag(id),
+            onLongPressCancel: () => _endDrag(id),
             child: child,
           ),
         ),

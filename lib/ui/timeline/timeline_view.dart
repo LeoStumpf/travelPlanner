@@ -21,6 +21,9 @@ const _headerH = 52.0;
 const _labelW = 40.0;
 const _lanePad = 6.0;
 
+/// Touch width of a resize grip (centred on the block edge).
+const _handleW = 24.0;
+
 double _rowHeight(ItemKind k) => switch (k) {
   ItemKind.stay => 48,
   ItemKind.transport => 32,
@@ -343,6 +346,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         }
       }
 
+      final handles = <Widget>[];
       for (final i in lane.items) {
         final left = x(i.start!);
         final width = math.max(i.duration * _pxPerMin, 26.0);
@@ -377,24 +381,34 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               onLongPressEnd: () {
                 if (_dragId == i.id) _commitDrag(ui.shiftMode);
               },
-              onResizeStart: draggable && width >= 56
-                  ? _ResizeCallbacks(
-                      start: () => _startDrag(i, _DragType.resizeStart),
-                      update: (dx) => _dragTo(i, dx),
-                      end: () => _commitDrag(ui.shiftMode),
-                    )
-                  : null,
-              onResizeEnd: draggable && width >= 40
-                  ? _ResizeCallbacks(
-                      start: () => _startDrag(i, _DragType.resizeEnd),
-                      update: (dx) => _dragTo(i, dx),
-                      end: () => _commitDrag(ui.shiftMode),
-                    )
-                  : null,
             ),
           ),
         );
+        // Resize grips only on the selected block, so swipes over other
+        // blocks keep scrolling the timeline.
+        if (draggable && ui.selectedId == i.id) {
+          final top = _lanePad + row * rowH;
+          Widget handle(_DragType type, double centerX) => Positioned(
+            key: ValueKey('${type.name}-${i.id}'),
+            left: centerX - _handleW / 2,
+            width: _handleW,
+            top: top,
+            height: rowH - 6,
+            child: _ResizeHandle(
+              callbacks: _ResizeCallbacks(
+                start: () => _startDrag(i, type),
+                update: (dx) => _dragTo(i, dx),
+                end: () => _commitDrag(ui.shiftMode),
+              ),
+              color: kindColor(i.kind),
+            ),
+          );
+          // Narrow blocks keep only the end grip, so the body stays grabbable.
+          if (width >= 48) handles.add(handle(_DragType.resizeStart, left));
+          handles.add(handle(_DragType.resizeEnd, left + width));
+        }
       }
+      children.addAll(handles);
 
       laneWidgets.add(
         Container(
@@ -528,8 +542,6 @@ class _Block extends StatelessWidget {
   final VoidCallback onLongPressStart;
   final ValueChanged<double> onLongPressMove;
   final VoidCallback onLongPressEnd;
-  final _ResizeCallbacks? onResizeStart;
-  final _ResizeCallbacks? onResizeEnd;
 
   /// Pushes the title right when the block starts left of the viewport.
   final double titleInset;
@@ -544,8 +556,6 @@ class _Block extends StatelessWidget {
     required this.onLongPressStart,
     required this.onLongPressMove,
     required this.onLongPressEnd,
-    required this.onResizeStart,
-    required this.onResizeEnd,
     this.titleInset = 0,
   });
 
@@ -567,8 +577,6 @@ class _Block extends StatelessWidget {
 
     final rail = item.kind == ItemKind.stay;
     final ink = scheme.onSurface;
-    // On a line the stations already mark the ends; keep the grip invisible.
-    final Color? handleColor = rail ? null : fg;
 
     return GestureDetector(
       onTap: onTap,
@@ -591,32 +599,10 @@ class _Block extends StatelessWidget {
                 border: Border.all(color: borderColor, width: conflict || selected ? 2 : 1),
                 boxShadow: moving ? [BoxShadow(color: base.withValues(alpha: 0.5), blurRadius: 8)] : null,
               ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: LayoutBuilder(
-                builder: (context, c) => rail
-                    ? _rail(context, c.maxWidth, base, option, ink, nights)
-                    : _box(c.maxWidth, fg, nights),
-              ),
-            ),
-            if (onResizeStart != null)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 16,
-                child: _ResizeHandle(callbacks: onResizeStart!, color: handleColor),
-              ),
-            if (onResizeEnd != null)
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: 16,
-                child: _ResizeHandle(callbacks: onResizeEnd!, color: handleColor),
-              ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, c) => rail
+              ? _rail(context, c.maxWidth, base, option, ink, nights)
+              : _box(c.maxWidth, fg, nights),
         ),
       ),
     );
@@ -714,13 +700,14 @@ class _Block extends StatelessWidget {
   }
 }
 
-/// Grip on the left/right edge of a block; reports the horizontal distance
-/// dragged since the gesture started.
+/// Visible grip centred on the left/right edge of the selected block;
+/// reports the horizontal distance dragged since the gesture started. The
+/// whole (>= 24 dp wide) area is touchable, the pill shows where.
 class _ResizeHandle extends StatefulWidget {
   final _ResizeCallbacks callbacks;
 
-  /// Grip colour; null draws no grip (the touch area stays).
-  final Color? color;
+  /// Outline colour of the pill (the block's kind colour).
+  final Color color;
   const _ResizeHandle({required this.callbacks, required this.color});
 
   @override
@@ -731,28 +718,39 @@ class _ResizeHandleState extends State<_ResizeHandle> {
   double _startX = 0;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onHorizontalDragStart: (d) {
-      _startX = d.globalPosition.dx;
-      widget.callbacks.start();
-    },
-    onHorizontalDragUpdate: (d) => widget.callbacks.update(d.globalPosition.dx - _startX),
-    onHorizontalDragEnd: (_) => widget.callbacks.end(),
-    onHorizontalDragCancel: widget.callbacks.end,
-    child: widget.color == null
-        ? const SizedBox.expand()
-        : Center(
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (d) {
+        _startX = d.globalPosition.dx;
+        widget.callbacks.start();
+      },
+      onHorizontalDragUpdate: (d) => widget.callbacks.update(d.globalPosition.dx - _startX),
+      onHorizontalDragEnd: (_) => widget.callbacks.end(),
+      onHorizontalDragCancel: widget.callbacks.end,
+      child: Center(
+        child: Container(
+          width: 12,
+          height: double.infinity,
+          margin: const EdgeInsets.symmetric(vertical: 1),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: widget.color, width: 2),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)],
+          ),
+          child: Center(
             child: Container(
-              width: 3,
-              height: 16,
-              decoration: BoxDecoration(
-                color: widget.color!.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(2),
-              ),
+              width: 2,
+              height: 10,
+              decoration: BoxDecoration(color: scheme.onSurface, borderRadius: BorderRadius.circular(1)),
             ),
           ),
-  );
+        ),
+      ),
+    );
+  }
 }
 
 class _GapBox extends StatelessWidget {
