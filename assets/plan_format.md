@@ -9,7 +9,7 @@ You are helping plan a trip for the travel planner app **Tripboard**. Research w
 - If the user gave you an existing plan, keep every `ref` you did not create exactly as it was. Items with a known `ref` are updated, any other `ref` creates a new item.
 - You may return only new and changed items. Items you leave out stay unchanged in the app. To delete something, put its `ref` into `remove`.
 - For an existing item, only the fields you include are changed. Set a field to `null` to clear it.
-- Put sources (booking pages, timetables, official sites) into `links`. Put prices, tips and caveats into `notes`.
+- Put sources (booking pages, timetables, official sites) into `links`. Put tips and caveats into `notes`, prices into `cost` (see **Costs**).
 - Use `status` honestly: `booked` only if the user said it is booked; `option` for alternatives to choose from (e.g. two hotels for the same place); `idea` for unscheduled suggestions.
 - Give `lat`/`lng` (decimal degrees) for places, lodging and activities whenever you can. Otherwise give a precise `place` text and the app looks the coordinates up.
 
@@ -24,7 +24,10 @@ You are helping plan a trip for the travel planner app **Tripboard**. Research w
     "title": "Sri Lanka",
     "startDate": "2027-02-03",        // optional, YYYY-MM-DD = day 1
     "days": 10,                       // optional, planned length
-    "tz": "Europe/Berlin"             // optional, home time zone (IANA)
+    "tz": "Europe/Berlin",            // optional, home time zone (IANA)
+    "currency": "EUR",                // optional, home currency (ISO 4217) the budget is shown in
+    "travellers": 2,                  // optional, number of travellers (default 1)
+    "rates": { "LKR": 330 }           // optional, exchange rates: units of that currency per 1 home currency
   },
   "items": [ … ],                     // plan items, see below
   "notes": [ … ],                     // free notes / checklists / links
@@ -55,12 +58,26 @@ Every item has a `ref` (unique string; for new items use short slugs like `"kand
 | `bookingRef` | string | transport only, optional: booking reference / PNR – only if the user gave it, never invent one |
 | `tz` | string | optional IANA time zone, e.g. `"Asia/Colombo"`. On a `stay`: the zone of the place. On a `transport`: departure zone, only needed when it differs from the `from` stay's |
 | `endTz` | string | transport only, optional: arrival zone, only needed when it differs from the `to` stay's |
-| `notes` | string | details, prices, tips |
+| `cost` | object | optional price, see **Costs** |
+| `notes` | string | details, tips |
 | `links` | string[] | URLs |
 
 **Moments** are `{"day": 1, "time": "14:00"}`. Day 1 is the first day of the trip, `time` is local 24-hour time (`"24:00"` = midnight at the end of that day). Overnight trips simply end on a later day. If the trip has a `startDate` you may write `{"date": "2027-02-05", "time": "14:00"}` instead.
 
 **Time zones** (optional). Every time is the local clock time of where it happens: a stay's times (and those of its accommodation and activities) in the stay's zone, a transport's `start` in the zone it departs from and its `end` in the zone it arrives in – exactly as printed on a ticket. Give each `stay` its IANA zone in `tz` and the trip a home zone in `trip.tz` (used for anything without a zone, e.g. the outbound flight from home). A transport takes its zones from its `from`/`to` stays (else the home zone), so `tz`/`endTz` on transports are rarely needed. The app then computes real durations and orders everything correctly, even when a flight lands "earlier" than it left. Leave all `tz` out to plan without time zones.
+
+**Costs** (optional, but please fill them in). Give every transport, accommodation and paid activity an estimated `cost` from your research, so the app can show a budget:
+
+```
+"cost": { "amount": 45, "currency": "LKR", "perPerson": true, "paid": false }
+```
+
+- `amount` (number, required for a new cost) in `currency`, an ISO 4217 code like `"EUR"`, `"LKR"`, `"USD"`. Without `currency` the trip's home currency is meant. Use the currency you would actually pay in (usually the local one) and a realistic, rounded estimate.
+- `perPerson: true` for prices per traveller (tickets, entry fees, tours, dorm beds); leave it out for totals (a double room per night × nights, a taxi, a rental car). The app multiplies per-person prices by `trip.travellers`.
+- `paid: true` only if the user said it is paid. Leave it out otherwise.
+- Ask for (or keep) the user's home currency in `trip.currency` and the number of travellers in `trip.travellers`. For every foreign currency you use, add a current approximate rate to `trip.rates` as units per 1 home currency (`{"LKR": 330}` = 1 EUR buys 330 LKR); the app converts offline with these. Keep rates the user already has unless asked.
+- Options and ideas show up separately and do not count into the total, so give alternatives their own estimate too.
+- To change only part of an existing cost, give just those fields (e.g. `{"paid": true}`); `"cost": null` removes it.
 
 **How the layers fit together**
 
@@ -83,7 +100,7 @@ Every item has a `ref` (unique string; for new items use short slugs like `"kand
 | `pinned` | boolean | |
 | `item` | ref | optional item this note is about |
 
-Good uses: packing list, visa/vaccination to-dos, budget overview, alternatives you considered.
+Good uses: packing list, visa/vaccination to-dos, alternatives you considered. Costs belong into the items' `cost` – the app sums them up itself.
 
 ## Example
 
@@ -91,19 +108,19 @@ Good uses: packing list, visa/vaccination to-dos, budget overview, alternatives 
 {
   "format": "tripboard-plan",
   "version": 1,
-  "trip": { "title": "Sri Lanka in 10 days", "startDate": "2027-02-03", "days": 11, "tz": "Europe/Berlin" },
+  "trip": { "title": "Sri Lanka in 10 days", "startDate": "2027-02-03", "days": 11, "tz": "Europe/Berlin", "currency": "EUR", "travellers": 2, "rates": { "LKR": 330 } },
   "items": [
-    { "ref": "flight-out", "kind": "transport", "mode": "plane", "title": "Flight Frankfurt → Colombo", "to": "colombo", "departure": "Frankfurt FRA", "arrival": "Colombo CMB", "number": "UL 554", "start": {"day": 1, "time": "21:15"}, "end": {"day": 2, "time": "10:20"}, "status": "booked", "fixed": true },
+    { "ref": "flight-out", "kind": "transport", "mode": "plane", "title": "Flight Frankfurt → Colombo", "to": "colombo", "departure": "Frankfurt FRA", "arrival": "Colombo CMB", "number": "UL 554", "start": {"day": 1, "time": "21:15"}, "end": {"day": 2, "time": "10:20"}, "status": "booked", "fixed": true, "cost": { "amount": 640, "currency": "EUR", "perPerson": true, "paid": true } },
     { "ref": "colombo", "kind": "stay", "title": "Colombo", "tz": "Asia/Colombo", "place": "Colombo, Sri Lanka", "lat": 6.9271, "lng": 79.8612, "start": {"day": 2, "time": "11:00"}, "end": {"day": 3, "time": "08:00"} },
-    { "ref": "hotel-colombo", "kind": "accommodation", "title": "Hotel near Colombo Fort", "stay": "colombo", "place": "Colombo Fort, Sri Lanka", "start": {"day": 2, "time": "14:00"}, "end": {"day": 3, "time": "07:30"} },
-    { "ref": "train-colombo-kandy", "kind": "transport", "mode": "train", "title": "Train Colombo Fort → Kandy", "from": "colombo", "to": "kandy", "departure": "Colombo Fort", "arrival": "Kandy", "number": "1009", "start": {"day": 3, "time": "08:30"}, "end": {"day": 3, "time": "11:20"}, "notes": "Intercity, reserve 2nd class seats", "links": ["https://eservices.railway.gov.lk/schedule/searchTrain.action?lang=en"] },
+    { "ref": "hotel-colombo", "kind": "accommodation", "title": "Hotel near Colombo Fort", "stay": "colombo", "place": "Colombo Fort, Sri Lanka", "start": {"day": 2, "time": "14:00"}, "end": {"day": 3, "time": "07:30"}, "cost": { "amount": 28000, "currency": "LKR" } },
+    { "ref": "train-colombo-kandy", "kind": "transport", "mode": "train", "title": "Train Colombo Fort → Kandy", "from": "colombo", "to": "kandy", "departure": "Colombo Fort", "arrival": "Kandy", "number": "1009", "start": {"day": 3, "time": "08:30"}, "end": {"day": 3, "time": "11:20"}, "cost": { "amount": 1500, "currency": "LKR", "perPerson": true }, "notes": "Intercity, reserve 2nd class seats", "links": ["https://eservices.railway.gov.lk/schedule/searchTrain.action?lang=en"] },
     { "ref": "kandy", "kind": "stay", "title": "Kandy", "tz": "Asia/Colombo", "place": "Kandy, Sri Lanka", "lat": 7.2906, "lng": 80.6337, "start": {"day": 3, "time": "12:00"}, "end": {"day": 5, "time": "08:00"} },
-    { "ref": "temple", "kind": "activity", "title": "Temple of the Tooth", "stay": "kandy", "lat": 7.2936, "lng": 80.6413, "start": {"day": 4, "time": "09:00"}, "end": {"day": 4, "time": "11:00"} },
+    { "ref": "temple", "kind": "activity", "title": "Temple of the Tooth", "stay": "kandy", "lat": 7.2936, "lng": 80.6413, "start": {"day": 4, "time": "09:00"}, "end": {"day": 4, "time": "11:00"}, "cost": { "amount": 2000, "currency": "LKR", "perPerson": true } },
     { "ref": "galle", "kind": "stay", "title": "Galle", "tz": "Asia/Colombo", "place": "Galle Fort, Sri Lanka", "status": "idea" }
   ],
   "notes": [
     { "ref": "packing", "type": "checklist", "title": "Packing list", "checklist": ["Passport", "ETA visa printout", "Mosquito repellent"] },
-    { "ref": "budget", "type": "note", "title": "Budget", "text": "Rough total per person: …" }
+    { "ref": "visa", "type": "note", "title": "Visa", "text": "Apply for the ETA online at least a week before departure." }
   ]
 }
 ```

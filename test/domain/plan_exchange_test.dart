@@ -399,4 +399,121 @@ void main() {
       expect(r.isEmpty, isTrue);
     });
   });
+
+  group('costs', () {
+    TripData withCosts() {
+      final demo = demoInterrail();
+      final tgv = demo.items.firstWhere((i) => i.title.startsWith('TGV'));
+      final items = [
+        for (final i in demo.items)
+          i.id == tgv.id ? i.copyWith(cost: const Cost(amount: 79, perPerson: true, paid: true)) : i,
+      ];
+      return TripData(
+        trip: demo.trip.copyWith(currency: 'EUR', travellers: 2, rates: {'CHF': 0.95}),
+        items: items,
+        cards: demo.cards,
+      );
+    }
+
+    test('are exported with the trip currency, travellers and rates', () {
+      final d = withCosts();
+      final doc = PlanExchange.export(d);
+      final trip = doc['trip'] as Map<String, Object?>;
+      expect([trip['currency'], trip['travellers'], trip['rates']], ['EUR', 2, {'CHF': 0.95}]);
+      final items = (doc['items'] as List).cast<Map<String, Object?>>();
+      final tgv = items.firstWhere((i) => (i['title'] as String).startsWith('TGV'));
+      expect(tgv['cost'], {'amount': 79.0, 'perPerson': true, 'paid': true});
+      expect(items.where((i) => i.containsKey('cost')), hasLength(1));
+      // A trip without costs exports none of the new keys.
+      final plain = PlanExchange.export(demoInterrail())['trip'] as Map<String, Object?>;
+      expect(plain.keys, isNot(anyOf(contains('currency'), contains('travellers'), contains('rates'))));
+    });
+
+    test('survive an export → import round trip; re-import changes nothing', () {
+      final d = withCosts();
+      final imp = _apply(PlanExchange.exportText(d));
+      expect(imp.warnings, isEmpty);
+      expect([imp.trip.currency, imp.trip.travellers, imp.trip.rates], ['EUR', 2, {'CHF': 0.95}]);
+      expect(imp.items.firstWhere((i) => i.title.startsWith('TGV')).cost,
+          const Cost(amount: 79, perPerson: true, paid: true));
+      expect(_apply(PlanExchange.exportText(d), into: d).isEmpty, isTrue);
+    });
+
+    test('are created, merged partially and cleared', () {
+      final d = withCosts();
+      final tgv = d.items.firstWhere((i) => i.title.startsWith('TGV'));
+      final paris = d.items.firstWhere((i) => i.title == 'Paris');
+      final imp = _apply(
+        _plan([
+          {'ref': tgv.id, 'cost': {'paid': false, 'currency': 'eur'}},
+          {'ref': paris.id, 'cost': 120},
+          {'ref': 'louvre', 'kind': 'activity', 'title': 'Louvre', 'stay': paris.id,
+            'cost': {'amount': 22, 'currency': 'EUR', 'perPerson': true}},
+        ]),
+        into: d,
+      );
+      expect(imp.warnings, isEmpty);
+      final byId = {for (final i in imp.items) i.id: i};
+      expect(byId[tgv.id]!.cost, const Cost(amount: 79, currency: 'EUR', perPerson: true));
+      expect(byId[paris.id]!.cost, const Cost(amount: 120));
+      expect(imp.items.firstWhere((i) => i.title == 'Louvre').cost,
+          const Cost(amount: 22, currency: 'EUR', perPerson: true));
+
+      final cleared = _apply(_plan([{'ref': tgv.id, 'cost': null}]), into: d);
+      expect(cleared.items.single.cost, isNull);
+    });
+
+    test('bad costs, currencies and rates are reported and ignored', () {
+      final d = withCosts();
+      final paris = d.items.firstWhere((i) => i.title == 'Paris');
+      final imp = _apply(
+        _plan(
+          [
+            {'ref': paris.id, 'cost': {'currency': 'EUR'}},
+            {'ref': 'a', 'kind': 'activity', 'title': 'A', 'cost': -5},
+            {'ref': 'b', 'kind': 'activity', 'title': 'B', 'cost': {'amount': 10, 'currency': 'Euro'}},
+          ],
+          trip: {'currency': 'Dollar', 'rates': {'USD': 1.1, 'CHF': null, 'XX': 2, 'GBP': 'high', 'JPY': 0}},
+        ),
+        into: d,
+      );
+      final types = imp.warnings.map((w) => (w.type, w.field, w.value)).toList();
+      expect(types, containsAll([
+        (PlanWarningType.unknownCurrency, 'currency', 'Dollar'),
+        (PlanWarningType.unknownCurrency, 'rates', 'XX'),
+        (PlanWarningType.invalidRate, 'GBP', 'high'),
+        (PlanWarningType.invalidRate, 'JPY', '0'),
+        (PlanWarningType.invalidCost, 'cost', '{"currency":"EUR"}'),
+        (PlanWarningType.invalidCost, 'cost', '-5'),
+        (PlanWarningType.unknownCurrency, 'cost.currency', 'Euro'),
+      ]));
+      expect(imp.trip.currency, 'EUR');
+      // Rates merge: USD added, CHF removed by null, the bad ones skipped.
+      expect(imp.trip.rates, {'USD': 1.1});
+      expect(imp.items.where((i) => i.id == paris.id), isEmpty);
+      expect(imp.items.firstWhere((i) => i.title == 'A').cost, isNull);
+      // The amount still counts, in the home currency.
+      expect(imp.items.firstWhere((i) => i.title == 'B').cost, const Cost(amount: 10));
+    });
+
+    test('travellers are clamped to at least one; null resets', () {
+      expect(_apply(_plan(const [], trip: {'title': 'T', 'travellers': 0})).trip.travellers, 1);
+      expect(_apply(_plan(const [], trip: {'title': 'T', 'travellers': 4})).trip.travellers, 4);
+      final d = withCosts();
+      expect(_apply(_plan(const [], trip: {'travellers': null}), into: d).trip.travellers, 1);
+      final bad = _apply(_plan(const [], trip: {'travellers': 2.5}), into: d);
+      expect(bad.trip.travellers, 2);
+      expect(bad.warnings.single.type, PlanWarningType.notAnInteger);
+    });
+
+    test('the guide example carries estimated costs', () {
+      final spec = File('assets/plan_format.md').readAsStringSync();
+      final example = RegExp(r'```json\n([\s\S]*?)```').allMatches(spec).last.group(1)!;
+      final imp = _apply(example);
+      expect([imp.trip.currency, imp.trip.travellers, imp.trip.rates], ['EUR', 2, {'LKR': 330}]);
+      final costs = [for (final i in imp.items) if (i.cost != null) i];
+      expect(costs, hasLength(4));
+      expect(costs.firstWhere((i) => i.mode == TransportMode.plane).cost!.paid, isTrue);
+    });
+  });
 }

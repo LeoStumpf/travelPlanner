@@ -1874,4 +1874,183 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get timelineEmptyAction => 'Ersten Ort anlegen';
+
+  @override
+  String get costSection => 'Kosten';
+
+  @override
+  String get costAmountLabel => 'Betrag';
+
+  @override
+  String get costCurrencyLabel => 'Währung';
+
+  @override
+  String get costCurrencyHintNone => 'Code, z. B. EUR';
+
+  @override
+  String get costTotal => 'Gesamt';
+
+  @override
+  String get costPerPerson => 'Pro Person';
+
+  @override
+  String get costPaid => 'Bezahlt';
+
+  @override
+  String get costOpen => 'Offen';
+
+  @override
+  String get costInvalidAmount => 'Kein gültiger Betrag';
+
+  @override
+  String get costInvalidCurrency => 'Code aus drei Buchstaben wie EUR';
+
+  @override
+  String costTravellersTotal(int count, String total) {
+    return '$count Reisende: $total';
+  }
+
+  @override
+  String costPerPersonOf(String amount) {
+    return '$amount pro Person';
+  }
+
+  @override
+  String costTimesPerPerson(int count, String amount) {
+    return '$count × $amount pro Person';
+  }
+
+  @override
+  String costApprox(String amount) {
+    return '≈ $amount';
+  }
+
+  @override
+  String get costHint =>
+      'Schätzungen reichen – markiere es als bezahlt, sobald es das ist.';
+
+  @override
+  String get tripCurrencyLabel => 'Heimatwährung';
+
+  @override
+  String get tripCurrencyHint =>
+      'Darin zeigt das Budget alle Kosten, z. B. EUR.';
+
+  @override
+  String get travellersLabel => 'Reisende';
+
+  @override
+  String stepMarkedPaid(String title) {
+    return '„$title“ als bezahlt markiert';
+  }
+
+  @override
+  String stepMarkedUnpaid(String title) {
+    return '„$title“ als offen markiert';
+  }
+
+  @override
+  String stepRateChanged(String currency) {
+    return 'Wechselkurs $currency';
+  }
+
+  @override
+  String get budget => 'Budget';
+
+  @override
+  String get budgetEmptyTitle => 'Noch keine Kosten';
+
+  @override
+  String get budgetEmptyBody =>
+      'Trage Kosten im Editor ein – bei Orten, Transporten, Unterkünften oder Aktivitäten – oder lass Claude geschätzte Preise ergänzen.';
+
+  @override
+  String get budgetByLayer => 'Nach Ebene';
+
+  @override
+  String get budgetNotCounted => 'Optionen & Ideen (nicht eingerechnet)';
+
+  @override
+  String budgetMissingRate(String currency, String amount) {
+    return 'Kein Wechselkurs für $currency – $amount nicht eingerechnet';
+  }
+
+  @override
+  String get budgetEnterRate => 'Kurs eingeben';
+
+  @override
+  String get budgetRates => 'Wechselkurse';
+
+  @override
+  String get budgetRatesHint =>
+      'Von dir eingetragen und mit der Reise gespeichert – so funktioniert das Budget auch offline.';
+
+  @override
+  String budgetRateValue(String home, String rate, String currency) {
+    return '1 $home = $rate $currency';
+  }
+
+  @override
+  String get budgetRateMissing => 'Kein Kurs';
+
+  @override
+  String get budgetAddRate => 'Kurs hinzufügen';
+
+  @override
+  String budgetRateDialogTitle(String currency) {
+    return 'Wechselkurs für $currency';
+  }
+
+  @override
+  String budgetRateDialogHint(String currency, String home) {
+    return 'Wie viel $currency bekommt man für 1 $home?';
+  }
+
+  @override
+  String get budgetRemoveRate => 'Kurs entfernen';
+
+  @override
+  String get budgetNoCurrency =>
+      'Lege eine Heimatwährung fest, um Fremdwährungen umzurechnen.';
+
+  @override
+  String budgetCurrencyGuessed(String currency) {
+    return 'Keine Heimatwährung festgelegt – angezeigt wird $currency, die am häufigsten verwendete.';
+  }
+
+  @override
+  String budgetSettingsLine(String currency, int count) {
+    return 'Heimatwährung: $currency · Reisende: $count';
+  }
+
+  @override
+  String get budgetCurrencyNotSet => 'nicht festgelegt';
+
+  @override
+  String get budgetItems => 'Posten';
+
+  @override
+  String budgetPaidOf(String paid, String total) {
+    return '$paid von $total bezahlt';
+  }
+
+  @override
+  String warnInvalidCost(String entry, String value) {
+    return '„$entry“: Kosten $value ohne gültigen Betrag – ignoriert';
+  }
+
+  @override
+  String warnUnknownCurrency(String entry, String field, String value) {
+    return '„$entry“: $field: unbekannte Währung „$value“ (erwartet ein Code wie „EUR“) – ignoriert';
+  }
+
+  @override
+  String warnUnknownTripCurrency(String field, String value) {
+    return 'Reise: $field: unbekannte Währung „$value“ (erwartet ein Code wie „EUR“) – ignoriert';
+  }
+
+  @override
+  String warnInvalidRate(String field, String value) {
+    return 'Reise: Wechselkurs für $field „$value“ ist keine positive Zahl – ignoriert';
+  }
 }

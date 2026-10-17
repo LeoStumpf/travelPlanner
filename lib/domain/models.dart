@@ -28,6 +28,57 @@ T _enumByName<T extends Enum>(List<T> values, Object? name, T fallback) {
   return fallback;
 }
 
+/// Optional price of a plan item. Amounts are in [currency], or in the
+/// trip's home currency ([Trip.currency]) when that is null; see budget.dart.
+class Cost {
+  final double amount;
+
+  /// ISO 4217 code ("EUR", "LKR"); null = the trip's home currency.
+  final String? currency;
+
+  /// The amount is per traveller ([Trip.travellers]) rather than in total.
+  final bool perPerson;
+  final bool paid;
+
+  const Cost({required this.amount, this.currency, this.perPerson = false, this.paid = false});
+
+  Cost copyWith({double? amount, Object? currency = _keep, bool? perPerson, bool? paid}) => Cost(
+        amount: amount ?? this.amount,
+        currency: identical(currency, _keep) ? this.currency : currency as String?,
+        perPerson: perPerson ?? this.perPerson,
+        paid: paid ?? this.paid,
+      );
+
+  Map<String, Object?> toJson() => {
+        'amount': amount,
+        if (currency != null) 'currency': currency,
+        if (perPerson) 'perPerson': true,
+        if (paid) 'paid': true,
+      };
+
+  /// Null for anything that is not a cost object with a numeric amount.
+  static Cost? fromJson(Object? j) {
+    if (j is! Map || j['amount'] is! num) return null;
+    return Cost(
+      amount: (j['amount'] as num).toDouble(),
+      currency: j['currency'] as String?,
+      perPerson: j['perPerson'] == true,
+      paid: j['paid'] == true,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is Cost &&
+      other.amount == amount &&
+      other.currency == currency &&
+      other.perPerson == perPerson &&
+      other.paid == paid;
+
+  @override
+  int get hashCode => Object.hash(amount, currency, perPerson, paid);
+}
+
 class Trip {
   final String id;
   final String title;
@@ -42,6 +93,16 @@ class Trip {
   /// IANA zone ("Europe/Berlin") of items that have none of their own.
   /// Null = times without zone, as before zones existed.
   final String? homeZone;
+
+  /// ISO 4217 home currency the budget is shown in; null = not set yet.
+  final String? currency;
+
+  /// Number of travellers; per-person costs count this many times.
+  final int travellers;
+
+  /// Manual exchange rates: foreign units per one unit of [currency]
+  /// ({"LKR": 330} = 1 EUR buys 330 LKR). Entered by the user, offline.
+  final Map<String, double> rates;
   final DateTime createdAt;
 
   const Trip({
@@ -51,6 +112,9 @@ class Trip {
     this.plannedDays,
     this.color = 0xFF00876A,
     this.homeZone,
+    this.currency,
+    this.travellers = 1,
+    this.rates = const {},
     required this.createdAt,
   });
 
@@ -60,6 +124,9 @@ class Trip {
     Object? plannedDays = _keep,
     int? color,
     Object? homeZone = _keep,
+    Object? currency = _keep,
+    int? travellers,
+    Map<String, double>? rates,
   }) =>
       Trip(
         id: id,
@@ -68,6 +135,9 @@ class Trip {
         plannedDays: identical(plannedDays, _keep) ? this.plannedDays : plannedDays as int?,
         color: color ?? this.color,
         homeZone: identical(homeZone, _keep) ? this.homeZone : homeZone as String?,
+        currency: identical(currency, _keep) ? this.currency : currency as String?,
+        travellers: travellers ?? this.travellers,
+        rates: rates ?? this.rates,
         createdAt: createdAt,
       );
 
@@ -78,6 +148,9 @@ class Trip {
         'plannedDays': plannedDays,
         'color': color,
         if (homeZone != null) 'homeZone': homeZone,
+        if (currency != null) 'currency': currency,
+        if (travellers != 1) 'travellers': travellers,
+        if (rates.isNotEmpty) 'rates': rates,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -88,6 +161,12 @@ class Trip {
         plannedDays: j['plannedDays'] as int?,
         color: j['color'] as int? ?? 0xFF00876A,
         homeZone: j['homeZone'] as String?,
+        currency: j['currency'] as String?,
+        travellers: (j['travellers'] as int?) ?? 1,
+        rates: {
+          for (final e in ((j['rates'] as Map?) ?? const {}).entries)
+            if (e.value is num) '${e.key}': (e.value as num).toDouble(),
+        },
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 }
@@ -141,6 +220,9 @@ class PlanItem {
   /// For transport: arrival zone, overriding the destination stay's.
   final String? endTz;
 
+  /// Optional price (estimated or actual), see budget.dart.
+  final Cost? cost;
+
   /// Position on the canvas; null = auto-placed.
   final double? canvasX;
   final double? canvasY;
@@ -171,6 +253,7 @@ class PlanItem {
     this.bookingRef,
     this.tz,
     this.endTz,
+    this.cost,
     this.canvasX,
     this.canvasY,
     required this.createdAt,
@@ -217,6 +300,7 @@ class PlanItem {
     Object? bookingRef = _keep,
     Object? tz = _keep,
     Object? endTz = _keep,
+    Object? cost = _keep,
     Object? canvasX = _keep,
     Object? canvasY = _keep,
   }) =>
@@ -246,6 +330,7 @@ class PlanItem {
         bookingRef: identical(bookingRef, _keep) ? this.bookingRef : bookingRef as String?,
         tz: identical(tz, _keep) ? this.tz : tz as String?,
         endTz: identical(endTz, _keep) ? this.endTz : endTz as String?,
+        cost: identical(cost, _keep) ? this.cost : cost as Cost?,
         canvasX: identical(canvasX, _keep) ? this.canvasX : canvasX as double?,
         canvasY: identical(canvasY, _keep) ? this.canvasY : canvasY as double?,
         createdAt: createdAt,
@@ -282,6 +367,7 @@ class PlanItem {
         if (bookingRef != null) 'bookingRef': bookingRef,
         if (tz != null) 'tz': tz,
         if (endTz != null) 'endTz': endTz,
+        if (cost != null) 'cost': cost!.toJson(),
         'canvasX': canvasX,
         'canvasY': canvasY,
         'createdAt': createdAt.toIso8601String(),
@@ -312,6 +398,7 @@ class PlanItem {
         bookingRef: j['bookingRef'] as String?,
         tz: j['tz'] as String?,
         endTz: j['endTz'] as String?,
+        cost: Cost.fromJson(j['cost']),
         canvasX: (j['canvasX'] as num?)?.toDouble(),
         canvasY: (j['canvasY'] as num?)?.toDouble(),
         createdAt: DateTime.parse(j['createdAt'] as String),

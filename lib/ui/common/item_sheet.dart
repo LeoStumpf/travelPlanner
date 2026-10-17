@@ -4,6 +4,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/analysis.dart';
+import '../../domain/budget.dart';
 import '../../domain/map_layout.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
@@ -62,6 +63,33 @@ Future<void> toggleBooked(AppLocalizations l, WidgetRef ref, TripData data, Plan
   final booked = item.status != ItemStatus.booked;
   final label = booked ? l.stepMarkedBooked(item.title) : l.stepUnbooked(item.title);
   return ref.read(planActionsProvider).saveItems(data, setBooked(data.items, item.id, booked), label);
+}
+
+/// Marks [item]'s cost paid or open as one undoable step.
+Future<void> togglePaid(AppLocalizations l, WidgetRef ref, TripData data, PlanItem item) {
+  final paid = !(item.cost?.paid ?? false);
+  final label = paid ? l.stepMarkedPaid(item.title) : l.stepMarkedUnpaid(item.title);
+  return ref.read(planActionsProvider).saveItems(data, [setPaid(item, paid)], label);
+}
+
+/// "120,00 € ≈ 98,00 £" plus "2 × 60,00 € per person · Paid" for [item]'s
+/// cost, or null without one.
+(String, String)? costSummary(AppLocalizations l, TripData data, PlanItem item) {
+  final c = item.cost;
+  if (c == null) return null;
+  final home = budgetCurrency(data.trip, data.items);
+  final cur = c.currency ?? home;
+  final total = costTotal(c, data.trip.travellers);
+  final converted = convertAmount(total, cur, home, data.trip.rates);
+  final title = [
+    l.money(total, cur),
+    if (cur != home && converted != null) l.costApprox(l.money(converted, home)),
+  ].join('  ');
+  final subtitle = [
+    if (c.perPerson) l.costTimesPerPerson(data.trip.travellers, l.money(c.amount, cur)),
+    c.paid ? l.costPaid : l.costOpen,
+  ].join(' · ');
+  return (title, subtitle);
 }
 
 /// Fixes or releases [item] as one undoable step.
@@ -184,6 +212,14 @@ class _ItemSheet extends ConsumerWidget {
           ),
         if (item.placeName != null)
           ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.place_outlined), title: Text(item.placeName!)),
+        if (costSummary(l, data, item) case (final title, final subtitle))
+          ListTile(
+            key: const ValueKey('item-cost'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.payments_outlined),
+            title: Text(title),
+            subtitle: Text(subtitle),
+          ),
         for (final c in conflicts) ConflictTile(conflict: c, data: data),
         const SizedBox(height: 4),
         _QuickActions(data: data, item: item),
@@ -368,6 +404,15 @@ class _QuickActions extends ConsumerWidget {
         selected: item.fixed,
         onSelected: (_) => toggleFixed(l, ref, data, item),
       ),
+      if (item.cost != null)
+        FilterChip(
+          key: const ValueKey('quick-paid'),
+          avatar: const Icon(Icons.payments_outlined, size: 16),
+          showCheckmark: false,
+          label: Text(l.costPaid),
+          selected: item.cost!.paid,
+          onSelected: (_) => togglePaid(l, ref, data, item),
+        ),
       if (!item.isScheduled)
         ActionChip(
           key: const ValueKey('quick-schedule'),

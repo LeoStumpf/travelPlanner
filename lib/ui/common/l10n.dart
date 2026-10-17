@@ -107,6 +107,15 @@ extension DomainL10n on AppLocalizations {
   /// A numeric date with time, e.g. "17.10.2026 14:03" for backups.
   String dateTime(DateTime d) => DateFormat.yMd(localeName).add_Hm().format(d);
 
+  /// [amount] in [currency] for this locale ("1.234,50 €", "LKR 12,000");
+  /// without a currency just the number with two decimals.
+  String money(double amount, String? currency) => currency == null
+      ? NumberFormat.decimalPatternDigits(locale: localeName, decimalDigits: 2).format(amount)
+      : NumberFormat.simpleCurrency(locale: localeName, name: currency).format(amount);
+
+  /// An exchange rate with as many decimals as it needs (up to 6).
+  String rate(double r) => (NumberFormat.decimalPattern(localeName)..maximumFractionDigits = 6).format(r);
+
   String days(int n) => daysCount(n);
   String nights(int n) => nightsCount(n);
 
@@ -165,6 +174,9 @@ extension DomainL10n on AppLocalizations {
       PlanWarningType.dateNeedsStartDate => warnDateNeedsStartDate(e, f),
       PlanWarningType.invalidMoment => warnInvalidMoment(e, f, v, '{"day": 1, "time": "14:00"}'),
       PlanWarningType.unknownTimeZone => w.entry == null ? warnUnknownTripTimeZone(v) : warnUnknownTimeZone(e, f, v),
+      PlanWarningType.invalidCost => warnInvalidCost(e, v),
+      PlanWarningType.unknownCurrency => w.entry == null ? warnUnknownTripCurrency(f, v) : warnUnknownCurrency(e, f, v),
+      PlanWarningType.invalidRate => warnInvalidRate(f, v),
     };
   }
 

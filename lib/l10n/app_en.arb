@@ -1527,5 +1527,216 @@
   "details": "Details",
   "timelineEmptyTitle": "No places yet",
   "timelineEmptyBody": "Start with the first place of your trip – lodging, transport and activities build on it.",
-  "timelineEmptyAction": "Add first place"
+  "timelineEmptyAction": "Add first place",
+  "costSection": "Cost",
+  "costAmountLabel": "Amount",
+  "costCurrencyLabel": "Currency",
+  "costCurrencyHintNone": "Code, e.g. EUR",
+  "costTotal": "Total",
+  "costPerPerson": "Per person",
+  "costPaid": "Paid",
+  "costOpen": "Open",
+  "costInvalidAmount": "Not a valid amount",
+  "costInvalidCurrency": "Three-letter code like EUR",
+  "costTravellersTotal": "{count, plural, =1{1 traveller} other{{count} travellers}}: {total}",
+  "@costTravellersTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "costPerPersonOf": "{amount} per person",
+  "@costPerPersonOf": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "costTimesPerPerson": "{count} × {amount} per person",
+  "@costTimesPerPerson": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "costApprox": "≈ {amount}",
+  "@costApprox": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "costHint": "Estimates are fine – mark it paid once it is.",
+  "tripCurrencyLabel": "Home currency",
+  "tripCurrencyHint": "The budget shows all costs in this currency, e.g. EUR.",
+  "travellersLabel": "Travellers",
+  "stepMarkedPaid": "“{title}” marked as paid",
+  "@stepMarkedPaid": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepMarkedUnpaid": "“{title}” marked as unpaid",
+  "@stepMarkedUnpaid": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "stepRateChanged": "Exchange rate {currency}",
+  "@stepRateChanged": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "budget": "Budget",
+  "budgetEmptyTitle": "No costs yet",
+  "budgetEmptyBody": "Add costs to places, transports, lodging or activities in the editor – or let Claude fill in estimated prices.",
+  "budgetByLayer": "By layer",
+  "budgetNotCounted": "Options & ideas (not counted)",
+  "budgetMissingRate": "No exchange rate for {currency} – {amount} not included",
+  "@budgetMissingRate": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetEnterRate": "Enter rate",
+  "budgetRates": "Exchange rates",
+  "budgetRatesHint": "Entered by you and stored with the trip, so the budget also works offline.",
+  "budgetRateValue": "1 {home} = {rate} {currency}",
+  "@budgetRateValue": {
+    "placeholders": {
+      "home": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetRateMissing": "No rate",
+  "budgetAddRate": "Add rate",
+  "budgetRateDialogTitle": "Exchange rate for {currency}",
+  "@budgetRateDialogTitle": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetRateDialogHint": "How many {currency} do you get for 1 {home}?",
+  "@budgetRateDialogHint": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "home": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetRemoveRate": "Remove rate",
+  "budgetNoCurrency": "Set a home currency to convert foreign amounts.",
+  "budgetCurrencyGuessed": "No home currency set – showing {currency}, the one used most.",
+  "@budgetCurrencyGuessed": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetSettingsLine": "Home currency: {currency} · Travellers: {count}",
+  "@budgetSettingsLine": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "budgetCurrencyNotSet": "not set",
+  "budgetItems": "Items",
+  "budgetPaidOf": "{paid} of {total} paid",
+  "@budgetPaidOf": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "warnInvalidCost": "“{entry}”: cost {value} has no valid amount – ignored",
+  "@warnInvalidCost": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownCurrency": "“{entry}”: {field}: unknown currency “{value}” (expected a code like “EUR”) – ignored",
+  "@warnUnknownCurrency": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnUnknownTripCurrency": "Trip: {field}: unknown currency “{value}” (expected a code like “EUR”) – ignored",
+  "@warnUnknownTripCurrency": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "warnInvalidRate": "Trip: exchange rate for {field} “{value}” is not a positive number – ignored",
+  "@warnInvalidRate": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

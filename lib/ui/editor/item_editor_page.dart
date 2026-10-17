@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/analysis.dart';
+import '../../domain/budget.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
@@ -138,6 +139,13 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   late final _number = TextEditingController(text: _i.transportNumber);
   late final _seat = TextEditingController(text: _i.seat);
   late final _bookingRef = TextEditingController(text: _i.bookingRef);
+  // Cost; the amount stays text until saved so typing "12," is fine.
+  late final _costAmount = TextEditingController(text: _amountText(_i.cost?.amount));
+  late final _costCurrency = TextEditingController(text: _i.cost?.currency ?? '');
+  late bool _costPerPerson = _i.cost?.perPerson ?? false;
+  late bool _costPaid = _i.cost?.paid ?? false;
+  bool _amountError = false;
+  bool _currencyError = false;
   late bool _scheduled = _i.isScheduled;
   late int _start = _i.start ?? at(0, defaultStayArrival);
   late int _end = _i.end ?? at(2, defaultStayDeparture);
@@ -160,6 +168,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
         'title': _title.text.trim(),
         'notes': _notes.text,
         'details': [for (final c in _detailControllers) c.text.trim()],
+        'cost': [_costAmount.text.trim(), _costCurrency.text.trim().toUpperCase(), _costPerPerson, _costPaid],
         'scheduled': _scheduled,
         if (_scheduled) 'start': _start,
         if (_scheduled) 'end': _end,
@@ -210,7 +219,11 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     super.dispose();
   }
 
-  List<TextEditingController> get _detailControllers => [_departure, _arrival, _number, _seat, _bookingRef];
+  List<TextEditingController> get _detailControllers =>
+      [_departure, _arrival, _number, _seat, _bookingRef, _costAmount, _costCurrency];
+
+  static String _amountText(double? a) =>
+      a == null ? '' : (a == a.roundToDouble() ? a.toInt().toString() : a.toStringAsFixed(2));
 
   void _update(PlanItem Function(PlanItem) f) => setState(() => _i = f(_i));
 
@@ -324,6 +337,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             ..._zoneFields(data),
             if (_i.kind == ItemKind.transport) ..._detailFields(),
             if (_i.kind != ItemKind.transport) _placeTile(),
+            ..._costFields(data),
             const Divider(),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -487,6 +501,101 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     ];
   }
 
+  /// Optional cost: amount, currency (default: the trip's home currency),
+  /// total or per person, paid.
+  List<Widget> _costFields(TripData data) {
+    final l = context.l10n;
+    final home = budgetCurrency(data.trip, data.items);
+    final amount = parseAmount(_costAmount.text);
+    final currency = normalizeCurrency(_costCurrency.text) ?? home;
+    final travellers = data.trip.travellers;
+    return [
+      const Divider(),
+      Text(l.costSection, style: Theme.of(context).textTheme.titleSmall),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          flex: 3,
+          child: TextField(
+            key: const ValueKey('field-cost-amount'),
+            controller: _costAmount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: l.costAmountLabel,
+              prefixIcon: const Icon(Icons.payments_outlined),
+              errorText: _amountError ? l.costInvalidAmount : null,
+            ),
+            onChanged: (_) => setState(() => _amountError = false),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: TextField(
+            key: const ValueKey('field-cost-currency'),
+            controller: _costCurrency,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 3,
+            decoration: InputDecoration(
+              labelText: l.costCurrencyLabel,
+              hintText: home ?? l.costCurrencyHintNone,
+              counterText: '',
+              errorText: _currencyError ? l.costInvalidCurrency : null,
+              errorMaxLines: 2,
+            ),
+            onChanged: (_) => setState(() => _currencyError = false),
+          ),
+        ),
+      ]),
+      const SizedBox(height: 8),
+      SegmentedButton<bool>(
+        key: const ValueKey('cost-per'),
+        showSelectedIcon: false,
+        segments: [
+          ButtonSegment(value: false, label: Text(l.costTotal)),
+          ButtonSegment(value: true, label: Text(l.costPerPerson)),
+        ],
+        selected: {_costPerPerson},
+        onSelectionChanged: (v) => setState(() => _costPerPerson = v.first),
+      ),
+      if (_costPerPerson && amount != null)
+        Padding(
+          key: const ValueKey('cost-travellers-total'),
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(l.costTravellersTotal(travellers, l.money(amount * travellers, currency)),
+              style: Theme.of(context).textTheme.bodySmall),
+        ),
+      SwitchListTile(
+        key: const ValueKey('cost-paid'),
+        contentPadding: EdgeInsets.zero,
+        secondary: Icon(_costPaid ? Icons.check_circle : Icons.radio_button_unchecked),
+        title: Text(l.costPaid),
+        subtitle: Text(l.costHint),
+        value: _costPaid,
+        onChanged: (v) => setState(() => _costPaid = v),
+      ),
+    ];
+  }
+
+  /// The edited cost: null without an amount; false when the input is
+  /// invalid (the fields then show why).
+  Object? _editedCost() {
+    final amountText = _costAmount.text.trim();
+    final currencyText = _costCurrency.text.trim();
+    final amount = parseAmount(amountText);
+    final currency = normalizeCurrency(currencyText);
+    final badAmount = amountText.isNotEmpty && amount == null;
+    final badCurrency = currencyText.isNotEmpty && currency == null;
+    if (badAmount || badCurrency) {
+      setState(() {
+        _amountError = badAmount;
+        _currencyError = badCurrency;
+      });
+      return false;
+    }
+    if (amount == null) return null;
+    return Cost(amount: amount, currency: currency, perPerson: _costPerPerson, paid: _costPaid);
+  }
+
   Widget _placeTile() => ListTile(
         key: const ValueKey('place-tile'),
         contentPadding: EdgeInsets.zero,
@@ -631,15 +740,17 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
 
   Future<void> _save(TripData data) async {
     if (_leaving || _busy) return;
+    final cost = _editedCost();
+    if (cost == false) return;
     _busy = true;
     try {
-      await _store(data);
+      await _store(data, cost as Cost?);
     } finally {
       _busy = false;
     }
   }
 
-  Future<void> _store(TripData data) async {
+  Future<void> _store(TripData data, Cost? cost) async {
     final mode = ref.read(tripUiProvider).shiftMode;
     final actions = ref.read(planActionsProvider);
     final l = context.l10n;
@@ -657,6 +768,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       transportNumber: opt(_number),
       seat: opt(_seat),
       bookingRef: opt(_bookingRef),
+      cost: cost,
     );
     if (item.kind != ItemKind.transport) {
       item = item.copyWith(

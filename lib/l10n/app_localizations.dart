@@ -2922,6 +2922,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add first place'**
   String get timelineEmptyAction;
+
+  /// No description provided for @costSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get costSection;
+
+  /// No description provided for @costAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get costAmountLabel;
+
+  /// No description provided for @costCurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get costCurrencyLabel;
+
+  /// No description provided for @costCurrencyHintNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Code, e.g. EUR'**
+  String get costCurrencyHintNone;
+
+  /// No description provided for @costTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get costTotal;
+
+  /// No description provided for @costPerPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Per person'**
+  String get costPerPerson;
+
+  /// No description provided for @costPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get costPaid;
+
+  /// No description provided for @costOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get costOpen;
+
+  /// No description provided for @costInvalidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a valid amount'**
+  String get costInvalidAmount;
+
+  /// No description provided for @costInvalidCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Three-letter code like EUR'**
+  String get costInvalidCurrency;
+
+  /// No description provided for @costTravellersTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 traveller} other{{count} travellers}}: {total}'**
+  String costTravellersTotal(int count, String total);
+
+  /// No description provided for @costPerPersonOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} per person'**
+  String costPerPersonOf(String amount);
+
+  /// No description provided for @costTimesPerPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} × {amount} per person'**
+  String costTimesPerPerson(int count, String amount);
+
+  /// No description provided for @costApprox.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount}'**
+  String costApprox(String amount);
+
+  /// No description provided for @costHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimates are fine – mark it paid once it is.'**
+  String get costHint;
+
+  /// No description provided for @tripCurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Home currency'**
+  String get tripCurrencyLabel;
+
+  /// No description provided for @tripCurrencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The budget shows all costs in this currency, e.g. EUR.'**
+  String get tripCurrencyHint;
+
+  /// No description provided for @travellersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travellers'**
+  String get travellersLabel;
+
+  /// No description provided for @stepMarkedPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” marked as paid'**
+  String stepMarkedPaid(String title);
+
+  /// No description provided for @stepMarkedUnpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” marked as unpaid'**
+  String stepMarkedUnpaid(String title);
+
+  /// No description provided for @stepRateChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate {currency}'**
+  String stepRateChanged(String currency);
+
+  /// No description provided for @budget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get budget;
+
+  /// No description provided for @budgetEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No costs yet'**
+  String get budgetEmptyTitle;
+
+  /// No description provided for @budgetEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add costs to places, transports, lodging or activities in the editor – or let Claude fill in estimated prices.'**
+  String get budgetEmptyBody;
+
+  /// No description provided for @budgetByLayer.
+  ///
+  /// In en, this message translates to:
+  /// **'By layer'**
+  String get budgetByLayer;
+
+  /// No description provided for @budgetNotCounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Options & ideas (not counted)'**
+  String get budgetNotCounted;
+
+  /// No description provided for @budgetMissingRate.
+  ///
+  /// In en, this message translates to:
+  /// **'No exchange rate for {currency} – {amount} not included'**
+  String budgetMissingRate(String currency, String amount);
+
+  /// No description provided for @budgetEnterRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter rate'**
+  String get budgetEnterRate;
+
+  /// No description provided for @budgetRates.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rates'**
+  String get budgetRates;
+
+  /// No description provided for @budgetRatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Entered by you and stored with the trip, so the budget also works offline.'**
+  String get budgetRatesHint;
+
+  /// No description provided for @budgetRateValue.
+  ///
+  /// In en, this message translates to:
+  /// **'1 {home} = {rate} {currency}'**
+  String budgetRateValue(String home, String rate, String currency);
+
+  /// No description provided for @budgetRateMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No rate'**
+  String get budgetRateMissing;
+
+  /// No description provided for @budgetAddRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add rate'**
+  String get budgetAddRate;
+
+  /// No description provided for @budgetRateDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate for {currency}'**
+  String budgetRateDialogTitle(String currency);
+
+  /// No description provided for @budgetRateDialogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How many {currency} do you get for 1 {home}?'**
+  String budgetRateDialogHint(String currency, String home);
+
+  /// No description provided for @budgetRemoveRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove rate'**
+  String get budgetRemoveRate;
+
+  /// No description provided for @budgetNoCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a home currency to convert foreign amounts.'**
+  String get budgetNoCurrency;
+
+  /// No description provided for @budgetCurrencyGuessed.
+  ///
+  /// In en, this message translates to:
+  /// **'No home currency set – showing {currency}, the one used most.'**
+  String budgetCurrencyGuessed(String currency);
+
+  /// No description provided for @budgetSettingsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Home currency: {currency} · Travellers: {count}'**
+  String budgetSettingsLine(String currency, int count);
+
+  /// No description provided for @budgetCurrencyNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'not set'**
+  String get budgetCurrencyNotSet;
+
+  /// No description provided for @budgetItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get budgetItems;
+
+  /// No description provided for @budgetPaidOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{paid} of {total} paid'**
+  String budgetPaidOf(String paid, String total);
+
+  /// No description provided for @warnInvalidCost.
+  ///
+  /// In en, this message translates to:
+  /// **'“{entry}”: cost {value} has no valid amount – ignored'**
+  String warnInvalidCost(String entry, String value);
+
+  /// No description provided for @warnUnknownCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'“{entry}”: {field}: unknown currency “{value}” (expected a code like “EUR”) – ignored'**
+  String warnUnknownCurrency(String entry, String field, String value);
+
+  /// No description provided for @warnUnknownTripCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip: {field}: unknown currency “{value}” (expected a code like “EUR”) – ignored'**
+  String warnUnknownTripCurrency(String field, String value);
+
+  /// No description provided for @warnInvalidRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip: exchange rate for {field} “{value}” is not a positive number – ignored'**
+  String warnInvalidRate(String field, String value);
 }
 
 class _AppLocalizationsDelegate

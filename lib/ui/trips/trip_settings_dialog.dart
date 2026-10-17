@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/budget.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
 import '../common/zone_picker.dart';
 
-/// Create ([trip] == null) or edit a trip's title, start date, length and
-/// home time zone. [usedZones] are offered first in the zone picker.
+/// Create ([trip] == null) or edit a trip's title, start date, length, home
+/// time zone, home currency and number of travellers. [usedZones] are offered first in the zone picker.
 Future<Trip?> showTripSettingsDialog(BuildContext context, Trip? trip, {List<String> usedZones = const []}) =>
     showDialog<Trip>(context: context, builder: (_) => _TripSettingsDialog(trip: trip, usedZones: usedZones));
 
@@ -26,6 +27,18 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
   late DateTime? _start = widget.trip?.startDate;
   late int _color = widget.trip?.color ?? tripColors.first;
   late String? _homeZone = widget.trip?.homeZone;
+  late final _currency = TextEditingController(text: widget.trip?.currency ?? '');
+  late final _travellers = TextEditingController(text: '${widget.trip?.travellers ?? 1}');
+  bool _currencyError = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _days.dispose();
+    _currency.dispose();
+    _travellers.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +101,38 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
               suggestions: widget.usedZones,
               onChanged: (z) => setState(() => _homeZone = z),
             ),
+            const SizedBox(height: 4),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('trip-currency'),
+                  controller: _currency,
+                  textCapitalization: TextCapitalization.characters,
+                  maxLength: 3,
+                  decoration: InputDecoration(
+                    labelText: l.tripCurrencyLabel,
+                    hintText: 'EUR',
+                    counterText: '',
+                    errorText: _currencyError ? l.costInvalidCurrency : null,
+                    errorMaxLines: 2,
+                  ),
+                  onChanged: (_) {
+                    if (_currencyError) setState(() => _currencyError = false);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 96,
+                child: TextField(
+                  key: const ValueKey('trip-travellers'),
+                  controller: _travellers,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: l.travellersLabel),
+                ),
+              ),
+            ]),
+            Text(l.tripCurrencyHint, style: const TextStyle(fontSize: 12)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -112,6 +157,13 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
           onPressed: () {
             final title = _title.text.trim().isEmpty ? l.newTrip : _title.text.trim();
             final days = int.tryParse(_days.text.trim());
+            final currencyText = _currency.text.trim();
+            final currency = normalizeCurrency(currencyText);
+            if (currencyText.isNotEmpty && currency == null) {
+              setState(() => _currencyError = true);
+              return;
+            }
+            final travellers = (int.tryParse(_travellers.text.trim()) ?? 1).clamp(1, 99);
             final t = widget.trip;
             Navigator.pop(
               context,
@@ -123,9 +175,19 @@ class _TripSettingsDialogState extends State<_TripSettingsDialog> {
                       plannedDays: days,
                       color: _color,
                       homeZone: _homeZone,
+                      currency: currency,
+                      travellers: travellers,
                       createdAt: DateTime.now(),
                     )
-                  : t.copyWith(title: title, startDate: _start, plannedDays: days, color: _color, homeZone: _homeZone),
+                  : t.copyWith(
+                      title: title,
+                      startDate: _start,
+                      plannedDays: days,
+                      color: _color,
+                      homeZone: _homeZone,
+                      currency: currency,
+                      travellers: travellers,
+                    ),
             );
           },
           child: Text(l.save),

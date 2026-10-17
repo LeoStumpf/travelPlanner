@@ -6,6 +6,7 @@ import '../../domain/models.dart';
 import '../../domain/zones.dart';
 import '../../state/providers.dart';
 import '../agenda/agenda_view.dart';
+import '../budget/budget_page.dart';
 import '../canvas/canvas_view.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
@@ -64,12 +65,15 @@ class _TripPageState extends ConsumerState<TripPage> {
                     }
                   } else if (v == 'export') {
                     if (context.mounted) await exportTrip(context, ref, data.trip);
+                  } else if (v == 'budget') {
+                    if (context.mounted) await openBudget(context, data.trip.id);
                   } else if (v == 'claude') {
                     if (context.mounted) await showPlanExchangeSheet(context, ref, data);
                   }
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'claude', child: Text(l.planWithClaude)),
+                  PopupMenuItem(value: 'budget', child: Text(l.budget)),
                   PopupMenuItem(value: 'settings', child: Text(l.editTrip)),
                   PopupMenuItem(value: 'export', child: Text(l.exportBackup)),
                 ],

@@ -9,6 +9,7 @@
 
 import 'dart:convert';
 
+import 'budget.dart';
 import 'models.dart';
 import 'time.dart';
 import 'zones.dart';
@@ -111,6 +112,16 @@ enum PlanWarningType {
 
   /// A time zone field (field) names no known IANA zone (value); ignored.
   unknownTimeZone,
+
+  /// A `cost` (value, as JSON) has no usable amount; ignored.
+  invalidCost,
+
+  /// A currency field (field) is not a three-letter code (value); ignored.
+  /// [PlanWarning.entry] is null for the trip's currency or rates.
+  unknownCurrency,
+
+  /// An exchange rate (field = currency) is not a positive number (value).
+  invalidRate,
 }
 
 /// A problem with one part of a plan that did not stop the import.
@@ -196,6 +207,9 @@ class PlanExchange {
         if (d.trip.startDate != null) 'startDate': _date(d.trip.startDate!),
         if (d.trip.plannedDays != null) 'days': d.trip.plannedDays,
         if (d.trip.homeZone != null) 'tz': d.trip.homeZone,
+        if (d.trip.currency != null) 'currency': d.trip.currency,
+        if (d.trip.travellers != 1) 'travellers': d.trip.travellers,
+        if (d.trip.rates.isNotEmpty) 'rates': d.trip.rates,
       },
       'items': [for (final i in items) _exportItem(i)],
       'notes': [
@@ -236,6 +250,7 @@ class PlanExchange {
         if (i.bookingRef != null) 'bookingRef': i.bookingRef,
         if (i.tz != null && _zoned(i.kind)) 'tz': i.tz,
         if (i.endTz != null && i.kind == ItemKind.transport) 'endTz': i.endTz,
+        if (i.cost != null) 'cost': i.cost!.toJson(),
         if (i.notes.isNotEmpty) 'notes': i.notes,
         if (i.links.isNotEmpty) 'links': i.links,
       };
@@ -336,6 +351,9 @@ class PlanExchange {
     final startDate = t.containsKey('startDate') ? _parseDate(t['startDate'], warnings) : null;
     final days = t.containsKey('days') ? _parseInt(t['days'], 'days', warnings) : null;
     final homeZone = t.containsKey('tz') ? _parseZone(t['tz'], 'tz', null, warnings) : null;
+    final currency = t.containsKey('currency') ? _parseCurrency(t['currency'], 'currency', null, warnings) : null;
+    final travellers = t.containsKey('travellers') ? _parseInt(t['travellers'], 'travellers', warnings) : null;
+    final travellerCount = travellers == null ? null : (travellers.value ?? 1).clamp(1, 99);
     if (into == null) {
       final title = (t['title'] as String?)?.trim();
       trip = Trip(
@@ -344,6 +362,9 @@ class PlanExchange {
         startDate: startDate?.value,
         plannedDays: days?.value,
         homeZone: homeZone?.value,
+        currency: currency?.value,
+        travellers: travellerCount ?? 1,
+        rates: _applyRates(const {}, t['rates'], warnings),
         createdAt: now,
       );
     } else {
@@ -353,6 +374,9 @@ class PlanExchange {
       if (startDate != null) tr = tr.copyWith(startDate: startDate.value);
       if (days != null) tr = tr.copyWith(plannedDays: days.value);
       if (homeZone != null) tr = tr.copyWith(homeZone: homeZone.value);
+      if (currency != null) tr = tr.copyWith(currency: currency.value);
+      if (travellerCount != null) tr = tr.copyWith(travellers: travellerCount);
+      if (t.containsKey('rates')) tr = tr.copyWith(rates: _applyRates(tr.rates, t['rates'], warnings));
       tripChanged = jsonEncode(tr.toJson()) != jsonEncode(into.trip.toJson());
       trip = tr;
     }
@@ -491,6 +515,10 @@ class PlanExchange {
       }
       if (item.kind != ItemKind.stay && item.kind != ItemKind.transport) item = item.copyWith(tz: null);
       if (item.kind != ItemKind.transport) item = item.copyWith(endTz: null);
+      if (has('cost')) {
+        final c = _parseCost(e['cost'], item.cost, label(e), warnings);
+        if (c != null) item = item.copyWith(cost: c.value);
+      }
       if (has('stay')) item = item.copyWith(parentId: resolveItem(e['stay'], 'stay', e));
       if (has('from')) item = item.copyWith(fromId: resolveItem(e['from'], 'from', e));
       if (has('to')) item = item.copyWith(toId: resolveItem(e['to'], 'to', e));
@@ -669,6 +697,59 @@ class PlanExchange {
   static String? _text(Object? v) {
     final t = _str(v)?.trim();
     return t == null || t.isEmpty ? null : t;
+  }
+
+  /// A currency field: a code (or symbol, see [normalizeCurrency]), or null
+  /// / blank to clear it.
+  static ({String? value})? _parseCurrency(Object? v, String field, String? entry, List<PlanWarning> warnings) {
+    final t = _text(v);
+    if (t == null) return (value: null);
+    final c = normalizeCurrency(t);
+    if (c != null) return (value: c);
+    warnings.add(PlanWarning(PlanWarningType.unknownCurrency, entry: entry, field: field, value: t));
+    return null;
+  }
+
+  /// `cost`: null clears it, a number is a total in the home currency, an
+  /// object sets the fields it names on top of [old].
+  static ({Cost? value})? _parseCost(Object? v, Cost? old, String entry, List<PlanWarning> warnings) {
+    if (v == null) return (value: null);
+    if (v is num && v >= 0) return (value: Cost(amount: v.toDouble()));
+    if (v is Map) {
+      final amount = v['amount'];
+      if (amount is num && amount >= 0 || (!v.containsKey('amount') && old != null)) {
+        var c = old ?? const Cost(amount: 0);
+        if (amount is num) c = c.copyWith(amount: amount.toDouble());
+        if (v.containsKey('currency')) {
+          final cur = _parseCurrency(v['currency'], 'cost.currency', entry, warnings);
+          if (cur != null) c = c.copyWith(currency: cur.value);
+        }
+        if (v.containsKey('perPerson')) c = c.copyWith(perPerson: v['perPerson'] == true);
+        if (v.containsKey('paid')) c = c.copyWith(paid: v['paid'] == true);
+        return (value: c);
+      }
+    }
+    warnings.add(PlanWarning(PlanWarningType.invalidCost, entry: entry, field: 'cost', value: jsonEncode(v)));
+    return null;
+  }
+
+  /// `trip.rates` merged into [old]: each code sets its rate, null removes it.
+  static Map<String, double> _applyRates(Map<String, double> old, Object? v, List<PlanWarning> warnings) {
+    if (v is! Map) return old;
+    final out = {...old};
+    for (final e in v.entries) {
+      final code = normalizeCurrency('${e.key}');
+      if (code == null) {
+        warnings.add(PlanWarning(PlanWarningType.unknownCurrency, field: 'rates', value: '${e.key}'));
+      } else if (e.value == null) {
+        out.remove(code);
+      } else if (e.value is num && (e.value as num) > 0) {
+        out[code] = (e.value as num).toDouble();
+      } else {
+        warnings.add(PlanWarning(PlanWarningType.invalidRate, field: code, value: '${e.value}'));
+      }
+    }
+    return out;
   }
 
   static ({int? value})? _parseInt(Object? v, String field, List<PlanWarning> warnings) {
