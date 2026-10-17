@@ -4,6 +4,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/analysis.dart';
+import '../../domain/map_layout.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
@@ -14,6 +15,7 @@ import '../editor/item_editor_page.dart';
 import 'conflict_tile.dart';
 import 'dialogs.dart';
 import 'l10n.dart';
+import 'navigation.dart';
 import 'style.dart';
 import 'transport_details.dart';
 
@@ -201,6 +203,13 @@ class _ItemSheet extends ConsumerWidget {
             OutlinedButton.icon(onPressed: () => goto(TripView.map), icon: const Icon(Icons.map), label: Text(l.viewMap)),
           if (view != TripView.canvas)
             OutlinedButton.icon(onPressed: () => goto(TripView.canvas), icon: const Icon(Icons.dashboard), label: Text(l.viewCanvas)),
+          if (navigationTarget(data, item) != null)
+            OutlinedButton.icon(
+              key: const ValueKey('item-navigation'),
+              onPressed: () => openNavigation(context, ref, data, item),
+              icon: const Icon(Icons.directions),
+              label: Text(l.navigation),
+            ),
         ]),
         if (item.kind == ItemKind.accommodation &&
             item.status != ItemStatus.booked &&

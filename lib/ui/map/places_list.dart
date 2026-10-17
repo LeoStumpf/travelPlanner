@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/analysis.dart';
 import '../../domain/map_offline.dart';
@@ -8,6 +7,7 @@ import '../../domain/models.dart';
 import '../../domain/zones.dart';
 import '../common/item_sheet.dart';
 import '../common/l10n.dart';
+import '../common/navigation.dart';
 import '../common/style.dart';
 
 /// The trip's places as a list, for when the map can't be shown: the stays
@@ -80,10 +80,7 @@ class PlacesList extends ConsumerWidget {
                   : IconButton(
                       tooltip: l.mapOpenInMapsApp,
                       icon: const Icon(Icons.directions_outlined),
-                      onPressed: () => launchUrl(
-                        Uri.parse('geo:${pos.$1},${pos.$2}?q=${pos.$1},${pos.$2}(${Uri.encodeComponent(i.title)})'),
-                        mode: LaunchMode.externalApplication,
-                      ),
+                      onPressed: () => openNavigation(context, ref, data, i),
                     ),
               onTap: () => showItemSheet(context, ref, data.trip.id, i.id),
             );

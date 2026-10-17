@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Map tiles, place search and link previews. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- "My location" on the map, only while it is showing. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Android cloud backup covers the database and attachments, see
          res/xml/backup_rules.xml and data_extraction_rules.xml. -->
     <application
@@ -71,6 +74,11 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/pdf" />
+        </intent>
+        <!-- "Navigation": handing a place to a maps app. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
         </intent>
     </queries>
 </manifest>

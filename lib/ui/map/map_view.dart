@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../../data/location.dart';
 import '../../data/offline_maps.dart';
 import '../../domain/analysis.dart';
+import '../../domain/map_layout.dart';
 import '../../domain/map_offline.dart';
 import '../../domain/models.dart';
 import '../../domain/zones.dart';
@@ -28,6 +31,9 @@ final nativeMapProvider = Provider<bool>((ref) => true);
 /// How long the style may take before the map counts as unavailable. The
 /// plugin reports no load errors, so silence is the only signal.
 const mapStyleTimeout = Duration(seconds: 12);
+
+/// How far from a marker a tap still selects it, in logical pixels.
+const markerHitRadius = 26.0;
 
 class TripMapView extends ConsumerStatefulWidget {
   final TripData data;
@@ -54,6 +60,18 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
   Timer? _styleTimer;
   late final AppLifecycleListener _lifecycle;
 
+  // Where each marker was drawn (spread apart when sharing a spot) and at
+  // which whole zoom the spreading was computed.
+  Map<String, LatLng> _drawn = const {};
+  int _spreadZoom = -1;
+
+  // "My location": the last fix, whether a request is running, updates
+  // while the map is showing, and the blue dot.
+  LatLng? _me;
+  bool _locating = false;
+  StreamSubscription<(double, double)>? _meUpdates;
+  Circle? _meCircle;
+
   TripData get data => widget.data;
 
   @override
@@ -69,6 +87,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
   @override
   void dispose() {
     _styleTimer?.cancel();
+    _meUpdates?.cancel();
     _lifecycle.dispose();
     super.dispose();
   }
@@ -97,6 +116,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
       _styleLoaded = false;
       _styleTimedOut = false;
       _fitted = false;
+      _meCircle = null;
       _online = null;
     });
     _startStyleTimer();
@@ -110,6 +130,12 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
     if (!old.active && widget.active) {
       _focusSelection();
       _probe();
+      if (_me != null) _watchMe();
+    }
+    // No position updates while another view shows.
+    if (old.active && !widget.active) {
+      _meUpdates?.cancel();
+      _meUpdates = null;
     }
   }
 
@@ -133,8 +159,16 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
     await map.clearLines();
     await map.clearCircles();
     await map.clearSymbols();
+    _meCircle = null;
 
     final visible = [for (final i in data.items) if (ui.shows(i)) i];
+    _spreadZoom = _zoom.floor();
+    final spread = spreadMarkers([
+      for (final i in visible)
+        if (i.kind != ItemKind.transport)
+          if (_pos(i) case final p?) (id: i.id, kind: i.kind, lat: p.latitude, lng: p.longitude),
+    ], _spreadZoom.toDouble());
+    _drawn = {for (final MapEntry(:key, :value) in spread.entries) key: LatLng(value.$1, value.$2)};
 
     // Route: confirmed stays in order.
     if (ui.layers.contains(ItemKind.stay)) {
@@ -169,14 +203,15 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
     final order = [ItemKind.activity, ItemKind.accommodation, ItemKind.stay];
     for (final kind in order) {
       for (final i in visible.where((x) => x.kind == kind)) {
-        final p = _pos(i);
+        final p = _drawn[i.id];
         if (p == null) continue;
         final selected = i.id == ui.selectedId;
         final faded = i.isOption || i.status == ItemStatus.idea || !i.isScheduled;
+        // Taps next to a circle count too (see [_onMapClick]).
         final radius = switch (kind) {
-          ItemKind.stay => 11.0,
-          ItemKind.accommodation => 7.0,
-          _ => 6.0,
+          ItemKind.stay => 12.0,
+          ItemKind.accommodation => 9.0,
+          _ => 8.0,
         };
         await map.addCircle(
           CircleOptions(
@@ -191,18 +226,112 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
         );
         if (kind == ItemKind.stay || selected) {
           final n = chain.indexWhere((s) => s.id == i.id);
-          await map.addSymbol(SymbolOptions(
-            geometry: p,
-            textField: n >= 0 ? '${n + 1}. ${i.title}' : i.title,
-            textSize: kind == ItemKind.stay ? 13 : 11,
-            textOffset: const Offset(0, 1.6),
-            textColor: '#222222',
-            textHaloColor: '#ffffff',
-            textHaloWidth: 1.5,
-          ));
+          await map.addSymbol(
+            SymbolOptions(
+              geometry: p,
+              textField: n >= 0 ? '${n + 1}. ${i.title}' : i.title,
+              textSize: kind == ItemKind.stay ? 13 : 11,
+              textOffset: const Offset(0, 1.6),
+              textColor: '#222222',
+              textHaloColor: '#ffffff',
+              textHaloWidth: 1.5,
+            ),
+            {'id': i.id},
+          );
         }
       }
     }
+    await _drawMe();
+  }
+
+  /// The blue dot on top of everything; moved in place on updates.
+  Future<void> _drawMe() async {
+    final map = _map, me = _me;
+    if (map == null || me == null || !_styleReady) return;
+    final circle = _meCircle;
+    if (circle != null) {
+      await map.updateCircle(circle, CircleOptions(geometry: me));
+      return;
+    }
+    _meCircle = await map.addCircle(CircleOptions(
+      geometry: me,
+      circleRadius: 8,
+      circleColor: '#1a73e8',
+      circleStrokeWidth: 3,
+      circleStrokeColor: '#ffffff',
+    ));
+  }
+
+  double get _zoom => _map?.cameraPosition?.zoom ?? 2;
+
+  /// Spreading depends on the zoom: redraw when it crosses a whole level
+  /// and some markers share a spot.
+  void _onCameraIdle() {
+    if (_zoom.floor() == _spreadZoom) return;
+    final shared = <(double, double)>{};
+    final any = data.items.any((i) {
+      if (i.kind == ItemKind.transport) return false;
+      final p = _pos(i);
+      return p != null && !shared.add((p.latitude, p.longitude));
+    });
+    if (any) _scheduleRedraw();
+  }
+
+  /// A tap that missed every circle: the nearest marker within
+  /// [markerHitRadius] still counts.
+  Future<void> _onMapClick(math.Point<double> point) async {
+    final map = _map;
+    if (map == null || _drawn.isEmpty) return;
+    final ids = _drawn.keys.toList();
+    final screen = await map.toScreenLocationBatch([for (final id in ids) _drawn[id]!]);
+    if (!mounted) return;
+    // Android reports physical pixels, iOS logical ones.
+    final scale = defaultTargetPlatform == TargetPlatform.android ? MediaQuery.devicePixelRatioOf(context) : 1.0;
+    final hit = nearestMarker(
+      {for (var k = 0; k < ids.length; k++) ids[k]: (screen[k].x.toDouble(), screen[k].y.toDouble())},
+      (point.x, point.y),
+      markerHitRadius * scale,
+    );
+    _onTap(hit);
+  }
+
+  /// "My location": asks for the permission if needed, shows the position
+  /// and follows it while the map is showing. Failures say what to do.
+  Future<void> _locateMe() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    final source = ref.read(locationSourceProvider);
+    final r = await source.locate();
+    if (!mounted) return;
+    setState(() => _locating = false);
+    final p = r.position;
+    if (p == null) {
+      final l = context.l10n;
+      final (text, settings) = switch (r.failure!) {
+        LocateFailure.serviceDisabled => (l.locationServiceOff, source.openLocationSettings),
+        LocateFailure.denied => (l.locationDenied, null),
+        LocateFailure.deniedForever => (l.locationDeniedForever, source.openAppSettings),
+        LocateFailure.unavailable => (l.locationUnavailable, null),
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(text),
+        action: settings == null ? null : SnackBarAction(label: l.locationSettings, onPressed: settings),
+      ));
+      return;
+    }
+    setState(() => _me = LatLng(p.$1, p.$2));
+    await _drawMe();
+    _watchMe();
+    // Close enough to see the streets around, but never zoom out.
+    await _map?.animateCamera(_zoom >= 13 ? CameraUpdate.newLatLng(_me!) : CameraUpdate.newLatLngZoom(_me!, 14));
+  }
+
+  void _watchMe() {
+    _meUpdates ??= ref.read(locationSourceProvider).watch().listen((p) {
+      if (!mounted) return;
+      setState(() => _me = LatLng(p.$1, p.$2));
+      _drawMe();
+    });
   }
 
   /// Slightly curved line so overlapping connections stay distinguishable.
@@ -247,15 +376,42 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
     ));
   }
 
-  Future<void> _focusSelection() async {
+  /// Brings the selection into view without changing the zoom: nothing
+  /// happens while it is already visible, otherwise the map pans to it.
+  /// A transport whose ends don't fit is shown whole. [initial] (the
+  /// world view after loading) zooms in to street level instead.
+  Future<void> _focusSelection({bool initial = false}) async {
     final sel = data.item(ref.read(tripUiProvider).selectedId);
-    if (sel == null || _map == null) return;
-    LatLng? p = _pos(sel);
-    if (sel.kind == ItemKind.transport) {
-      final a = data.item(sel.fromId);
-      if (a != null && a.hasLocation) p = LatLng(a.lat!, a.lng!);
+    final map = _map;
+    if (sel == null || map == null) return;
+    // A marker spread away from its stay is focused where it is drawn.
+    final drawn = sel.kind == ItemKind.transport ? null : _drawn[sel.id];
+    final pts = drawn != null ? [drawn] : [for (final (lat, lng) in focusPoints(data, sel)) LatLng(lat, lng)];
+    if (pts.isEmpty) return;
+    if (initial) {
+      await map.animateCamera(CameraUpdate.newLatLngZoom(pts.first, 10));
+      return;
     }
-    if (p != null) await _map!.animateCamera(CameraUpdate.newLatLngZoom(p, 10));
+    final r = await map.getVisibleRegion();
+    final visible = GeoBox(r.southwest.latitude, r.southwest.longitude, r.northeast.latitude, r.northeast.longitude);
+    if (!needsPan(visible, [for (final p in pts) (p.latitude, p.longitude)])) return;
+    if (pts.length == 1) {
+      await map.animateCamera(CameraUpdate.newLatLng(pts.first));
+      return;
+    }
+    final box = GeoBox.around([for (final p in pts) (p.latitude, p.longitude)])!;
+    final fits = box.north - box.south <= (visible.north - visible.south) * 0.76 &&
+        box.east - box.west <= (visible.east - visible.west) * 0.76;
+    final centre = LatLng((box.north + box.south) / 2, (box.east + box.west) / 2);
+    await map.animateCamera(fits
+        ? CameraUpdate.newLatLng(centre)
+        : CameraUpdate.newLatLngBounds(
+            LatLngBounds(southwest: LatLng(box.south, box.west), northeast: LatLng(box.north, box.east)),
+            left: 48,
+            right: 48,
+            top: 64,
+            bottom: 64,
+          ));
   }
 
   void _onTap(String? id) {
@@ -302,11 +458,15 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
             compassEnabled: true,
             rotateGesturesEnabled: false,
             tiltGesturesEnabled: false,
+            trackCameraPosition: true,
             onMapCreated: (c) {
               _map = c;
               c.onCircleTapped.add((circle) => _onTap(circle.data?['id'] as String?));
               c.onLineTapped.add((line) => _onTap(line.data?['id'] as String?));
+              c.onSymbolTapped.add((symbol) => _onTap(symbol.data?['id'] as String?));
             },
+            onMapClick: (point, _) => _onMapClick(point),
+            onCameraIdle: _onCameraIdle,
             onStyleLoadedCallback: () async {
               _styleReady = true;
               _styleTimer?.cancel();
@@ -317,7 +477,7 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
                 _fitted = true;
                 final sel = ref.read(tripUiProvider).selectedId;
                 if (sel != null && data.item(sel) != null) {
-                  await _focusSelection();
+                  await _focusSelection(initial: true);
                 } else {
                   await _fitAll();
                 }
@@ -347,6 +507,16 @@ class _TripMapViewState extends ConsumerState<TripMapView> {
                       child: CircularProgressIndicator(strokeWidth: 2.5, value: offline.progress),
                     )
                   : Icon(offline.saved ? Icons.offline_pin : Icons.download_for_offline_outlined),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton.small(
+              key: const ValueKey('my-location-button'),
+              heroTag: 'my-location',
+              tooltip: l.myLocation,
+              onPressed: _locateMe,
+              child: _locating
+                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
+                  : Icon(_me != null ? Icons.my_location : Icons.location_searching),
             ),
           ]),
         ),

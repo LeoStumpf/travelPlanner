@@ -440,5 +440,13 @@
   "localTimeIn": "Ortszeit {zone}",
   "realDuration": "Dauer {duration}",
   "warnUnknownTimeZone": "„{entry}“: {field}: unbekannte Zeitzone „{value}“ (erwartet z. B. „Asia/Colombo“) – ignoriert",
-  "warnUnknownTripTimeZone": "Reise: unbekannte Zeitzone „{value}“ (erwartet z. B. „Europe/Berlin“) – ignoriert"
+  "warnUnknownTripTimeZone": "Reise: unbekannte Zeitzone „{value}“ (erwartet z. B. „Europe/Berlin“) – ignoriert",
+  "navigation": "Navigation",
+  "noNavigationApp": "Keine App für die Navigation gefunden.",
+  "myLocation": "Mein Standort",
+  "locationServiceOff": "Der Standort ist ausgeschaltet.",
+  "locationDenied": "Tripboard darf den Standort nicht verwenden.",
+  "locationDeniedForever": "Der Standortzugriff ist gesperrt. Erlaube ihn in den App-Einstellungen.",
+  "locationUnavailable": "Der Standort konnte nicht ermittelt werden.",
+  "locationSettings": "Einstellungen"
 }

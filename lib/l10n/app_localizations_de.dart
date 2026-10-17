@@ -1764,4 +1764,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String warnUnknownTripTimeZone(String value) {
     return 'Reise: unbekannte Zeitzone „$value“ (erwartet z. B. „Europe/Berlin“) – ignoriert';
   }
+
+  @override
+  String get navigation => 'Navigation';
+
+  @override
+  String get noNavigationApp => 'Keine App für die Navigation gefunden.';
+
+  @override
+  String get myLocation => 'Mein Standort';
+
+  @override
+  String get locationServiceOff => 'Der Standort ist ausgeschaltet.';
+
+  @override
+  String get locationDenied => 'Tripboard darf den Standort nicht verwenden.';
+
+  @override
+  String get locationDeniedForever =>
+      'Der Standortzugriff ist gesperrt. Erlaube ihn in den App-Einstellungen.';
+
+  @override
+  String get locationUnavailable =>
+      'Der Standort konnte nicht ermittelt werden.';
+
+  @override
+  String get locationSettings => 'Einstellungen';
 }

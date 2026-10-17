@@ -1460,5 +1460,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "navigation": "Navigation",
+  "noNavigationApp": "No app found for navigation.",
+  "myLocation": "My location",
+  "locationServiceOff": "Location is turned off.",
+  "locationDenied": "Tripboard isn't allowed to use your location.",
+  "locationDeniedForever": "Location access is blocked. Allow it in the app settings.",
+  "locationUnavailable": "Your location couldn't be determined.",
+  "locationSettings": "Settings"
 }

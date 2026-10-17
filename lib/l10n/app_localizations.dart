@@ -2748,6 +2748,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trip: unknown time zone “{value}” (expected e.g. “Europe/Berlin”) – ignored'**
   String warnUnknownTripTimeZone(String value);
+
+  /// No description provided for @navigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get navigation;
+
+  /// No description provided for @noNavigationApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No app found for navigation.'**
+  String get noNavigationApp;
+
+  /// No description provided for @myLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get myLocation;
+
+  /// No description provided for @locationServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is turned off.'**
+  String get locationServiceOff;
+
+  /// No description provided for @locationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Tripboard isn\'t allowed to use your location.'**
+  String get locationDenied;
+
+  /// No description provided for @locationDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location access is blocked. Allow it in the app settings.'**
+  String get locationDeniedForever;
+
+  /// No description provided for @locationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location couldn\'t be determined.'**
+  String get locationUnavailable;
+
+  /// No description provided for @locationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get locationSettings;
 }
 
 class _AppLocalizationsDelegate
