@@ -49,7 +49,12 @@ class _PlaceSearchPageState extends ConsumerState<PlaceSearchPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.initial.isNotEmpty) _search(widget.initial);
+    // After the first frame: the search reads the locale from the context.
+    if (widget.initial.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _search(widget.initial);
+      });
+    }
   }
 
   @override
@@ -74,6 +79,7 @@ class _PlaceSearchPageState extends ConsumerState<PlaceSearchPage> {
       _error = null;
       _results = const [];
       _searched = null;
+      _loading = false; // an outdated search no longer clears it
     });
     if (q.isEmpty) return;
 

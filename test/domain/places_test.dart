@@ -134,4 +134,8 @@ void main() {
       expect(recentPlaces(uses, limit: 1), hasLength(1));
     });
   });
+
+  test('a link with broken escapes is no place', () {
+    expect(parsePlaceInput('https://www.google.com/maps/place/%FF'), isNull);
+  });
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -23,9 +24,13 @@ class FakeGeocoder extends Geocoder {
   final queries = <String>[];
   final expands = <String>[];
 
+  /// While set, searches wait for it (a slow connection).
+  Completer<void>? gate;
+
   @override
   Future<List<PlaceResult>> search(String query, {String lang = 'en'}) async {
     queries.add(query);
+    if (gate != null) await gate!.future;
     if (offline) throw const SocketException('offline');
     return results;
   }
@@ -235,6 +240,34 @@ void main() {
     await type(tester, 'https://maps.google.com/?q=Temple+of+the+Tooth');
     expect(geocoder.queries, ['Temple of the Tooth']);
     expect(find.text('Temple of the Tooth'), findsOneWidget);
+  });
+
+  testWidgets('searches the initial text right away', (tester) async {
+    geocoder.results = const [PlaceResult('Galle Fort', 'Galle', 6.03, 80.22)];
+    await open(tester, initial: 'Galle');
+    expect(tester.takeException(), isNull);
+    expect(geocoder.queries, ['Galle']);
+    expect(find.text('Galle Fort'), findsOneWidget);
+  });
+
+  testWidgets('clearing the field during a slow search stops the spinner', (tester) async {
+    geocoder.gate = Completer<void>();
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('place-query')), 'Ella');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    await type(tester, '');
+    geocoder.gate!.complete();
+    await settle(tester);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.text('Zuletzt verwendet'), findsOneWidget);
+  });
+
+  testWidgets('a link with broken escapes is treated as text', (tester) async {
+    await open(tester);
+    await type(tester, 'https://www.google.com/maps/place/%FF');
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('place-query')), findsOneWidget);
   });
 
   testWidgets('the editor keeps a place saved without coordinates', (tester) async {

@@ -129,7 +129,12 @@ ParsedPlace? _parseWeb(Uri uri) {
   final google = host.contains('google.') || host == 'goo.gl' || host.endsWith('.goo.gl');
   final osm = host.endsWith('openstreetmap.org') || host == 'osm.org';
   final apple = host == 'maps.apple.com';
-  final path = Uri.decodeFull(uri.path);
+  final String path;
+  try {
+    path = Uri.decodeFull(uri.path);
+  } on FormatException {
+    return null; // broken escapes ("%FF"): just text to search for
+  }
   final googleMaps = google && (host.startsWith('maps.') || host.endsWith('goo.gl') || path.startsWith('/maps'));
   if (!googleMaps && !osm && !apple) return null;
 
