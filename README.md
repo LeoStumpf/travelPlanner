@@ -43,10 +43,10 @@ Das Format ist in [`assets/plan_format.md`](assets/plan_format.md) beschrieben, 
 
 | Pfad | Inhalt |
 | --- | --- |
-| `lib/domain/` | Modelle, Zeitmodell, `zones.dart` (Zeitzonen), `scheduler.dart` (Verschiebe-Logik) und `analysis.dart` (Konflikte, Lücken). Reines Dart. |
-| `lib/data/` | drift-Datenbank, Repository, Anhänge, Ortssuche (Photon), Link-Vorschau, Backup |
+| `lib/domain/` | Modelle, Zeitmodell, `zones.dart` (Zeitzonen), `scheduler.dart` (Verschiebe-Logik), `analysis.dart` (Konflikte, Lücken), `agenda.dart` (Heute), `budget.dart`, `packing.dart`, `search.dart`, `places.dart`, `itinerary.dart`/`ics.dart` (Teilen), `reminders.dart`, `plan_exchange.dart` (Claude-Format). Reines Dart. |
+| `lib/data/` | drift-Datenbank und Migrationen, Repository, Anhänge, Ortssuche (Photon), Link-Vorschau, Offline-Karten, Standort, Backup/Auto-Backup, Teilen, Erinnerungen (`reminder_scheduler.dart`) |
 | `lib/state/` | Riverpod-Provider, gemeinsamer UI-Zustand, Undo |
-| `lib/ui/` | Reiseliste, Reise-Shell, Zeitplan, Karte, Canvas, Notizen, Editoren |
+| `lib/ui/` | Reiseliste, Reise-Shell, Zeitplan, Karte, Canvas, Notizen, Heute, Budget, Suche, Teilen, Erinnerungen, Backups, Claude-Austausch, Editoren |
 | `lib/l10n/` | Texte auf Englisch und Deutsch (ARB) und die daraus erzeugten Klassen |
 
 ## Entwickeln
@@ -63,8 +63,8 @@ Datenbank-Migrationen: Ändert sich das Schema in `lib/data/db.dart`, wird `sche
 ## Release
 
 ```bash
-flutter build apk --release --split-per-abi   # kleinere APKs pro Architektur
+flutter build apk --release --split-per-abi --target-platform android-arm64   # APK für aktuelle Telefone (~39 MB)
 flutter build appbundle --release             # für den Play Store
 ```
 
-Signiert wird mit dem Upload-Key aus `android/key.properties`. Die Datei liegt nicht im Repo, der Keystore liegt unter `~/tripboard-upload-keystore.jks`. Fehlt die Datei, wird mit dem Debug-Key signiert. Das App-Icon entsteht aus `assets/icon/*.svg` (als PNG rendern, dann `dart run flutter_launcher_icons`). Die Play-Store-Grafiken liegen in `store/play/`; der Feature-Banner wird aus `store/feature-graphic.html` gerendert (Befehl steht in der Datei).
+Signiert wird mit dem Upload-Key aus `android/key.properties`. Die Datei liegt nicht im Repo, der Keystore liegt unter `~/tripboard-upload-keystore.jks`. Fehlt die Datei, wird mit dem Debug-Key signiert. Der Release-Build läuft Android-Lint (`lintVitalRelease`): In den Backup-Regeln (`res/xml/`) darf nur ausgeschlossen werden, was in einem eingeschlossenen Pfad liegt. Das App-Icon entsteht aus `assets/icon/*.svg` (als PNG rendern, dann `dart run flutter_launcher_icons`). Die Play-Store-Grafiken liegen in `store/play/`; der Feature-Banner wird aus `store/feature-graphic.html` gerendert (Befehl steht in der Datei).
