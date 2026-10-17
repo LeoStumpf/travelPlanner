@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 
 import '../domain/models.dart';
 import 'attachment_store.dart';
 import 'db.dart';
+import 'doc_migrations.dart';
 
 /// A trip in the trash and when it was put there.
 class TrashedTrip {
@@ -114,6 +116,7 @@ class Repository {
         type: type,
         json: jsonEncode(json),
         updatedAt: DateTime.now().millisecondsSinceEpoch,
+        docVersion: const Value(currentDocVersion),
       ));
 
   Future<void> saveTrip(Trip t) => _put(t.id, t.id, 'trip', t.toJson());

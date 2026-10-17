@@ -55,8 +55,27 @@ class $DocsTable extends Docs with TableInfo<$DocsTable, DocRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _docVersionMeta = const VerificationMeta(
+    'docVersion',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, tripId, type, json, updatedAt];
+  late final GeneratedColumn<int> docVersion = GeneratedColumn<int>(
+    'doc_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tripId,
+    type,
+    json,
+    updatedAt,
+    docVersion,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -106,6 +125,12 @@ class $DocsTable extends Docs with TableInfo<$DocsTable, DocRow> {
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('doc_version')) {
+      context.handle(
+        _docVersionMeta,
+        docVersion.isAcceptableOrUnknown(data['doc_version']!, _docVersionMeta),
+      );
+    }
     return context;
   }
 
@@ -135,6 +160,10 @@ class $DocsTable extends Docs with TableInfo<$DocsTable, DocRow> {
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
       )!,
+      docVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}doc_version'],
+      )!,
     );
   }
 
@@ -152,12 +181,16 @@ class DocRow extends DataClass implements Insertable<DocRow> {
   final String type;
   final String json;
   final int updatedAt;
+
+  /// Version of the JSON layout in [json], see doc_migrations.dart.
+  final int docVersion;
   const DocRow({
     required this.id,
     required this.tripId,
     required this.type,
     required this.json,
     required this.updatedAt,
+    required this.docVersion,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -167,6 +200,7 @@ class DocRow extends DataClass implements Insertable<DocRow> {
     map['type'] = Variable<String>(type);
     map['json'] = Variable<String>(json);
     map['updated_at'] = Variable<int>(updatedAt);
+    map['doc_version'] = Variable<int>(docVersion);
     return map;
   }
 
@@ -177,6 +211,7 @@ class DocRow extends DataClass implements Insertable<DocRow> {
       type: Value(type),
       json: Value(json),
       updatedAt: Value(updatedAt),
+      docVersion: Value(docVersion),
     );
   }
 
@@ -191,6 +226,7 @@ class DocRow extends DataClass implements Insertable<DocRow> {
       type: serializer.fromJson<String>(json['type']),
       json: serializer.fromJson<String>(json['json']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      docVersion: serializer.fromJson<int>(json['docVersion']),
     );
   }
   @override
@@ -202,6 +238,7 @@ class DocRow extends DataClass implements Insertable<DocRow> {
       'type': serializer.toJson<String>(type),
       'json': serializer.toJson<String>(json),
       'updatedAt': serializer.toJson<int>(updatedAt),
+      'docVersion': serializer.toJson<int>(docVersion),
     };
   }
 
@@ -211,12 +248,14 @@ class DocRow extends DataClass implements Insertable<DocRow> {
     String? type,
     String? json,
     int? updatedAt,
+    int? docVersion,
   }) => DocRow(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
     type: type ?? this.type,
     json: json ?? this.json,
     updatedAt: updatedAt ?? this.updatedAt,
+    docVersion: docVersion ?? this.docVersion,
   );
   DocRow copyWithCompanion(DocsCompanion data) {
     return DocRow(
@@ -225,6 +264,9 @@ class DocRow extends DataClass implements Insertable<DocRow> {
       type: data.type.present ? data.type.value : this.type,
       json: data.json.present ? data.json.value : this.json,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      docVersion: data.docVersion.present
+          ? data.docVersion.value
+          : this.docVersion,
     );
   }
 
@@ -235,13 +277,15 @@ class DocRow extends DataClass implements Insertable<DocRow> {
           ..write('tripId: $tripId, ')
           ..write('type: $type, ')
           ..write('json: $json, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('docVersion: $docVersion')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, tripId, type, json, updatedAt);
+  int get hashCode =>
+      Object.hash(id, tripId, type, json, updatedAt, docVersion);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -250,7 +294,8 @@ class DocRow extends DataClass implements Insertable<DocRow> {
           other.tripId == this.tripId &&
           other.type == this.type &&
           other.json == this.json &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.docVersion == this.docVersion);
 }
 
 class DocsCompanion extends UpdateCompanion<DocRow> {
@@ -259,6 +304,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
   final Value<String> type;
   final Value<String> json;
   final Value<int> updatedAt;
+  final Value<int> docVersion;
   final Value<int> rowid;
   const DocsCompanion({
     this.id = const Value.absent(),
@@ -266,6 +312,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
     this.type = const Value.absent(),
     this.json = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.docVersion = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DocsCompanion.insert({
@@ -274,6 +321,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
     required String type,
     required String json,
     required int updatedAt,
+    this.docVersion = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tripId = Value(tripId),
@@ -286,6 +334,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
     Expression<String>? type,
     Expression<String>? json,
     Expression<int>? updatedAt,
+    Expression<int>? docVersion,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -294,6 +343,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
       if (type != null) 'type': type,
       if (json != null) 'json': json,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (docVersion != null) 'doc_version': docVersion,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -304,6 +354,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
     Value<String>? type,
     Value<String>? json,
     Value<int>? updatedAt,
+    Value<int>? docVersion,
     Value<int>? rowid,
   }) {
     return DocsCompanion(
@@ -312,6 +363,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
       type: type ?? this.type,
       json: json ?? this.json,
       updatedAt: updatedAt ?? this.updatedAt,
+      docVersion: docVersion ?? this.docVersion,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -334,6 +386,9 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
+    if (docVersion.present) {
+      map['doc_version'] = Variable<int>(docVersion.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -348,6 +403,7 @@ class DocsCompanion extends UpdateCompanion<DocRow> {
           ..write('type: $type, ')
           ..write('json: $json, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('docVersion: $docVersion, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -358,11 +414,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $DocsTable docs = $DocsTable(this);
+  late final Index docsTrip = Index(
+    'docs_trip',
+    'CREATE INDEX docs_trip ON docs (trip_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [docs];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [docs, docsTrip];
 }
 
 typedef $$DocsTableCreateCompanionBuilder = DocsCompanion Function({
@@ -371,6 +431,7 @@ typedef $$DocsTableCreateCompanionBuilder = DocsCompanion Function({
   required String type,
   required String json,
   required int updatedAt,
+  Value<int> docVersion,
   Value<int> rowid,
 });
 typedef $$DocsTableUpdateCompanionBuilder = DocsCompanion Function({
@@ -379,6 +440,7 @@ typedef $$DocsTableUpdateCompanionBuilder = DocsCompanion Function({
   Value<String> type,
   Value<String> json,
   Value<int> updatedAt,
+  Value<int> docVersion,
   Value<int> rowid,
 });
 
@@ -412,6 +474,11 @@ class $$DocsTableFilterComposer extends Composer<_$AppDatabase, $DocsTable> {
 
   ColumnFilters<int> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get docVersion => $composableBuilder(
+    column: $table.docVersion,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -448,6 +515,11 @@ class $$DocsTableOrderingComposer extends Composer<_$AppDatabase, $DocsTable> {
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get docVersion => $composableBuilder(
+    column: $table.docVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DocsTableAnnotationComposer
@@ -473,6 +545,11 @@ class $$DocsTableAnnotationComposer
 
   GeneratedColumn<int> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get docVersion => $composableBuilder(
+    column: $table.docVersion,
+    builder: (column) => column,
+  );
 }
 
 class $$DocsTableTableManager
@@ -508,6 +585,7 @@ class $$DocsTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<String> json = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
+                Value<int> docVersion = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DocsCompanion(
                 id: id,
@@ -515,6 +593,7 @@ class $$DocsTableTableManager
                 type: type,
                 json: json,
                 updatedAt: updatedAt,
+                docVersion: docVersion,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -524,6 +603,7 @@ class $$DocsTableTableManager
                 required String type,
                 required String json,
                 required int updatedAt,
+                Value<int> docVersion = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DocsCompanion.insert(
                 id: id,
@@ -531,6 +611,7 @@ class $$DocsTableTableManager
                 type: type,
                 json: json,
                 updatedAt: updatedAt,
+                docVersion: docVersion,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

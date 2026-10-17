@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/models.dart';
+import 'doc_migrations.dart';
 import 'repository.dart';
 
 /// ZIP backups: one trip (`trip.json` plus all attachment files) or all
@@ -29,6 +30,7 @@ class Backup {
   static Map<String, Object?> toJson(TripData d) => {
         'format': 'travel_planner',
         'version': formatVersion,
+        'docVersion': currentDocVersion,
         'trip': d.trip.toJson(),
         'items': [for (final i in d.items) i.toJson()],
         'cards': [for (final c in d.cards) c.toJson()],
@@ -36,15 +38,18 @@ class Backup {
         'attachments': [for (final a in d.attachments) a.toJson()],
       };
 
+  /// Backups written before the doc version existed count as version 1.
   static TripData fromJson(Map<String, Object?> j) {
-    List<Map<String, Object?>> list(String k) =>
-        [for (final e in (j[k] as List? ?? const [])) (e as Map).cast<String, Object?>()];
+    final from = (j['docVersion'] as num?)?.toInt() ?? 1;
+    Map<String, Object?> doc(String type, Object? e) => migrateDoc(type, (e as Map).cast<String, Object?>(), from);
+    List<Map<String, Object?>> list(String k, String type) =>
+        [for (final e in (j[k] as List? ?? const [])) doc(type, e)];
     return TripData(
-      trip: Trip.fromJson((j['trip'] as Map).cast<String, Object?>()),
-      items: [for (final e in list('items')) PlanItem.fromJson(e)],
-      cards: [for (final e in list('cards')) NoteCard.fromJson(e)],
-      edges: [for (final e in list('edges')) Edge.fromJson(e)],
-      attachments: [for (final e in list('attachments')) Attachment.fromJson(e)],
+      trip: Trip.fromJson(doc('trip', j['trip'])),
+      items: [for (final e in list('items', 'item')) PlanItem.fromJson(e)],
+      cards: [for (final e in list('cards', 'card')) NoteCard.fromJson(e)],
+      edges: [for (final e in list('edges', 'edge')) Edge.fromJson(e)],
+      attachments: [for (final e in list('attachments', 'attachment')) Attachment.fromJson(e)],
     );
   }
 

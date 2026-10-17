@@ -32,6 +32,8 @@ flutter test
 flutter run
 ```
 
+Datenbank-Migrationen: Ändert sich das Schema in `lib/data/db.dart`, wird `schemaVersion` erhöht, ein `fromXToY`-Schritt ergänzt und `dart run drift_dev make-migrations` ausgeführt. Das legt einen Schema-Snapshot in `drift_schemas/` ab und erzeugt `lib/data/db.steps.dart` sowie die Test-Helfer in `test/drift/` neu. Ändert sich das JSON-Layout der Modelle so, dass alte Daten falsch gelesen würden, wird `currentDocVersion` in `lib/data/doc_migrations.dart` erhöht und ein Schritt ergänzt. Gespeicherte Zeilen werden dann beim Öffnen umgeschrieben, Backups beim Import.
+
 ## Release
 
 ```bash
