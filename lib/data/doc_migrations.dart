@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 /// Version of the JSON layout of the stored documents (trip, item, card, edge,
-/// attachment rows and the same objects inside backup ZIPs).
+/// attachment rows and the same objects inside backup ZIPs). Steps also see
+/// the repository's `trashed` marker rows (`{"deletedAt": ...}`) and must pass
+/// through types they do not change.
 ///
 /// Adding an optional field with a default needs no new version: the
 /// `fromJson` factories already tolerate missing keys. Bump it only when old
