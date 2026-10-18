@@ -18,6 +18,10 @@ class ZoneTile extends StatelessWidget {
   final List<String> suggestions;
   final ValueChanged<String?> onChanged;
 
+  /// Whether the chosen zone shows today's offset; off where [subtitle]
+  /// already gives the offset at the relevant date.
+  final bool showOffset;
+
   const ZoneTile({
     super.key,
     required this.label,
@@ -26,6 +30,7 @@ class ZoneTile extends StatelessWidget {
     required this.onChanged,
     this.subtitle,
     this.suggestions = const [],
+    this.showOffset = true,
   });
 
   @override
@@ -35,7 +40,7 @@ class ZoneTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.public),
       title: Text(label),
-      subtitle: Text([z == null ? noneLabel : zoneLabel(z), ?subtitle].join('\n')),
+      subtitle: Text([z == null ? noneLabel : (showOffset ? zoneLabel(z) : z), ?subtitle].join('\n')),
       trailing: z == null
           ? null
           : IconButton(

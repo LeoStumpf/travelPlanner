@@ -704,6 +704,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       zone: own,
       noneLabel: auto == null ? l.zoneAutomaticNone : l.zoneAutomatic(auto),
       subtitle: departure ? local : [?local, l.transportZoneHint].join('\n'),
+      showOffset: local == null,
       suggestions: data.usedZones,
       onChanged: (z) => setState(() {
         _i = departure ? _i.copyWith(tz: z) : _i.copyWith(endTz: z);
