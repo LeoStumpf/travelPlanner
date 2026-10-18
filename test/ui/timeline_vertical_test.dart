@@ -140,4 +140,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  group('times when zoomed in', () {
+    Future<void> zoomIn(WidgetTester tester, int taps) async {
+      for (var k = 0; k < taps; k++) {
+        await tester.tap(find.byTooltip('Vergrößern'));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('horizontal: hours appear and get finer, down to every hour', (tester) async {
+      await pump(tester, size: const Size(360, 740));
+      expect(find.text('12:00'), findsNothing);
+      await zoomIn(tester, 3); // 216 dp per day: every 6 hours
+      expect(find.text('12:00'), findsWidgets);
+      expect(find.text('15:00'), findsNothing);
+      await zoomIn(tester, 10); // fully zoomed in: every hour
+      expect(find.text('15:00'), findsWidgets);
+      expect(find.text('16:00'), findsWidgets);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('Verkleinern'));
+      for (var k = 0; k < 12; k++) {
+        await tester.tap(find.byTooltip('Verkleinern'));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('12:00'), findsNothing);
+    });
+
+    testWidgets('vertical: hours run down the day column', (tester) async {
+      await pump(tester, axis: 'vertical', size: const Size(360, 740));
+      expect(find.text('18'), findsWidgets); // 120 dp per day: every 6 hours
+      await zoomIn(tester, 10);
+      expect(find.text('9'), findsWidgets);
+      final nine = tester.getTopLeft(find.text('9').first);
+      final ten = tester.getTopLeft(find.text('10').first);
+      expect(ten.dy, greaterThan(nine.dy + 40));
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

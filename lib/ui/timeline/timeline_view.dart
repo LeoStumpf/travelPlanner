@@ -70,9 +70,24 @@ double _columnWidth(ItemKind k) => switch (k) {
 /// Vertical timeline: width of the day column on the left.
 const _gutterW = 48.0;
 
-/// Zoom limits (length of one day) per orientation.
-const _horizontalDay = (min: 28.0, initial: 64.0, max: 480.0);
-const _verticalDay = (min: 40.0, initial: 120.0, max: 960.0);
+/// Zoom limits (length of one day) per orientation. Fully zoomed in, an
+/// hour is 80 dp long.
+const _horizontalDay = (min: 28.0, initial: 64.0, max: 1920.0);
+const _verticalDay = (min: 40.0, initial: 120.0, max: 1920.0);
+
+/// Height of the row of hour labels under the day numbers.
+const _hourRowH = 14.0;
+
+/// Hours between two time labels for [dayLength] (dp per day): the
+/// smallest of 1, 2, 3, 6, 12 that leaves [minGap] between labels; null when
+/// even 12 hours are too close (zoomed out: days only).
+int? _hourStep(double dayLength, double minGap) {
+  final perHour = dayLength / 24;
+  for (final step in const [1, 2, 3, 6, 12]) {
+    if (step * perHour >= minGap) return step;
+  }
+  return null;
+}
 
 enum _DragType { move, resizeStart, resizeEnd }
 
@@ -388,7 +403,9 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
 
     double x(int minute) => (minute - firstDay * minutesPerDay) * _pxPerMin;
     final scale = _textScale(context);
-    final headerH = _headerH * scale;
+    // Time labels: "15:00" side by side needs more room than "15" stacked.
+    final hourStep = _hourStep(_dayWidth, (vertical ? 22 : 44) * scale);
+    final headerH = (_headerH + (hourStep != null && !vertical ? _hourRowH : 0)) * scale;
     final hasStays = data.items.any((i) => i.kind == ItemKind.stay);
     final hasScheduled = data.items.any((i) => i.isScheduled);
 
@@ -586,6 +603,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         vertical: vertical,
         firstDay: firstDay,
         dayWidth: _dayWidth,
+        hourStep: hourStep,
         headerH: headerExtent,
         tripStart: data.trip.startDate,
         color: Theme.of(context).colorScheme.onSurface,
@@ -598,6 +616,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       firstDay: firstDay,
       lastDay: lastDay,
       dayWidth: _dayWidth,
+      hourStep: hourStep,
       height: vertical ? _gutterW * scale : headerH,
       tripStart: data.trip.startDate,
       onLongPress: (d) => showAddSheet(context, ref, data, atDay: d),
@@ -1521,6 +1540,9 @@ class _DayHeader extends StatelessWidget {
   final int firstDay;
   final int lastDay;
   final double dayWidth;
+
+  /// Hours between time labels; null shows none.
+  final int? hourStep;
   final double height;
   final DateTime? tripStart;
   final ValueChanged<int> onLongPress;
@@ -1530,6 +1552,7 @@ class _DayHeader extends StatelessWidget {
     required this.firstDay,
     required this.lastDay,
     required this.dayWidth,
+    this.hourStep,
     required this.height,
     required this.tripStart,
     required this.onLongPress,
@@ -1547,6 +1570,34 @@ class _DayHeader extends StatelessWidget {
       color: Theme.of(context).colorScheme.onSurface,
     );
     final showDate = tripStart != null && dayWidth > 44;
+    final scale = _textScale(context);
+    final hourStyle = TextStyle(
+      fontSize: 10,
+      height: 1.2,
+      fontFeatures: const [FontFeature.tabularFigures()],
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    final perHour = dayWidth / 24;
+    // Labels sit right of their hour line (below it when vertical). In the
+    // day column they leave the day number and date at the top alone.
+    final hours = [
+      if (hourStep case final step?)
+        for (var h = step; h < 24; h += step)
+          if (!vertical || h * perHour >= 76 * scale)
+            Positioned(
+              left: vertical ? null : h * perHour + 2,
+              right: vertical ? 4 : null,
+              top: vertical ? h * perHour + 1 : null,
+              bottom: vertical ? null : 1,
+              child: ExcludeSemantics(
+                child: Text(
+                  vertical || step * perHour < 44 * scale ? '$h' : '${h.toString().padLeft(2, '0')}:00',
+                  style: hourStyle,
+                  maxLines: 1,
+                ),
+              ),
+            ),
+    ];
     final days = [
       for (var d = firstDay; d <= lastDay; d++)
         Semantics(
@@ -1561,25 +1612,35 @@ class _DayHeader extends StatelessWidget {
             child: SizedBox(
               width: vertical ? height : dayWidth,
               height: vertical ? dayWidth : height,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 4, top: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
-                    if (showDate)
-                      Flexible(
-                        child: Text(
-                          context.l10n.day(tripStart, d),
-                          style: style,
-                          // Narrow day column: the date wraps.
-                          maxLines: vertical ? 3 : 1,
-                          softWrap: vertical,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 4,
+                      top: 4,
+                      bottom: hours.isEmpty || vertical ? 0 : _hourRowH * scale,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
+                        if (showDate)
+                          Flexible(
+                            child: Text(
+                              context.l10n.day(tripStart, d),
+                              style: style,
+                              // Narrow day column: the date wraps.
+                              maxLines: vertical ? 3 : 1,
+                              softWrap: vertical,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  ...hours,
+                ],
               ),
             ),
           ),
@@ -1604,6 +1665,9 @@ class _GridPainter extends CustomPainter {
   final bool vertical;
   final int firstDay;
   final double dayWidth;
+
+  /// Hours between hour lines; null draws none.
+  final int? hourStep;
   final double headerH;
   final DateTime? tripStart;
   final Color color;
@@ -1614,6 +1678,7 @@ class _GridPainter extends CustomPainter {
     this.vertical = false,
     required this.firstDay,
     required this.dayWidth,
+    this.hourStep,
     required this.headerH,
     required this.tripStart,
     required this.color,
@@ -1640,6 +1705,18 @@ class _GridPainter extends CustomPainter {
       vertical ? Offset(crossSize, main) : Offset(main, crossSize),
       p,
     );
+    // Hour lines start below the header, so its labels stay readable.
+    final hourWeak = Paint()
+      ..color = color.withValues(alpha: 0.05)
+      ..strokeWidth = 1;
+    final hourStrong = Paint()
+      ..color = color.withValues(alpha: 0.08)
+      ..strokeWidth = 1;
+    void hourLine(double main, Paint p) => canvas.drawLine(
+      vertical ? Offset(headerH, main) : Offset(main, headerH),
+      vertical ? Offset(crossSize, main) : Offset(main, crossSize),
+      p,
+    );
     final days = (mainSize / dayWidth).ceil();
     for (var k = 0; k <= days; k++) {
       final x = k * dayWidth;
@@ -1651,6 +1728,11 @@ class _GridPainter extends CustomPainter {
       // Night from 20:00 of this day to 06:00 of the next.
       canvas.drawRect(rect(x + 20 * 60 * px, 10 * 60 * px, headerH, crossSize - headerH), night);
       across(x, line);
+      if (hourStep case final step?) {
+        for (var h = step; h < 24; h += step) {
+          hourLine(x + h * 60 * px, h % 6 == 0 ? hourStrong : hourWeak);
+        }
+      }
     }
     if (today != null) {
       across(
@@ -1667,6 +1749,7 @@ class _GridPainter extends CustomPainter {
       old.vertical != vertical ||
       old.firstDay != firstDay ||
       old.dayWidth != dayWidth ||
+      old.hourStep != hourStep ||
       old.tripStart != tripStart ||
       old.color != color ||
       old.nightColor != nightColor ||
@@ -1749,8 +1832,8 @@ class _Toolbar extends ConsumerWidget {
               // Shows the layout it switches to: layers as rows or as columns.
               icon: Icon(vertical ? Icons.view_agenda_outlined : Icons.view_week_outlined),
             ),
-            IconButton(tooltip: l.zoomOut, onPressed: () => onZoom(1 / 1.3), icon: const Icon(Icons.zoom_out)),
-            IconButton(tooltip: l.zoomIn, onPressed: () => onZoom(1.3), icon: const Icon(Icons.zoom_in)),
+            IconButton(tooltip: l.zoomOut, onPressed: () => onZoom(1 / 1.5), icon: const Icon(Icons.zoom_out)),
+            IconButton(tooltip: l.zoomIn, onPressed: () => onZoom(1.5), icon: const Icon(Icons.zoom_in)),
           ],
         ),
       ),
