@@ -441,7 +441,7 @@
   "offlineMapDelete": "Offline-Karte löschen",
   "offlineMapDeleteConfirm": "Offline-Karte dieser Reise löschen?",
   "transportDetails": "Ticketdaten",
-  "departureStationLabel": "Abfahrt von (Bahnhof / Flughafen)",
+  "departureStationLabel": "Abfahrt von (Bahnhof / Flughafen, z. B. MUC)",
   "arrivalStationLabel": "Ankunft in (Bahnhof / Flughafen)",
   "transportNumberLabel": "Zug- / Flugnummer",
   "seatLabel": "Sitzplatz / Gleis",
@@ -449,8 +449,8 @@
   "copyBookingRef": "Buchungsnummer kopieren",
   "bookingRefCopied": "Buchungsnummer kopiert",
   "timeZoneLabel": "Zeitzone",
-  "homeZoneLabel": "Heimat-Zeitzone",
-  "homeZoneHint": "Gilt für Orte und Zeiten ohne eigene Zone. Leer lassen, um ohne Zeitzonen zu planen.",
+  "homeZoneLabel": "Zeitzone der Reise",
+  "homeZoneHint": "Gilt für alle Orte und Zeiten ohne eigene Zone (z. B. Asia/Colombo). Leer lassen, um ohne Zeitzonen zu planen.",
   "zoneNone": "Keine",
   "zoneNoneHome": "Keine – Zone der Reise ({zone})",
   "zoneAutomatic": "Automatisch ({zone})",
@@ -714,5 +714,7 @@
   "deleteFilesQuestion": "{count, plural, =1{1 Datei löschen?} other{{count} Dateien löschen?}}",
   "deleteFilesBody": "Verknüpfte Orte, Transporte und Notizen verlieren die Datei ebenfalls.",
   "timelineVertical": "Senkrecht anzeigen",
-  "timelineHorizontal": "Waagerecht anzeigen"
+  "timelineHorizontal": "Waagerecht anzeigen",
+  "placeOutsideTrip": "Außerhalb der Reise (z. B. Start zu Hause)",
+  "tripZoneMissing": "Die Reise hat noch keine Zeitzone. Lege sie fest (z. B. Asia/Colombo), dann gelten alle Zeiten ohne eigene Zone in dieser Ortszeit."
 }

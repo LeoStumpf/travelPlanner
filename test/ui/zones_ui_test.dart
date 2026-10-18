@@ -166,16 +166,48 @@ void main() {
       expect(find.textContaining(de.zoneAutomatic(colombo)), findsOneWidget);
       expect(find.byKey(const ValueKey('real-duration')), findsOneWidget);
       expect(find.text(de.realDuration(de.duration(8 * 60 + 30, withMinutes: true))), findsOneWidget);
-      expect(find.text(de.localTimeIn('$berlin (UTC+1)')), findsOneWidget);
-      expect(find.text(de.localTimeIn('$colombo (UTC+5:30)')), findsOneWidget);
+      expect(find.textContaining(de.localTimeIn('$berlin (UTC+1)')), findsOneWidget);
+      expect(find.textContaining(de.localTimeIn('$colombo (UTC+5:30)')), findsOneWidget);
     });
 
-    testWidgets('without zones the editor looks as before', (tester) async {
+    testWidgets('without zones a transport still offers its zones and the trip zone', (tester) async {
       await openWith(
           tester, fraToCmb(zoned: false, homeZone: null), (c, ref, d) => openItemEditor(c, d, item: d.item('lh')));
-      expect(find.text(de.departureZoneLabel), findsNothing);
+      expect(find.text(de.departureZoneLabel), findsOneWidget);
+      expect(find.text(de.arrivalZoneLabel), findsOneWidget);
+      expect(find.byKey(const ValueKey('trip-zone')), findsOneWidget);
       expect(find.byKey(const ValueKey('real-duration')), findsNothing);
       expect(find.byKey(const ValueKey('start-zone')), findsNothing);
+    });
+
+    testWidgets('a flight from home: Munich time at the start, trip zone set from the editor', (tester) async {
+      await openWith(
+          tester, fraToCmb(zoned: false, homeZone: null), (c, ref, d) => openItemEditor(c, d, item: d.item('lh')));
+      final tripZone = find.byKey(const ValueKey('trip-zone'));
+      await tester.ensureVisible(tripZone);
+      await tester.pumpAndSettle();
+      await tester.tap(tripZone);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('zone-search')), 'colombo');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('zone-Asia/Colombo')));
+      await settle(tester);
+      expect((await tester.runAsync(() => repo.loadTrip('zt')))!.trip.homeZone, colombo);
+      expect(find.byKey(const ValueKey('trip-zone')), findsNothing);
+
+      final dep = find.byKey(const ValueKey('field-tz'));
+      await tester.ensureVisible(dep);
+      await tester.pumpAndSettle();
+      await tester.tap(dep);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('zone-search')), 'berlin');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('zone-Europe/Berlin')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining(de.localTimeIn('$berlin (UTC+1)')), findsOneWidget);
+      await tester.tap(find.text(de.save));
+      await settle(tester);
+      expect((await tester.runAsync(() => repo.loadTrip('zt')))!.item('lh')!.tz, berlin);
     });
 
     testWidgets('overriding the arrival zone is saved; tz is dropped from activities', (tester) async {

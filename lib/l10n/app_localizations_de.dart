@@ -1775,7 +1775,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get transportDetails => 'Ticketdaten';
 
   @override
-  String get departureStationLabel => 'Abfahrt von (Bahnhof / Flughafen)';
+  String get departureStationLabel =>
+      'Abfahrt von (Bahnhof / Flughafen, z. B. MUC)';
 
   @override
   String get arrivalStationLabel => 'Ankunft in (Bahnhof / Flughafen)';
@@ -1799,11 +1800,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get timeZoneLabel => 'Zeitzone';
 
   @override
-  String get homeZoneLabel => 'Heimat-Zeitzone';
+  String get homeZoneLabel => 'Zeitzone der Reise';
 
   @override
   String get homeZoneHint =>
-      'Gilt für Orte und Zeiten ohne eigene Zone. Leer lassen, um ohne Zeitzonen zu planen.';
+      'Gilt für alle Orte und Zeiten ohne eigene Zone (z. B. Asia/Colombo). Leer lassen, um ohne Zeitzonen zu planen.';
 
   @override
   String get zoneNone => 'Keine';
@@ -2877,4 +2878,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get timelineHorizontal => 'Waagerecht anzeigen';
+
+  @override
+  String get placeOutsideTrip => 'Außerhalb der Reise (z. B. Start zu Hause)';
+
+  @override
+  String get tripZoneMissing =>
+      'Die Reise hat noch keine Zeitzone. Lege sie fest (z. B. Asia/Colombo), dann gelten alle Zeiten ohne eigene Zone in dieser Ortszeit.';
 }

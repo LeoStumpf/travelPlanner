@@ -2752,7 +2752,7 @@ abstract class AppLocalizations {
   /// No description provided for @departureStationLabel.
   ///
   /// In en, this message translates to:
-  /// **'Departure station / airport'**
+  /// **'Departure from (station / airport, e.g. MUC)'**
   String get departureStationLabel;
 
   /// No description provided for @arrivalStationLabel.
@@ -2800,13 +2800,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeZoneLabel.
   ///
   /// In en, this message translates to:
-  /// **'Home time zone'**
+  /// **'Trip time zone'**
   String get homeZoneLabel;
 
   /// No description provided for @homeZoneHint.
   ///
   /// In en, this message translates to:
-  /// **'Applies to places and times without a zone of their own. Leave empty to plan without time zones.'**
+  /// **'Applies to all places and times without their own zone (e.g. Asia/Colombo). Leave empty to plan without time zones.'**
   String get homeZoneHint;
 
   /// No description provided for @zoneNone.
@@ -4392,6 +4392,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show horizontally'**
   String get timelineHorizontal;
+
+  /// No description provided for @placeOutsideTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside the trip (e.g. leaving from home)'**
+  String get placeOutsideTrip;
+
+  /// No description provided for @tripZoneMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip has no time zone yet. Set one (e.g. Asia/Colombo) and all times without their own zone use that local time.'**
+  String get tripZoneMissing;
 }
 
 class _AppLocalizationsDelegate

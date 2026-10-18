@@ -241,6 +241,8 @@ void main() {
       await tester.pumpAndSettle();
       final blue = find.byKey(ValueKey('trip-color-${tripColors[1]}'));
       expect(tester.getSize(blue).shortestSide, greaterThanOrEqualTo(48));
+      await tester.ensureVisible(blue);
+      await tester.pumpAndSettle();
       await tester.tap(blue);
       await tester.pump();
       await tester.tap(find.text(de.save));

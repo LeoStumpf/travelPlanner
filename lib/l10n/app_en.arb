@@ -1444,7 +1444,7 @@
   "offlineMapDelete": "Delete offline map",
   "offlineMapDeleteConfirm": "Delete the offline map of this trip?",
   "transportDetails": "Ticket details",
-  "departureStationLabel": "Departure station / airport",
+  "departureStationLabel": "Departure from (station / airport, e.g. MUC)",
   "arrivalStationLabel": "Arrival station / airport",
   "transportNumberLabel": "Train / flight no.",
   "seatLabel": "Seat / platform",
@@ -1452,8 +1452,8 @@
   "copyBookingRef": "Copy booking reference",
   "bookingRefCopied": "Booking reference copied",
   "timeZoneLabel": "Time zone",
-  "homeZoneLabel": "Home time zone",
-  "homeZoneHint": "Applies to places and times without a zone of their own. Leave empty to plan without time zones.",
+  "homeZoneLabel": "Trip time zone",
+  "homeZoneHint": "Applies to all places and times without their own zone (e.g. Asia/Colombo). Leave empty to plan without time zones.",
   "zoneNone": "None",
   "zoneNoneHome": "None – trip's zone ({zone})",
   "@zoneNoneHome": {
@@ -2357,5 +2357,7 @@
   },
   "deleteFilesBody": "Linked places, transports and notes lose the file as well.",
   "timelineVertical": "Show vertically",
-  "timelineHorizontal": "Show horizontally"
+  "timelineHorizontal": "Show horizontally",
+  "placeOutsideTrip": "Outside the trip (e.g. leaving from home)",
+  "tripZoneMissing": "The trip has no time zone yet. Set one (e.g. Asia/Colombo) and all times without their own zone use that local time."
 }

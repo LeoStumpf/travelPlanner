@@ -374,7 +374,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           isExpanded: true,
           decoration: InputDecoration(labelText: label),
           items: [
-            const DropdownMenuItem(value: null, child: Text('—')),
+            DropdownMenuItem(value: null, child: Text(_i.kind == ItemKind.transport ? l.placeOutsideTrip : '—')),
             for (final s in stays) DropdownMenuItem(value: s.id, child: Text(s.title.isEmpty ? l.noTitle : s.title)),
           ],
           onChanged: onChanged,
@@ -386,6 +386,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
       case ItemKind.accommodation:
       case ItemKind.activity:
         return [
+          _gap,
           stayDropdown(l.belongsToPlace, _i.parentId, (v) => _update((i) => i.copyWith(parentId: v))),
           Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 8),
@@ -406,8 +407,16 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
             ],
             onChanged: (m) => _update((i) => i.copyWith(mode: m)),
           ),
+          // A stay of the trip, and the station or airport itself; for the
+          // start from home ("MUC") only the latter.
+          _gap,
           stayDropdown(l.fromLabel, _i.fromId, (v) => _update((i) => i.copyWith(fromId: v))),
+          _gap,
+          _stationField(const ValueKey('field-departure'), _departure, l.departureStationLabel, Icons.trip_origin),
+          _gap,
           stayDropdown(l.toLabel, _i.toId, (v) => _update((i) => i.copyWith(toId: v))),
+          _gap,
+          _stationField(const ValueKey('field-arrival'), _arrival, l.arrivalStationLabel, Icons.place),
           const SizedBox(height: 8),
         ];
     }
@@ -419,7 +428,6 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   List<Widget> _zoneFields(TripData data) {
     final l = context.l10n;
     final home = data.trip.homeZone;
-    final zones = _zonesWith(data, _i);
     switch (_i.kind) {
       case ItemKind.stay:
         return [
@@ -434,35 +442,8 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           ),
         ];
       case ItemKind.transport:
-        if (!zones.isActive) return const [];
-        String auto(String? z) => z == null ? l.zoneAutomaticNone : l.zoneAutomatic(z);
-        final depAuto = zones.startZone(_i.copyWith(tz: null));
-        final arrAuto = zones.endZone(_i.copyWith(endTz: null));
-        return [
-          ZoneTile(
-            key: const ValueKey('field-tz'),
-            label: l.departureZoneLabel,
-            zone: _i.tz,
-            noneLabel: auto(depAuto),
-            suggestions: data.usedZones,
-            onChanged: (z) => setState(() {
-              _i = _i.copyWith(tz: z);
-              _keepEndAfterStart(data);
-            }),
-          ),
-          ZoneTile(
-            key: const ValueKey('field-end-tz'),
-            label: l.arrivalZoneLabel,
-            zone: _i.endTz,
-            noneLabel: auto(arrAuto),
-            subtitle: l.transportZoneHint,
-            suggestions: data.usedZones,
-            onChanged: (z) => setState(() {
-              _i = _i.copyWith(endTz: z);
-              _keepEndAfterStart(data);
-            }),
-          ),
-        ];
+        // Shown with the times, see [_transportZone].
+        return const [];
       case ItemKind.accommodation:
       case ItemKind.activity:
         return const [];
@@ -472,19 +453,11 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   /// Ticket details of a transport; all optional.
   List<Widget> _detailFields() {
     final l = context.l10n;
-    Widget text(Key key, TextEditingController c, String label, IconData icon,
-            {TextCapitalization caps = TextCapitalization.words}) =>
-        TextField(
-          key: key,
-          controller: c,
-          textCapitalization: caps,
-          decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
-        );
+    final text = _stationField;
     return [
       const Divider(),
       Text(l.transportDetails, style: Theme.of(context).textTheme.titleSmall),
-      text(const ValueKey('field-departure'), _departure, l.departureStationLabel, Icons.trip_origin),
-      text(const ValueKey('field-arrival'), _arrival, l.arrivalStationLabel, Icons.place),
+      _gap,
       Row(children: [
         Expanded(
           child: text(const ValueKey('field-number'), _number, l.transportNumberLabel, Icons.tag,
@@ -496,11 +469,24 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
               caps: TextCapitalization.sentences),
         ),
       ]),
+      _gap,
       text(const ValueKey('field-booking-ref'), _bookingRef, l.bookingRefLabel, Icons.confirmation_number_outlined,
           caps: TextCapitalization.characters),
       const SizedBox(height: 8),
     ];
   }
+
+  /// Room above each field, so its floating label clears the field above.
+  static const _gap = SizedBox(height: 12);
+
+  Widget _stationField(Key key, TextEditingController c, String label, IconData icon,
+          {TextCapitalization caps = TextCapitalization.words}) =>
+      TextField(
+        key: key,
+        controller: c,
+        textCapitalization: caps,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+      );
 
   /// Optional cost: amount, currency (default: the trip's home currency),
   /// total or per person, paid.
@@ -513,6 +499,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     return [
       const Divider(),
       Text(l.costSection, style: Theme.of(context).textTheme.titleSmall),
+      _gap,
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           flex: 3,
@@ -669,15 +656,18 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           _end = validEnd(v, v + dur);
         }),
       ),
-      if (zones.isActive) _zoneCaption(local(zones.startZone(timed), _start), const ValueKey('start-zone')),
+      if (kind == ItemKind.transport)
+        _transportZone(zones, departure: true, local: local(zones.startZone(timed), _start))
+      else if (zones.isActive)
+        _zoneCaption(local(zones.startZone(timed), _start), const ValueKey('start-zone')),
       MomentField(
         label: endLabel,
         tripStart: tripStart,
         value: _end,
         onChanged: (v) => setState(() => _end = validEnd(_start, v)),
       ),
+      if (kind == ItemKind.transport) _transportZone(zones, departure: false, local: local(zones.endZone(timed), _end)),
       if (zones.isActive && kind == ItemKind.transport) ...[
-        _zoneCaption(local(zones.endZone(timed), _end), const ValueKey('end-zone')),
         _zoneCaption(l.realDuration(l.duration(zones.absDuration(timed), withMinutes: true)),
             const ValueKey('real-duration')),
       ],
@@ -698,6 +688,43 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
           style: const TextStyle(fontSize: 12),
         ),
     ];
+  }
+
+  /// Departure or arrival zone of a transport, right under its time: a
+  /// flight from Munich needs German time at the start even when the trip
+  /// runs on Sri Lankan time. Without a trip zone it offers to set one.
+  Widget _transportZone(TripZones zones, {required bool departure, String? local}) {
+    final l = context.l10n;
+    final data = ref.watch(tripDataProvider(widget.tripId)).value!;
+    final auto = departure ? zones.startZone(_i.copyWith(tz: null)) : zones.endZone(_i.copyWith(endTz: null));
+    final own = departure ? _i.tz : _i.endTz;
+    final tile = ZoneTile(
+      key: ValueKey(departure ? 'field-tz' : 'field-end-tz'),
+      label: departure ? l.departureZoneLabel : l.arrivalZoneLabel,
+      zone: own,
+      noneLabel: auto == null ? l.zoneAutomaticNone : l.zoneAutomatic(auto),
+      subtitle: departure ? local : [?local, l.transportZoneHint].join('\n'),
+      suggestions: data.usedZones,
+      onChanged: (z) => setState(() {
+        _i = departure ? _i.copyWith(tz: z) : _i.copyWith(endTz: z);
+        _keepEndAfterStart(data);
+      }),
+    );
+    if (departure || data.trip.homeZone != null) return tile;
+    return Column(children: [
+      tile,
+      ZoneTile(
+        key: const ValueKey('trip-zone'),
+        label: l.homeZoneLabel,
+        zone: null,
+        noneLabel: l.zoneNone,
+        subtitle: l.tripZoneMissing,
+        suggestions: data.usedZones,
+        onChanged: (z) => ref
+            .read(planActionsProvider)
+            .record(widget.tripId, l.stepTripEdited, (r) => r.saveTrip(data.trip.copyWith(homeZone: z))),
+      ),
+    ]);
   }
 
   String _localLabel(String zone, String offset) => context.l10n.localTimeIn('$zone ($offset)');
