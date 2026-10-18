@@ -11,6 +11,7 @@ import '../../domain/scheduler.dart';
 import '../../domain/time.dart';
 import '../../domain/zones.dart';
 import '../../state/providers.dart';
+import '../editor/attachments_section.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
 import '../files/files_page.dart';
@@ -275,6 +276,24 @@ class _ItemSheet extends ConsumerWidget {
           const SizedBox(height: 16),
           Text(item.notes),
         ],
+        // Tickets right under the details, always with a way to add one.
+        _attachmentsHeader(context, ref, data, id),
+        if (atts.isEmpty)
+          Text(l.attachmentsEmpty, style: theme.textTheme.bodySmall),
+        for (final a in atts)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(fileIcon(a)),
+            title: Text(a.fileName),
+            subtitle: a.folder.isEmpty ? null : Text(a.folder.replaceAll('/', ' › ')),
+            onTap: () => openAttachment(context, ref, a),
+            trailing: IconButton(
+              tooltip: l.showInFiles,
+              icon: const Icon(Icons.folder_open_outlined),
+              onPressed: () => openFiles(context, data.trip.id, folder: a.folder),
+            ),
+          ),
         if (item.kind == ItemKind.stay) ...[
           _section(context, l.sectionAccommodations, ItemKind.accommodation, data, id),
           for (final o in lodging) _childTile(context, ref, data, o, options: lodging),
@@ -293,21 +312,6 @@ class _ItemSheet extends ConsumerWidget {
             title: Text(link, maxLines: 1, overflow: TextOverflow.ellipsis),
             onTap: () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
           ),
-        if (atts.isNotEmpty) _header(context, l.sectionAttachments),
-        for (final a in atts)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(fileIcon(a)),
-            title: Text(a.fileName),
-            subtitle: a.folder.isEmpty ? null : Text(a.folder.replaceAll('/', ' › ')),
-            onTap: () => openAttachment(context, ref, a),
-            trailing: IconButton(
-              tooltip: l.showInFiles,
-              icon: const Icon(Icons.folder_open_outlined),
-              onPressed: () => openFiles(context, data.trip.id, folder: a.folder),
-            ),
-          ),
         if (cards.isNotEmpty) _header(context, l.viewNotes),
         for (final c in cards)
           Card(
@@ -321,6 +325,38 @@ class _ItemSheet extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _attachmentsHeader(BuildContext context, WidgetRef ref, TripData data, String ownerId) {
+    final l = context.l10n;
+    final linked = {for (final a in data.attachmentsOf(ownerId)) a.id};
+    final options = <(IconData, String, VoidCallback)>[
+      (Icons.attach_file, l.filesPickFiles,
+          () => attachPicked(context, ref, tripId, ownerId, (s) => s.pickFiles(dialogTitle: l.attachFileDialog))),
+      (Icons.image_outlined, l.imageFromGallery, () => attachPicked(context, ref, tripId, ownerId, (s) => s.pickImages())),
+      (Icons.photo_camera_outlined, l.takePhoto,
+          () => attachPicked(context, ref, tripId, ownerId, (s) async => [?await s.takePhoto()])),
+      (Icons.folder_open_outlined, l.filesChooseFromWorkspace,
+          () => attachFromWorkspace(context, ref, tripId, ownerId, exclude: linked)),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(children: [
+        Expanded(child: Text(l.sectionAttachments, style: Theme.of(context).textTheme.titleSmall)),
+        MenuAnchor(
+          menuChildren: [
+            for (final (icon, label, onPressed) in options)
+              MenuItemButton(leadingIcon: Icon(icon), onPressed: onPressed, child: Text(label)),
+          ],
+          builder: (context, menu, _) => TextButton.icon(
+            key: const ValueKey('sheet-add-attachment'),
+            onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(l.add),
+          ),
+        ),
+      ]),
     );
   }
 

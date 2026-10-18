@@ -44,22 +44,23 @@ class AttachmentsSection extends ConsumerWidget {
             IconButton(
               tooltip: l.takePhoto,
               icon: const Icon(Icons.photo_camera_outlined),
-              onPressed: () => _add(context, ref, (s) async => [?await s.takePhoto()]),
+              onPressed: () => attachPicked(context, ref, tripId, ownerId, (s) async => [?await s.takePhoto()]),
             ),
             IconButton(
               tooltip: l.imageFromGallery,
               icon: const Icon(Icons.image_outlined),
-              onPressed: () => _add(context, ref, (s) => s.pickImages()),
+              onPressed: () => attachPicked(context, ref, tripId, ownerId, (s) => s.pickImages()),
             ),
             IconButton(
               tooltip: l.attachFileTooltip,
               icon: const Icon(Icons.attach_file),
-              onPressed: () => _add(context, ref, (s) => s.pickFiles(dialogTitle: l.attachFileDialog)),
+              onPressed: () =>
+                  attachPicked(context, ref, tripId, ownerId, (s) => s.pickFiles(dialogTitle: l.attachFileDialog)),
             ),
             IconButton(
               tooltip: l.filesChooseFromWorkspace,
               icon: const Icon(Icons.folder_open_outlined),
-              onPressed: () => _fromWorkspace(context, ref),
+              onPressed: () => attachFromWorkspace(context, ref, tripId, ownerId, exclude: {for (final a in attachments) a.id}),
             ),
           ],
         ),
@@ -107,35 +108,6 @@ class AttachmentsSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _add(BuildContext context, WidgetRef ref, Future<List<PickedFile>> Function(FileSources) pick) async {
-    final l = context.l10n;
-    final List<PickedFile> files;
-    try {
-      files = await pick(ref.read(fileSourcesProvider));
-    } catch (e) {
-      if (context.mounted) showSnack(context, l.errorWith('$e'));
-      return;
-    }
-    final data = ref.read(tripDataProvider(tripId)).value;
-    if (files.isEmpty || data == null) return;
-    final label = files.length == 1 ? l.stepFileAttached(files.single.name) : l.stepFilesAdded(files.length);
-    await addFilesToWorkspace(ref, data, files, label, ownerIds: [ownerId]);
-  }
-
-  Future<void> _fromWorkspace(BuildContext context, WidgetRef ref) async {
-    final data = ref.read(tripDataProvider(tripId)).value;
-    if (data == null) return;
-    final l = context.l10n;
-    final picked = await pickWorkspaceFiles(context, data, exclude: {for (final a in attachments) a.id});
-    if (picked == null || picked.isEmpty) return;
-    final label = picked.length == 1 ? l.stepFileAttached(picked.single.fileName) : l.stepFilesAdded(picked.length);
-    await ref.read(planActionsProvider).record(tripId, label, (repo) async {
-      for (final a in picked) {
-        await repo.linkAttachment(a, ownerId);
-      }
-    });
-  }
-
   Future<void> _unlink(BuildContext context, WidgetRef ref, Attachment a) async {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
@@ -145,4 +117,39 @@ class AttachmentsSection extends ConsumerWidget {
     final step = actions.lastStep(tripId);
     showUndoSnack(messenger, label, () => actions.undoStep(tripId, step));
   }
+}
+
+/// Picks files with [pick], puts them into the top level of the workspace and
+/// links them to [ownerId] (one undo step).
+Future<void> attachPicked(BuildContext context, WidgetRef ref, String tripId, String ownerId,
+    Future<List<PickedFile>> Function(FileSources) pick) async {
+  final l = context.l10n;
+  final List<PickedFile> files;
+  try {
+    files = await pick(ref.read(fileSourcesProvider));
+  } catch (e) {
+    if (context.mounted) showSnack(context, l.errorWith('$e'));
+    return;
+  }
+  final data = ref.read(tripDataProvider(tripId)).value;
+  if (files.isEmpty || data == null) return;
+  final label = files.length == 1 ? l.stepFileAttached(files.single.name) : l.stepFilesAdded(files.length);
+  await addFilesToWorkspace(ref, data, files, label, ownerIds: [ownerId]);
+}
+
+/// Links files already in the trip's workspace to [ownerId]; [exclude] are
+/// the ones linked already.
+Future<void> attachFromWorkspace(BuildContext context, WidgetRef ref, String tripId, String ownerId,
+    {Set<String> exclude = const {}}) async {
+  final data = ref.read(tripDataProvider(tripId)).value;
+  if (data == null) return;
+  final l = context.l10n;
+  final picked = await pickWorkspaceFiles(context, data, exclude: exclude);
+  if (picked == null || picked.isEmpty) return;
+  final label = picked.length == 1 ? l.stepFileAttached(picked.single.fileName) : l.stepFilesAdded(picked.length);
+  await ref.read(planActionsProvider).record(tripId, label, (repo) async {
+    for (final a in picked) {
+      await repo.linkAttachment(a, ownerId);
+    }
+  });
 }

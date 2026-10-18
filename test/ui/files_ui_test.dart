@@ -13,6 +13,7 @@ import 'package:travel_planner/domain/demo.dart';
 import 'package:travel_planner/domain/models.dart';
 import 'package:travel_planner/state/providers.dart';
 import 'package:travel_planner/ui/agenda/agenda_view.dart';
+import 'package:travel_planner/ui/common/item_sheet.dart';
 import 'package:travel_planner/ui/editor/attachments_section.dart';
 import 'package:travel_planner/ui/files/files_page.dart';
 
@@ -224,6 +225,51 @@ void main() {
     await pumpPage(tester, size: const Size(360, 640));
     sources.files = [_pdf('A very long booking confirmation file name for the flight to Colombo.pdf')];
     await addVia(tester, 'Dateien wählen');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the item sheet shows tickets and adds new ones on a phone', (tester) async {
+    await tester.runAsync(() => repo.putTripData(demo));
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final flight = demo.items.firstWhere((i) => i.kind == ItemKind.transport && i.fixed);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: testApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => showItemSheet(context, ref, demo.trip.id, flight.id),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await settle(tester);
+    await tester.tap(find.text('open'));
+    await settle(tester);
+    await tester.scrollUntilVisible(find.text('Tickets & Anhänge'), 200, scrollable: find.byType(Scrollable).last);
+    expect(find.text('Tickets & Anhänge'), findsOneWidget);
+    expect(find.textContaining('Noch nichts angehängt'), findsOneWidget);
+
+    sources.files = [_pdf('boarding.pdf')];
+    final add = find.byKey(const ValueKey('sheet-add-attachment'));
+    await tester.ensureVisible(add);
+    await tester.pumpAndSettle();
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dateien wählen'));
+    await settle(tester);
+    expect((await stored(tester)).attachments.single.ownerIds, [flight.id]);
+    expect(find.text('boarding.pdf'), findsOneWidget);
+    expect(find.textContaining('Noch nichts angehängt'), findsNothing);
+    await tester.tap(find.text('boarding.pdf'));
+    await tester.pump();
+    expect(opened.single, endsWith('.pdf'));
     expect(tester.takeException(), isNull);
   });
 
