@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../domain/agenda.dart';
 import '../../domain/analysis.dart';
 import '../../domain/budget.dart';
 import '../../domain/map_layout.dart';
@@ -13,6 +13,7 @@ import '../../domain/zones.dart';
 import '../../state/providers.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
+import '../files/files_page.dart';
 import 'conflict_tile.dart';
 import 'dialogs.dart';
 import 'l10n.dart';
@@ -149,7 +150,7 @@ class _ItemSheet extends ConsumerWidget {
       ..sort((a, b) => (a.start ?? 0).compareTo(b.start ?? 0));
     final transports = [for (final i in data.items) if (i.fromId == id || i.toId == id) i];
     final cards = [for (final c in data.cards) if (c.itemId == id) c];
-    final atts = data.attachmentsOf(id);
+    final atts = ticketsFor(data, id);
     final ui = ref.read(tripUiProvider.notifier);
     final view = ref.watch(tripUiProvider.select((u) => u.view));
     final theme = Theme.of(context);
@@ -297,9 +298,15 @@ class _ItemSheet extends ConsumerWidget {
           ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            leading: Icon(a.isImage ? Icons.image : (a.mime == 'application/pdf' ? Icons.picture_as_pdf : Icons.attach_file)),
+            leading: Icon(fileIcon(a)),
             title: Text(a.fileName),
-            onTap: () => OpenFilex.open(ref.read(repositoryProvider).files.fileFor(a).path, type: a.mime),
+            subtitle: a.folder.isEmpty ? null : Text(a.folder.replaceAll('/', ' › ')),
+            onTap: () => openAttachment(context, ref, a),
+            trailing: IconButton(
+              tooltip: l.showInFiles,
+              icon: const Icon(Icons.folder_open_outlined),
+              onPressed: () => openFiles(context, data.trip.id, folder: a.folder),
+            ),
           ),
         if (cards.isNotEmpty) _header(context, l.viewNotes),
         for (final c in cards)

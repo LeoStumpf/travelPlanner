@@ -48,9 +48,8 @@
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-                <data android:mimeType="application/pdf" />
-                <data android:mimeType="application/json" />
+                <!-- Any file: it lands in the trip's files (as a note with the attachment). -->
+                <data android:mimeType="*/*" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

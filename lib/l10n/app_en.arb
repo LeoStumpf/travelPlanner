@@ -2210,5 +2210,152 @@
         "type": "int"
       }
     }
-  }
+  },
+  "moreOptions": "More options",
+  "filesTitle": "Files",
+  "filesTooltip": "Files & tickets",
+  "filesEmpty": "No files yet. Keep tickets, bookings, photos or whole folders here – they stay on this device, are part of the backup and can be linked to places, transports and notes.",
+  "filesFolderEmpty": "This folder is empty.",
+  "filesAdd": "Add",
+  "filesPickFiles": "Choose files",
+  "filesPickFilesHint": "Several at once: long-press the first, then tap the others",
+  "filesPickImages": "Photos from gallery",
+  "filesImportFolder": "Import folder",
+  "filesNewFolder": "New folder",
+  "filesFolderName": "Folder name",
+  "filesRename": "Rename",
+  "filesMove": "Move to folder",
+  "filesLink": "Link to elements",
+  "filesShare": "Share",
+  "filesOpen": "Open",
+  "filesSelect": "Select",
+  "filesUnlink": "Unlink",
+  "filesUntitledNote": "Note",
+  "filesChooseFromWorkspace": "From the trip’s files",
+  "filesNoneToPick": "There are no other files in this trip yet.",
+  "showInFiles": "Show in files",
+  "filesFolderUnreadable": "Tripboard can’t read this folder. Use “Choose files” instead and select all files in it.",
+  "filesFolderCount": "{count, plural, =0{Empty} =1{1 file} other{{count} files}}",
+  "@filesFolderCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesSelected": "{count} selected",
+  "@filesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesFolderPartly": "{count, plural, =1{1 file couldn’t be read.} other{{count} files couldn’t be read.}}",
+  "@filesFolderPartly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepFilesAdded": "{count, plural, =1{1 file added} other{{count} files added}}",
+  "@stepFilesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepFolderCreated": "Folder “{name}” created",
+  "@stepFolderCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFolderRenamed": "Folder renamed to “{name}”",
+  "@stepFolderRenamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFolderDeleted": "Folder “{name}” deleted",
+  "@stepFolderDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFilesMoved": "Moved to “{folder}”",
+  "@stepFilesMoved": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFileRenamed": "Renamed to “{name}”",
+  "@stepFileRenamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFilesDeleted": "{count, plural, =1{1 file deleted} other{{count} files deleted}}",
+  "@stepFilesDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepFileLinksChanged": "Links of “{name}” changed",
+  "@stepFileLinksChanged": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFileUnlinked": "“{name}” unlinked – it stays in the trip’s files",
+  "@stepFileUnlinked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFolderQuestion": "Delete folder “{name}”?",
+  "@deleteFolderQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFolderBody": "{count, plural, =1{The file in it is deleted as well.} other{The {count} files in it are deleted as well.}}",
+  "@deleteFolderBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteFilesQuestion": "{count, plural, =1{Delete 1 file?} other{Delete {count} files?}}",
+  "@deleteFilesQuestion": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteFilesBody": "Linked places, transports and notes lose the file as well.",
+  "timelineVertical": "Show vertically",
+  "timelineHorizontal": "Show horizontally"
 }

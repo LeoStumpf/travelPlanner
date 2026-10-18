@@ -11,13 +11,26 @@ import 'dart:convert';
 /// units...), and add the step that turns version N into N + 1 to
 /// [docMigrationSteps] (index 0 migrates 1 -> 2). Steps get the raw JSON map
 /// and the row type, so they never depend on the current model classes.
-const currentDocVersion = 1;
+const currentDocVersion = 2;
 
 /// Rewrites one document of [type] from version `index + 1` to `index + 2`.
 typedef DocMigrationStep = Map<String, Object?> Function(String type, Map<String, Object?> json);
 
 /// Released steps, in order. Never edit a step once shipped.
-const List<DocMigrationStep> docMigrationSteps = [];
+const List<DocMigrationStep> docMigrationSteps = [_v1AttachmentOwners];
+
+/// 1 -> 2: an attachment belonged to one item or card (`ownerId`); it now
+/// lives in the trip's file workspace and can be linked to several
+/// (`ownerIds`).
+Map<String, Object?> _v1AttachmentOwners(String type, Map<String, Object?> j) {
+  if (type != 'attachment' || !j.containsKey('ownerId')) return j;
+  final owner = j['ownerId'];
+  return {
+    for (final e in j.entries)
+      if (e.key != 'ownerId') e.key: e.value,
+    'ownerIds': [?owner],
+  };
+}
 
 /// Data written by a newer app version (doc format [found], this app reads up
 /// to [supported]). A [FormatException], worded for the user by the UI.

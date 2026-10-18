@@ -32,7 +32,7 @@ void main() {
   Future<Attachment> attach() async {
     final att = await repo.files.addBytes(
       tripId: demo.trip.id,
-      ownerId: demo.items.first.id,
+      ownerIds: [demo.items.first.id],
       bytes: Uint8List.fromList([1, 2, 3]),
       fileName: 'ticket.pdf',
     );

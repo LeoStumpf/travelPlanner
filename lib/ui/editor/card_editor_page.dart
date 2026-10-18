@@ -64,6 +64,10 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
   late final _url = TextEditingController(text: _c.url ?? '');
   final Map<String, TextEditingController> _entryCtrls = {};
   bool _deleted = false;
+
+  /// Files added since then are the editor's own (see
+  /// [Repository.discardOwnerFiles]).
+  final _openedAt = DateTime.now();
   bool _loadingPreview = false;
   // What is in the database for this card (json), null while a new card is not stored yet.
   late String? _storedJson = widget.isNew ? null : jsonEncode(widget.initial.toJson());
@@ -392,9 +396,7 @@ class _CardEditorPageState extends ConsumerState<CardEditorPage> with WidgetsBin
       case 'delete':
         if (widget.isNew && _storedJson == null) {
           _deleted = true;
-          for (final a in data.attachmentsOf(_c.id)) {
-            await ref.read(repositoryProvider).deleteAttachment(a);
-          }
+          await ref.read(repositoryProvider).discardOwnerFiles(data, _c.id, _openedAt);
         } else if (await confirm(context, l.deleteNoteQuestion)) {
           if (!mounted) return;
           _deleted = true;

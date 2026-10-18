@@ -2680,4 +2680,201 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get moreOptions => 'Weitere Optionen';
+
+  @override
+  String get filesTitle => 'Dateien';
+
+  @override
+  String get filesTooltip => 'Dateien & Tickets';
+
+  @override
+  String get filesEmpty =>
+      'Noch keine Dateien. Lege hier Tickets, Buchungen, Fotos oder ganze Ordner ab – sie bleiben auf dem Gerät, sind im Backup enthalten und lassen sich mit Orten, Transporten und Notizen verknüpfen.';
+
+  @override
+  String get filesFolderEmpty => 'Dieser Ordner ist leer.';
+
+  @override
+  String get filesAdd => 'Hinzufügen';
+
+  @override
+  String get filesPickFiles => 'Dateien wählen';
+
+  @override
+  String get filesPickFilesHint =>
+      'Mehrere auf einmal: erste lange drücken, dann weitere antippen';
+
+  @override
+  String get filesPickImages => 'Fotos aus der Galerie';
+
+  @override
+  String get filesImportFolder => 'Ordner importieren';
+
+  @override
+  String get filesNewFolder => 'Neuer Ordner';
+
+  @override
+  String get filesFolderName => 'Ordnername';
+
+  @override
+  String get filesRename => 'Umbenennen';
+
+  @override
+  String get filesMove => 'In Ordner verschieben';
+
+  @override
+  String get filesLink => 'Mit Elementen verknüpfen';
+
+  @override
+  String get filesShare => 'Teilen';
+
+  @override
+  String get filesOpen => 'Öffnen';
+
+  @override
+  String get filesSelect => 'Auswählen';
+
+  @override
+  String get filesUnlink => 'Verknüpfung lösen';
+
+  @override
+  String get filesUntitledNote => 'Notiz';
+
+  @override
+  String get filesChooseFromWorkspace => 'Aus den Dateien der Reise';
+
+  @override
+  String get filesNoneToPick => 'Diese Reise hat noch keine weiteren Dateien.';
+
+  @override
+  String get showInFiles => 'In Dateien zeigen';
+
+  @override
+  String get filesFolderUnreadable =>
+      'Tripboard kann diesen Ordner nicht lesen. Nimm stattdessen „Dateien wählen“ und markiere dort alle Dateien.';
+
+  @override
+  String filesFolderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dateien',
+      one: '1 Datei',
+      zero: 'Leer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String filesSelected(int count) {
+    return '$count ausgewählt';
+  }
+
+  @override
+  String filesFolderPartly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dateien waren nicht lesbar.',
+      one: '1 Datei war nicht lesbar.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stepFilesAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dateien hinzugefügt',
+      one: '1 Datei hinzugefügt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stepFolderCreated(String name) {
+    return 'Ordner „$name“ angelegt';
+  }
+
+  @override
+  String stepFolderRenamed(String name) {
+    return 'Ordner in „$name“ umbenannt';
+  }
+
+  @override
+  String stepFolderDeleted(String name) {
+    return 'Ordner „$name“ gelöscht';
+  }
+
+  @override
+  String stepFilesMoved(String folder) {
+    return 'Nach „$folder“ verschoben';
+  }
+
+  @override
+  String stepFileRenamed(String name) {
+    return 'In „$name“ umbenannt';
+  }
+
+  @override
+  String stepFilesDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dateien gelöscht',
+      one: '1 Datei gelöscht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stepFileLinksChanged(String name) {
+    return 'Verknüpfungen von „$name“ geändert';
+  }
+
+  @override
+  String stepFileUnlinked(String name) {
+    return '„$name“ gelöst – bleibt in den Dateien der Reise';
+  }
+
+  @override
+  String deleteFolderQuestion(String name) {
+    return 'Ordner „$name“ löschen?';
+  }
+
+  @override
+  String deleteFolderBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Die $count Dateien darin werden mitgelöscht.',
+      one: 'Die Datei darin wird mitgelöscht.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String deleteFilesQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dateien löschen?',
+      one: '1 Datei löschen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deleteFilesBody =>
+      'Verknüpfte Orte, Transporte und Notizen verlieren die Datei ebenfalls.';
+
+  @override
+  String get timelineVertical => 'Senkrecht anzeigen';
+
+  @override
+  String get timelineHorizontal => 'Waagerecht anzeigen';
 }

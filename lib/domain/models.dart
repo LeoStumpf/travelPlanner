@@ -103,6 +103,10 @@ class Trip {
   /// Manual exchange rates: foreign units per one unit of [currency]
   /// ({"LKR": 330} = 1 EUR buys 330 LKR). Entered by the user, offline.
   final Map<String, double> rates;
+
+  /// Folders of the trip's file workspace ("Flights/Outbound"), including
+  /// empty ones; folders that hold files also follow from [Attachment.folder].
+  final List<String> folders;
   final DateTime createdAt;
 
   const Trip({
@@ -115,6 +119,7 @@ class Trip {
     this.currency,
     this.travellers = 1,
     this.rates = const {},
+    this.folders = const [],
     required this.createdAt,
   });
 
@@ -127,6 +132,7 @@ class Trip {
     Object? currency = _keep,
     int? travellers,
     Map<String, double>? rates,
+    List<String>? folders,
   }) =>
       Trip(
         id: id,
@@ -138,6 +144,7 @@ class Trip {
         currency: identical(currency, _keep) ? this.currency : currency as String?,
         travellers: travellers ?? this.travellers,
         rates: rates ?? this.rates,
+        folders: folders ?? this.folders,
         createdAt: createdAt,
       );
 
@@ -151,6 +158,7 @@ class Trip {
         if (currency != null) 'currency': currency,
         if (travellers != 1) 'travellers': travellers,
         if (rates.isNotEmpty) 'rates': rates,
+        if (folders.isNotEmpty) 'folders': folders,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -167,6 +175,7 @@ class Trip {
           for (final e in ((j['rates'] as Map?) ?? const {}).entries)
             if (e.value is num) '${e.key}': (e.value as num).toDouble(),
         },
+        folders: [for (final f in (j['folders'] as List?) ?? const []) '$f'],
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 }
@@ -580,12 +589,16 @@ class Edge {
       );
 }
 
-/// A file (ticket PDF, photo, screenshot) stored in the app's documents
-/// directory. [ownerId] is the item or card it belongs to.
+/// A file (ticket PDF, photo, screenshot) in the trip's file workspace,
+/// stored in the app's documents directory. [ownerIds] are the items and
+/// cards it is linked to (none: it only lives in the workspace).
 class Attachment {
   final String id;
   final String tripId;
-  final String ownerId;
+  final List<String> ownerIds;
+
+  /// Workspace folder ("Flights/Outbound"); '' is the top level.
+  final String folder;
   final String fileName;
 
   /// Path relative to the attachments directory.
@@ -596,7 +609,8 @@ class Attachment {
   const Attachment({
     required this.id,
     required this.tripId,
-    required this.ownerId,
+    this.ownerIds = const [],
+    this.folder = '',
     required this.fileName,
     required this.relPath,
     required this.mime,
@@ -605,10 +619,22 @@ class Attachment {
 
   bool get isImage => mime.startsWith('image/');
 
+  Attachment copyWith({List<String>? ownerIds, String? folder, String? fileName}) => Attachment(
+        id: id,
+        tripId: tripId,
+        ownerIds: ownerIds ?? this.ownerIds,
+        folder: folder ?? this.folder,
+        fileName: fileName ?? this.fileName,
+        relPath: relPath,
+        mime: mime,
+        createdAt: createdAt,
+      );
+
   Map<String, Object?> toJson() => {
         'id': id,
         'tripId': tripId,
-        'ownerId': ownerId,
+        'ownerIds': ownerIds,
+        if (folder.isNotEmpty) 'folder': folder,
         'fileName': fileName,
         'relPath': relPath,
         'mime': mime,
@@ -618,7 +644,8 @@ class Attachment {
   factory Attachment.fromJson(Map<String, Object?> j) => Attachment(
         id: j['id'] as String,
         tripId: j['tripId'] as String,
-        ownerId: j['ownerId'] as String,
+        ownerIds: [for (final o in (j['ownerIds'] as List?) ?? const []) '$o'],
+        folder: j['folder'] as String? ?? '',
         fileName: j['fileName'] as String? ?? '',
         relPath: j['relPath'] as String,
         mime: j['mime'] as String? ?? 'application/octet-stream',
@@ -659,7 +686,16 @@ class TripData {
   }
 
   List<Attachment> attachmentsOf(String ownerId) =>
-      [for (final a in attachments) if (a.ownerId == ownerId) a];
+      [for (final a in attachments) if (a.ownerIds.contains(ownerId)) a];
+
+  /// This data with [a] added or replaced.
+  TripData withAttachment(Attachment a) => TripData(
+        trip: trip,
+        items: items,
+        cards: cards,
+        edges: edges,
+        attachments: [for (final x in attachments) if (x.id != a.id) x, a],
+      );
 
   Attachment? attachment(String? id) {
     if (id == null) return null;

@@ -44,18 +44,25 @@ class DashedLinePainter extends CustomPainter {
   final Color color;
   final double dash;
   final double gap;
-  const DashedLinePainter(this.color, {this.dash = 10, this.gap = 5});
+
+  /// Dashes run down instead of across.
+  final bool vertical;
+  const DashedLinePainter(this.color, {this.dash = 10, this.gap = 5, this.vertical = false});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    final r = Radius.circular(size.height / 2);
-    for (var x = 0.0; x < size.width; x += dash + gap) {
-      final w = (size.width - x).clamp(0.0, dash);
-      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x, 0, w, size.height), r), paint);
+    final length = vertical ? size.height : size.width;
+    final thickness = vertical ? size.width : size.height;
+    final r = Radius.circular(thickness / 2);
+    for (var x = 0.0; x < length; x += dash + gap) {
+      final w = (length - x).clamp(0.0, dash);
+      final rect = vertical ? Rect.fromLTWH(0, x, thickness, w) : Rect.fromLTWH(x, 0, w, thickness);
+      canvas.drawRRect(RRect.fromRectAndRadius(rect, r), paint);
     }
   }
 
   @override
-  bool shouldRepaint(DashedLinePainter old) => old.color != color || old.dash != dash || old.gap != gap;
+  bool shouldRepaint(DashedLinePainter old) =>
+      old.color != color || old.dash != dash || old.gap != gap || old.vertical != vertical;
 }

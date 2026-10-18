@@ -2679,4 +2679,201 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get moreOptions => 'More options';
+
+  @override
+  String get filesTitle => 'Files';
+
+  @override
+  String get filesTooltip => 'Files & tickets';
+
+  @override
+  String get filesEmpty =>
+      'No files yet. Keep tickets, bookings, photos or whole folders here – they stay on this device, are part of the backup and can be linked to places, transports and notes.';
+
+  @override
+  String get filesFolderEmpty => 'This folder is empty.';
+
+  @override
+  String get filesAdd => 'Add';
+
+  @override
+  String get filesPickFiles => 'Choose files';
+
+  @override
+  String get filesPickFilesHint =>
+      'Several at once: long-press the first, then tap the others';
+
+  @override
+  String get filesPickImages => 'Photos from gallery';
+
+  @override
+  String get filesImportFolder => 'Import folder';
+
+  @override
+  String get filesNewFolder => 'New folder';
+
+  @override
+  String get filesFolderName => 'Folder name';
+
+  @override
+  String get filesRename => 'Rename';
+
+  @override
+  String get filesMove => 'Move to folder';
+
+  @override
+  String get filesLink => 'Link to elements';
+
+  @override
+  String get filesShare => 'Share';
+
+  @override
+  String get filesOpen => 'Open';
+
+  @override
+  String get filesSelect => 'Select';
+
+  @override
+  String get filesUnlink => 'Unlink';
+
+  @override
+  String get filesUntitledNote => 'Note';
+
+  @override
+  String get filesChooseFromWorkspace => 'From the trip’s files';
+
+  @override
+  String get filesNoneToPick => 'There are no other files in this trip yet.';
+
+  @override
+  String get showInFiles => 'Show in files';
+
+  @override
+  String get filesFolderUnreadable =>
+      'Tripboard can’t read this folder. Use “Choose files” instead and select all files in it.';
+
+  @override
+  String filesFolderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+      zero: 'Empty',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String filesSelected(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String filesFolderPartly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files couldn’t be read.',
+      one: '1 file couldn’t be read.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stepFilesAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files added',
+      one: '1 file added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stepFolderCreated(String name) {
+    return 'Folder “$name” created';
+  }
+
+  @override
+  String stepFolderRenamed(String name) {
+    return 'Folder renamed to “$name”';
+  }
+
+  @override
+  String stepFolderDeleted(String name) {
+    return 'Folder “$name” deleted';
+  }
+
+  @override
+  String stepFilesMoved(String folder) {
+    return 'Moved to “$folder”';
+  }
+
+  @override
+  String stepFileRenamed(String name) {
+    return 'Renamed to “$name”';
+  }
+
+  @override
+  String stepFilesDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files deleted',
+      one: '1 file deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stepFileLinksChanged(String name) {
+    return 'Links of “$name” changed';
+  }
+
+  @override
+  String stepFileUnlinked(String name) {
+    return '“$name” unlinked – it stays in the trip’s files';
+  }
+
+  @override
+  String deleteFolderQuestion(String name) {
+    return 'Delete folder “$name”?';
+  }
+
+  @override
+  String deleteFolderBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'The $count files in it are deleted as well.',
+      one: 'The file in it is deleted as well.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String deleteFilesQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count files?',
+      one: 'Delete 1 file?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deleteFilesBody =>
+      'Linked places, transports and notes lose the file as well.';
+
+  @override
+  String get timelineVertical => 'Show vertically';
+
+  @override
+  String get timelineHorizontal => 'Show horizontally';
 }

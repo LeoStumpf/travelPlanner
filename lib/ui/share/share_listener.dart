@@ -136,7 +136,7 @@ class _ShareListenerState extends ConsumerState<ShareListener> {
         );
         final att = await repo.files.addBytes(
           tripId: data.trip.id,
-          ownerId: card.id,
+          ownerIds: [card.id],
           bytes: await f.readAsBytes(),
           fileName: p.basename(m.path),
         );

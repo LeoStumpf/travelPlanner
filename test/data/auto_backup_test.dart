@@ -44,7 +44,7 @@ void main() {
   Future<Attachment> attach(TripData d, List<int> bytes) async {
     final att = await repo.files.addBytes(
       tripId: d.trip.id,
-      ownerId: d.items.first.id,
+      ownerIds: [d.items.first.id],
       bytes: Uint8List.fromList(bytes),
       fileName: 'ticket.pdf',
     );

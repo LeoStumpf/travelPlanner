@@ -116,7 +116,7 @@ void main() {
     final tgv = byTitle('TGV Paris → Lyon');
     final note = NoteCard(id: 'n1', tripId: demo.trip.id, type: CardType.image, itemId: tgv.id, createdAt: DateTime(2026));
     Attachment att(String id, String owner) => Attachment(
-        id: id, tripId: demo.trip.id, ownerId: owner, fileName: '$id.pdf', relPath: id, mime: 'application/pdf',
+        id: id, tripId: demo.trip.id, ownerIds: [owner], fileName: '$id.pdf', relPath: id, mime: 'application/pdf',
         createdAt: DateTime(2026));
     final data = TripData(
       trip: demo.trip,

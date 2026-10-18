@@ -24,4 +24,9 @@ class Sharer {
       subject: subject,
     ));
   }
+
+  /// Shares files that already exist on disk ([files]: path, mime, name).
+  Future<void> shareFiles(List<(String, String, String)> files) => SharePlus.instance.share(ShareParams(
+        files: [for (final (path, mime, name) in files) XFile(path, mimeType: mime, name: name)],
+      ));
 }

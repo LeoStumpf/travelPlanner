@@ -13,6 +13,7 @@ import '../../domain/time.dart';
 import '../../domain/timeline.dart';
 import '../../state/hints.dart';
 import '../../state/providers.dart';
+import '../../state/timeline_prefs.dart';
 import '../common/a11y.dart';
 import '../common/conflict_tile.dart';
 import '../common/dashed_border.dart';
@@ -57,7 +58,47 @@ double _rowHeight(ItemKind k) => switch (k) {
   ItemKind.activity => 32,
 };
 
+/// Vertical timeline: width of one row (now a column) of a layer before it
+/// is stretched to fill the screen.
+double _columnWidth(ItemKind k) => switch (k) {
+  ItemKind.stay => 88,
+  ItemKind.transport => 56,
+  ItemKind.accommodation => 64,
+  ItemKind.activity => 64,
+};
+
+/// Vertical timeline: width of the day column on the left.
+const _gutterW = 48.0;
+
+/// Zoom limits (length of one day) per orientation.
+const _horizontalDay = (min: 28.0, initial: 64.0, max: 480.0);
+const _verticalDay = (min: 40.0, initial: 120.0, max: 960.0);
+
 enum _DragType { move, resizeStart, resizeEnd }
+
+/// Font size from 12 down to 9 at which the longest word of [text] fits
+/// [maxWidth], so titles in narrow vertical columns wrap between words
+/// instead of inside them (9 when even that is too wide).
+double _fitWords(BuildContext context, String text, TextStyle style, double maxWidth) {
+  final longest = text.split(RegExp(r'\s+')).fold('', (a, w) => w.length > a.length ? w : a);
+  if (longest.isEmpty) return 12;
+  final scaler = MediaQuery.textScalerOf(context);
+  for (var size = 12.0; size > 9; size--) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: longest,
+        style: style.copyWith(fontSize: size),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    final fits = tp.width <= maxWidth;
+    tp.dispose();
+    if (fits) return size;
+  }
+  return 9;
+}
 
 class TimelineView extends ConsumerStatefulWidget {
   final TripData data;
@@ -68,8 +109,20 @@ class TimelineView extends ConsumerStatefulWidget {
 }
 
 class _TimelineViewState extends ConsumerState<TimelineView> {
+  /// Scrolls along the time axis (sideways or down, see [_vertical]).
   final _hScroll = ScrollController();
-  double _dayWidth = 64;
+
+  /// Length of one day along the time axis, kept per orientation.
+  double _dayW = _horizontalDay.initial;
+  double _dayH = _verticalDay.initial;
+
+  bool get _vertical => ref.read(timelineAxisProvider) == TimelineAxis.vertical;
+  double get _dayWidth => _vertical ? _dayH : _dayW;
+  set _dayWidth(double v) => _vertical ? _dayH = v : _dayW = v;
+  ({double min, double initial, double max}) get _dayLimits => _vertical ? _verticalDay : _horizontalDay;
+
+  /// The component of [o] along the time axis.
+  double _main(Offset o) => _vertical ? o.dy : o.dx;
 
   String? _dragId;
   _DragType? _dragType;
@@ -161,7 +214,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
   /// Changes the zoom while keeping the time under [focalX] (viewport
   /// coordinates) in place.
   void _zoomTo(double width, double focalX) {
-    final w = width.clamp(28.0, 480.0);
+    final w = width.clamp(_dayLimits.min, _dayLimits.max);
     if (!_hScroll.hasClients) {
       setState(() => _dayWidth = w);
       return;
@@ -178,9 +231,9 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     _pointers[e.pointer] = e.localPosition;
     if (_pointers.length == 2) {
       final ps = _pointers.values.toList();
-      _pinchStartDist = (ps[0].dx - ps[1].dx).abs().clamp(20, double.infinity);
+      _pinchStartDist = (_main(ps[0]) - _main(ps[1])).abs().clamp(20, double.infinity);
       _pinchStartWidth = _dayWidth;
-      final focalX = (ps[0].dx + ps[1].dx) / 2;
+      final focalX = (_main(ps[0]) + _main(ps[1])) / 2;
       _pinchFocalDays = ((_hScroll.hasClients ? _hScroll.offset : 0) + focalX) / _dayWidth;
       setState(() {});
     }
@@ -192,9 +245,9 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     final start = _pinchStartDist;
     if (_pointers.length < 2 || start == null) return;
     final ps = _pointers.values.toList();
-    final dist = (ps[0].dx - ps[1].dx).abs().clamp(20, double.infinity);
-    final w = (_pinchStartWidth * dist / start).clamp(28.0, 480.0);
-    final focalX = (ps[0].dx + ps[1].dx) / 2;
+    final dist = (_main(ps[0]) - _main(ps[1])).abs().clamp(20, double.infinity);
+    final w = (_pinchStartWidth * dist / start).clamp(_dayLimits.min, _dayLimits.max);
+    final focalX = (_main(ps[0]) + _main(ps[1])) / 2;
     setState(() => _dayWidth = w);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hScroll.hasClients) return;
@@ -290,6 +343,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
   @override
   Widget build(BuildContext context) {
     final ui = ref.watch(tripUiProvider);
+    final vertical = ref.watch(timelineAxisProvider) == TimelineAxis.vertical;
     final preview = _preview(ui.shiftMode);
     final items = preview?.items ?? data.items;
     final changed = preview?.changedIds ?? const <String>{};
@@ -325,7 +379,7 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         ItemKind.transport when transportGaps.isNotEmpty => 1,
         _ => 0,
       };
-      lanes.add(_LaneSpec(k, laneItems, rows, (laneItems.isEmpty ? 0 : count) + extra));
+      lanes.add(_LaneSpec(k, laneItems, rows, (laneItems.isEmpty ? 0 : count) + extra, hasMarkers: extra > 0));
     }
     final unscheduled = [
       for (final i in data.items)
@@ -338,24 +392,37 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
     final hasStays = data.items.any((i) => i.kind == ItemKind.stay);
     final hasScheduled = data.items.any((i) => i.isScheduled);
 
-    final laneWidgets = <Widget>[];
-    final labelWidgets = <Widget>[];
-    for (final lane in lanes) {
-      final rowH = _rowHeight(lane.kind) * scale;
+    /// A child placed [main] along the time axis and [cross] across it:
+    /// left/width and top/height, or the other way round when vertical.
+    Positioned place({
+      Key? key,
+      required double main,
+      required double mainExtent,
+      required double cross,
+      required double crossExtent,
+      required Widget child,
+    }) => vertical
+        ? Positioned(key: key, top: main, height: mainExtent, left: cross, width: crossExtent, child: child)
+        : Positioned(key: key, left: main, width: mainExtent, top: cross, height: crossExtent, child: child);
+
+    /// The blocks and markers of [lane], whose rows are [rowH] across; the
+    /// marker row is [markerH] across (default [rowH]).
+    List<Widget> laneChildren(_LaneSpec lane, double rowH, {double? markerH}) {
+      final markerCross = _lanePad + (lane.rowCount - 1) * rowH;
+      final markerExtent = (markerH ?? rowH) - 6;
       final room = labelRoom(lane.items, lane.rows);
-      final h = (lane.rowCount < 1 ? 1 : lane.rowCount) * rowH + 2 * _lanePad;
       final children = <Widget>[];
 
       if (lane.kind == ItemKind.stay) {
         for (final g in findGaps(items, plannedDays: data.trip.plannedDays)) {
           if (g.firstDay < firstDay) continue;
           children.add(
-            Positioned(
+            place(
               key: ValueKey('free-days-${g.firstDay}'),
-              left: x(at(g.firstDay, 0)) + 3,
-              width: g.days * _dayWidth - 6,
-              top: _lanePad,
-              height: rowH - 6,
+              main: x(at(g.firstDay, 0)) + 3,
+              mainExtent: g.days * _dayWidth - 6,
+              cross: _lanePad,
+              crossExtent: rowH - 6,
               child: _GapBox(
                 label: context.l10n.freeDays(g.days),
                 onTap: () => showAddSheet(context, ref, data, atDay: g.firstDay),
@@ -371,11 +438,11 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
             zones: data.zones,
           ).where((s) => dayOf(s.start!) <= n && n < lastDayOf(s.end!)).firstOrNull;
           children.add(
-            Positioned(
-              left: x(at(n, 19 * 60)),
-              width: 13 * 60 * _pxPerMin,
-              top: _lanePad + (lane.rowCount - 1) * rowH,
-              height: rowH - 6,
+            place(
+              main: x(at(n, 19 * 60)),
+              mainExtent: 13 * 60 * _pxPerMin,
+              cross: markerCross,
+              crossExtent: markerExtent,
               child: _MissingNight(
                 key: ValueKey('missing-night-$n'),
                 night: context.l10n.nightTitle(
@@ -395,14 +462,15 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
           // Centered between leaving the one stay and reaching the next,
           // wide enough to tap even when they touch.
           final mid = (x(g.from.end!) + x(g.to.start!)) / 2;
-          final w = math.max((x(g.to.start!) - x(g.from.end!)).abs(), _transportGapMinW);
+          final minExtent = vertical ? 48.0 : _transportGapMinW;
+          final w = math.max((x(g.to.start!) - x(g.from.end!)).abs(), minExtent);
           children.add(
-            Positioned(
+            place(
               key: ValueKey('transport-gap-${g.from.id}-${g.to.id}'),
-              left: mid - w / 2,
-              width: w,
-              top: _lanePad + (lane.rowCount - 1) * rowH,
-              height: rowH - 6,
+              main: mid - w / 2,
+              mainExtent: w,
+              cross: markerCross,
+              crossExtent: markerExtent,
               child: _GapBox(
                 label: context.l10n.kindTransport,
                 tooltip: context.l10n.noTransportBetween(g.from.title, g.to.title),
@@ -416,37 +484,43 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
       final handles = <Widget>[];
       for (final i in lane.items) {
         final left = x(i.start!);
-        final width = math.max(i.duration * _pxPerMin, 26.0);
+        final width = math.max(i.duration * _pxPerMin, vertical ? 20.0 : 26.0);
         final row = lane.rows[i.id] ?? 0;
         final draggable = !i.fixed;
         // Free space until the next block in this row (or the end).
         final roomPx = room[i.id] == null ? totalW - left : room[i.id]! * _pxPerMin;
         final spillW = math.min(roomPx - width - 6, _spillMaxW);
+        // Vertical blocks are a column wide: their titles wrap inside.
         final spill =
-            lane.kind != ItemKind.stay && width < _spillBelowW && spillW >= _spillMinW && i.title.trim().isNotEmpty;
+            !vertical &&
+            lane.kind != ItemKind.stay &&
+            width < _spillBelowW &&
+            spillW >= _spillMinW &&
+            i.title.trim().isNotEmpty;
         if (spill) {
           children.add(
-            Positioned(
+            place(
               key: ValueKey('label-${i.id}'),
-              left: left + width + 3,
-              width: spillW,
-              top: _lanePad + row * rowH,
-              height: rowH - 6,
+              main: left + width + 3,
+              mainExtent: spillW,
+              cross: _lanePad + row * rowH,
+              crossExtent: rowH - 6,
               child: _SpillLabel(item: i, onTap: () => showItemSheet(context, ref, data.trip.id, i.id)),
             ),
           );
         }
         children.add(
-          Positioned(
+          place(
             key: ValueKey(i.id),
-            left: left,
-            width: width,
-            top: _lanePad + row * rowH,
-            height: rowH - 6,
+            main: left,
+            mainExtent: width,
+            cross: _lanePad + row * rowH,
+            crossExtent: rowH - 6,
             child: _Block(
-              titleInset: (_scrollX - left).clamp(0, math.max(0, width - 90)),
+              vertical: vertical,
+              titleInset: (_scrollX - left).clamp(0, math.max(0, width - (vertical ? 40 : 90))),
               // A place's name may run on above the line up to the next place.
-              titleWidth: lane.kind == ItemKind.stay ? math.max(width, roomPx - 6) : width,
+              titleWidth: lane.kind == ItemKind.stay && !vertical ? math.max(width, roomPx - 6) : width,
               titleOutside: spill,
               item: i,
               tripStart: data.trip.startDate,
@@ -464,8 +538,8 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
                 if (_pinchStartDist != null) return;
                 _startDrag(i, _DragType.move);
               },
-              onLongPressMove: (dx) {
-                if (_dragId == i.id && _dragType == _DragType.move) _dragTo(i, dx);
+              onLongPressMove: (offset) {
+                if (_dragId == i.id && _dragType == _DragType.move) _dragTo(i, _main(offset));
               },
               onLongPressEnd: () {
                 if (_dragId == i.id) _commitDrag(ui.shiftMode);
@@ -477,13 +551,14 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
         // blocks keep scrolling the timeline.
         if (draggable && ui.selectedId == i.id) {
           final top = _lanePad + row * rowH;
-          Widget handle(_DragType type, double centerX) => Positioned(
+          Widget handle(_DragType type, double centerX) => place(
             key: ValueKey('${type.name}-${i.id}'),
-            left: centerX - _handleW / 2,
-            width: _handleW,
-            top: top,
-            height: rowH - 6,
+            main: centerX - _handleW / 2,
+            mainExtent: _handleW,
+            cross: top,
+            crossExtent: rowH - 6,
             child: _ResizeHandle(
+              vertical: vertical,
               callbacks: _ResizeCallbacks(
                 start: () => _startDrag(i, type),
                 update: (dx) => _dragTo(i, dx),
@@ -492,32 +567,190 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
               color: kindColor(i.kind),
             ),
           );
-          // Narrow blocks keep only the end grip, so the body stays grabbable.
+          // Short blocks keep only the end grip, so the body stays grabbable.
           if (width >= 48) handles.add(handle(_DragType.resizeStart, left));
           handles.add(handle(_DragType.resizeEnd, left + width));
         }
       }
       children.addAll(handles);
+      return children;
+    }
 
-      laneWidgets.add(
-        Container(
-          height: h,
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.4))),
+    Widget laneIcon(ItemKind k) => Tooltip(
+      message: context.l10n.layer(k),
+      child: Center(child: Icon(kindIcon(k), color: kindColor(k), size: 20)),
+    );
+    final lineColor = Theme.of(context).dividerColor.withValues(alpha: 0.4);
+    Widget grid(double headerExtent) => CustomPaint(
+      painter: _GridPainter(
+        vertical: vertical,
+        firstDay: firstDay,
+        dayWidth: _dayWidth,
+        headerH: headerExtent,
+        tripStart: data.trip.startDate,
+        color: Theme.of(context).colorScheme.onSurface,
+        nightColor: AppColors.of(context).night,
+        today: _todayIndex(),
+      ),
+    );
+    final dayHeader = _DayHeader(
+      vertical: vertical,
+      firstDay: firstDay,
+      lastDay: lastDay,
+      dayWidth: _dayWidth,
+      height: vertical ? _gutterW * scale : headerH,
+      tripStart: data.trip.startDate,
+      onLongPress: (d) => showAddSheet(context, ref, data, atDay: d),
+    );
+    Widget pinch(Widget child) => Listener(
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerUp,
+      child: child,
+    );
+    final physics = _pinchStartDist != null ? const NeverScrollableScrollPhysics() : null;
+
+    Widget horizontalBody() {
+      final laneWidgets = <Widget>[];
+      final labelWidgets = <Widget>[];
+      for (final lane in lanes) {
+        final rowH = _rowHeight(lane.kind) * scale;
+        final h = (lane.rowCount < 1 ? 1 : lane.rowCount) * rowH + 2 * _lanePad;
+        laneWidgets.add(
+          Container(
+            height: h,
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: lineColor)),
+            ),
+            child: Stack(clipBehavior: Clip.none, children: laneChildren(lane, rowH)),
           ),
-          child: Stack(clipBehavior: Clip.none, children: children),
-        ),
-      );
-      labelWidgets.add(
-        SizedBox(
-          height: h,
-          child: Tooltip(
-            message: context.l10n.layer(lane.kind),
-            child: Center(child: Icon(kindIcon(lane.kind), color: kindColor(lane.kind), size: 20)),
-          ),
+        );
+        labelWidgets.add(SizedBox(height: h, child: laneIcon(lane.kind)));
+      }
+      return SingleChildScrollView(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: _labelW,
+              child: Column(
+                children: [
+                  SizedBox(height: headerH),
+                  ...labelWidgets,
+                ],
+              ),
+            ),
+            Expanded(
+              child: pinch(
+                SingleChildScrollView(
+                  key: const ValueKey('timeline-horizontal'),
+                  controller: _hScroll,
+                  scrollDirection: Axis.horizontal,
+                  physics: physics,
+                  child: SizedBox(
+                    width: totalW,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: grid(headerH)),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [dayHeader, ...laneWidgets, const SizedBox(height: 24)],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
+
+    // Days run down, the layers are columns side by side. They fill the
+    // screen's width – places keep their width, the other layers shrink to
+    // fit down to 60 % – and scroll sideways only beyond that.
+    Widget verticalBody() => LayoutBuilder(
+      builder: (context, constraints) {
+        const minSqueeze = 0.6;
+        // Markers only need room for an icon.
+        const markerW = 34.0;
+        final gutter = _gutterW * scale;
+        double natural(_LaneSpec lane) =>
+            lane.blockRows * _columnWidth(lane.kind) * scale + (lane.hasMarkers ? markerW * scale : 0) + 2 * _lanePad;
+        final fixedW = lanes.where((l) => l.kind == ItemKind.stay).fold(0.0, (w, lane) => w + natural(lane));
+        final flexW = lanes.where((l) => l.kind != ItemKind.stay).fold(0.0, (w, lane) => w + natural(lane));
+        final room = constraints.maxWidth - gutter;
+        final factor = flexW <= 0
+            ? 1.0
+            : fixedW + flexW <= room
+            ? room / (fixedW + flexW)
+            : math.max(minSqueeze, (room - fixedW) / flexW);
+        // Growing applies to all layers alike, shrinking only to non-places.
+        double stretchOf(_LaneSpec lane) => factor >= 1 || lane.kind != ItemKind.stay ? factor : 1;
+        final laneWidgets = <Widget>[];
+        final labelWidgets = <Widget>[];
+        var totalCross = gutter;
+        for (final lane in lanes) {
+          final rowW = _columnWidth(lane.kind) * scale * stretchOf(lane);
+          final markerH = markerW * scale * stretchOf(lane);
+          final w = lane.blockRows * rowW + (lane.hasMarkers ? markerH : 0) + 2 * _lanePad;
+          totalCross += w;
+          laneWidgets.add(
+            Container(
+              width: w,
+              decoration: BoxDecoration(
+                border: Border(right: BorderSide(color: lineColor)),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: laneChildren(lane, rowW, markerH: markerH),
+              ),
+            ),
+          );
+          labelWidgets.add(SizedBox(width: w, child: laneIcon(lane.kind)));
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: math.max(totalCross, constraints.maxWidth),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 32 * scale,
+                  child: Row(
+                    children: [
+                      SizedBox(width: gutter),
+                      ...labelWidgets,
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: lineColor),
+                Expanded(
+                  child: pinch(
+                    SingleChildScrollView(
+                      key: const ValueKey('timeline-vertical'),
+                      controller: _hScroll,
+                      physics: physics,
+                      child: SizedBox(
+                        height: totalW + 24,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(child: grid(gutter)),
+                            Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [dayHeader, ...laneWidgets]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
     return Column(
       children: [
@@ -525,80 +758,22 @@ class _TimelineViewState extends ConsumerState<TimelineView> {
           mode: ui.shiftMode,
           conflicts: conflicts,
           data: data,
+          vertical: vertical,
           dragLabel: _dragId != null ? _dragLabel(preview) : null,
           onZoom: (f) => _zoomTo(_dayWidth * f, _hScroll.hasClients ? _hScroll.position.viewportDimension / 2 : 0),
+          onToggleAxis: () {
+            setState(() => _scrollX = 0);
+            ref.read(timelineAxisProvider.notifier).toggle();
+            final selected = data.item(ui.selectedId);
+            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollTo(selected, firstDay));
+          },
         ),
         const HintBanner(hint: Hint.timeline),
         if (!hasStays && hasScheduled) _EmptyTimeline(data: data, compact: true),
         if (!hasStays && !hasScheduled)
           Expanded(child: _EmptyTimeline(data: data))
         else
-          Expanded(
-            child: SingleChildScrollView(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: _labelW,
-                    child: Column(
-                      children: [
-                        SizedBox(height: headerH),
-                        ...labelWidgets,
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Listener(
-                      onPointerDown: _onPointerDown,
-                      onPointerMove: _onPointerMove,
-                      onPointerUp: _onPointerUp,
-                      onPointerCancel: _onPointerUp,
-                      child: SingleChildScrollView(
-                        controller: _hScroll,
-                        scrollDirection: Axis.horizontal,
-                        physics: _pinchStartDist != null ? const NeverScrollableScrollPhysics() : null,
-                        child: SizedBox(
-                          width: totalW,
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _GridPainter(
-                                    firstDay: firstDay,
-                                    dayWidth: _dayWidth,
-                                    headerH: headerH,
-                                    tripStart: data.trip.startDate,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    nightColor: AppColors.of(context).night,
-                                    today: _todayIndex(),
-                                  ),
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _DayHeader(
-                                    firstDay: firstDay,
-                                    lastDay: lastDay,
-                                    dayWidth: _dayWidth,
-                                    height: headerH,
-                                    tripStart: data.trip.startDate,
-                                    onLongPress: (d) => showAddSheet(context, ref, data, atDay: d),
-                                  ),
-                                  ...laneWidgets,
-                                  const SizedBox(height: 24),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          Expanded(child: vertical ? verticalBody() : horizontalBody()),
         if (unscheduled.isNotEmpty) _UnscheduledTray(items: unscheduled, data: data),
       ],
     );
@@ -617,7 +792,13 @@ class _LaneSpec {
   final List<PlanItem> items;
   final Map<String, int> rows;
   final int rowCount;
-  _LaneSpec(this.kind, this.items, this.rows, this.rowCount);
+
+  /// The last row holds markers ("+ Transport", missing nights).
+  final bool hasMarkers;
+  _LaneSpec(this.kind, this.items, this.rows, this.rowCount, {this.hasMarkers = false});
+
+  /// Rows with blocks (at least one, so an empty lane keeps its size).
+  int get blockRows => math.max(rowCount - (hasMarkers ? 1 : 0), hasMarkers ? 0 : 1);
 }
 
 class _ResizeCallbacks {
@@ -635,8 +816,11 @@ class _Block extends StatelessWidget {
   final bool moving;
   final VoidCallback onTap;
   final VoidCallback onLongPressStart;
-  final ValueChanged<double> onLongPressMove;
+  final ValueChanged<Offset> onLongPressMove;
   final VoidCallback onLongPressEnd;
+
+  /// Drawn for the vertical timeline (time runs down the block).
+  final bool vertical;
 
   /// Custom screen-reader actions ("1 Tag später/früher").
   final Map<CustomSemanticsAction, VoidCallback> semanticActions;
@@ -662,6 +846,7 @@ class _Block extends StatelessWidget {
     required this.onLongPressMove,
     required this.onLongPressEnd,
     this.semanticActions = const {},
+    this.vertical = false,
     this.titleInset = 0,
     this.titleWidth,
     this.titleOutside = false,
@@ -697,7 +882,7 @@ class _Block extends StatelessWidget {
       excludeFromSemantics: true,
       onTap: onTap,
       onLongPressStart: (_) => onLongPressStart(),
-      onLongPressMoveUpdate: (d) => onLongPressMove(d.offsetFromOrigin.dx),
+      onLongPressMoveUpdate: (d) => onLongPressMove(d.offsetFromOrigin),
       onLongPressEnd: (_) => onLongPressEnd(),
       onLongPressCancel: onLongPressEnd,
       child: AnimatedContainer(
@@ -718,8 +903,13 @@ class _Block extends StatelessWidget {
         child: CustomPaint(
           foregroundPainter: dashed && !rail ? DashedBorderPainter(fg, radius: radius, strokeWidth: 1.5) : null,
           child: LayoutBuilder(
-            builder: (context, c) =>
-                rail ? _rail(context, c.maxWidth, base, option, ink, nights) : _box(context, c.maxWidth, fg, nights),
+            builder: (context, c) => vertical
+                ? (rail
+                      ? _railDown(context, c.maxHeight, base, option, ink, nights)
+                      : _boxDown(context, c.maxWidth, c.maxHeight, fg, nights))
+                : (rail
+                      ? _rail(context, c.maxWidth, base, option, ink, nights)
+                      : _box(context, c.maxWidth, fg, nights)),
           ),
         ),
       ),
@@ -866,6 +1056,130 @@ class _Block extends StatelessWidget {
       ),
     );
   }
+
+  /// A stay in the vertical timeline: a line running down on the left with
+  /// a station at each end, the name (wrapping) and nights beside it.
+  Widget _railDown(BuildContext context, double h, Color base, bool option, Color ink, int? nights) {
+    final line = option ? base.withValues(alpha: 0.7) : base;
+    final station = Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        shape: BoxShape.circle,
+        border: Border.all(color: line, width: 4),
+      ),
+    );
+    final style = TextStyle(
+      color: ink,
+      height: 1.2,
+      fontWeight: FontWeight.w900,
+      fontStyle: item.isOption ? FontStyle.italic : null,
+    );
+    return LayoutBuilder(
+      builder: (context, c) {
+        final fontSize = _fitWords(context, item.title, style, c.maxWidth - 22);
+        final lineH = fontSize * 1.2 * _textScale(context) + 1;
+        final room = h - 4 - titleInset;
+        final showNights = nights != null && nights > 0 && room >= lineH + 18;
+        final lines = ((room - (showNights ? 16 : 0)) / lineH).floor();
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 4,
+              width: 8,
+              top: 8,
+              bottom: 8,
+              child: option
+                  ? CustomPaint(painter: DashedLinePainter(line, vertical: true))
+                  : DecoratedBox(
+                      decoration: BoxDecoration(color: line, borderRadius: BorderRadius.circular(4)),
+                    ),
+            ),
+            Positioned(left: 0, top: 0, child: station),
+            if (h >= 36) Positioned(left: 0, bottom: 0, child: station),
+            if (lines >= 1)
+              Positioned(
+                left: 20,
+                right: 2,
+                top: 2 + titleInset,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: lines,
+                      overflow: TextOverflow.ellipsis,
+                      style: style.copyWith(fontSize: fontSize),
+                    ),
+                    if (showNights)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: _NightsBadge(
+                          key: ValueKey('nights-${item.id}'),
+                          nights: nights,
+                          color: base,
+                          textColor: Colors.white,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Transport, lodging and activities in the vertical timeline: the title
+  /// wraps over as many lines as the block is tall; short blocks show only
+  /// their icon.
+  Widget _boxDown(BuildContext context, double w, double h, Color fg, int? nights) {
+    final icon = Icon(isTentative(item) ? statusIcon(item.status) : itemIcon(item), size: 15, color: fg);
+    final style = TextStyle(
+      color: fg,
+      height: 1.2,
+      fontWeight: FontWeight.w800,
+      fontStyle: item.isOption ? FontStyle.italic : null,
+    );
+    final fontSize = _fitWords(context, item.title, style, w - 6);
+    final lineH = fontSize * 1.2 * _textScale(context) + 1;
+    final room = h - 4 - titleInset;
+    if (w < 24 || room < lineH || item.title.trim().isEmpty) return Center(child: icon);
+    final showNights = nights != null && nights > 0 && room >= lineH + 18;
+    final lines = ((room - (showNights ? 16 : 0)) / lineH).floor().clamp(1, 6);
+    final title = Text(
+      item.title,
+      maxLines: lines,
+      overflow: TextOverflow.ellipsis,
+      style: style.copyWith(fontSize: fontSize),
+    );
+    return Padding(
+      padding: EdgeInsets.only(left: 4, right: 2, top: 2 + titleInset),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            title,
+            if (showNights)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: _NightsBadge(
+                  key: ValueKey('nights-${item.id}'),
+                  nights: nights,
+                  color: isTentative(item) ? fg.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.2),
+                  textColor: fg,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// "2N" as a small pill on its place's line / inside its lodging block.
@@ -984,15 +1298,17 @@ class _EmptyTimeline extends StatelessWidget {
   }
 }
 
-/// Visible grip centred on the left/right edge of the selected block;
-/// reports the horizontal distance dragged since the gesture started. The
-/// whole (>= 24 dp wide) area is touchable, the pill shows where.
+/// Visible grip centred on the start/end edge of the selected block (left/
+/// right, or top/bottom when [vertical]); reports the distance dragged
+/// along the time axis since the gesture started. The whole (>= 24 dp)
+/// area is touchable, the pill shows where.
 class _ResizeHandle extends StatefulWidget {
   final _ResizeCallbacks callbacks;
 
   /// Outline colour of the pill (the block's kind colour).
   final Color color;
-  const _ResizeHandle({required this.callbacks, required this.color});
+  final bool vertical;
+  const _ResizeHandle({required this.callbacks, required this.color, this.vertical = false});
 
   @override
   State<_ResizeHandle> createState() => _ResizeHandleState();
@@ -1005,21 +1321,30 @@ class _ResizeHandleState extends State<_ResizeHandle> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     // Screen readers use the block's "1 Tag später/früher" actions instead.
+    final v = widget.vertical;
+    double along(Offset o) => v ? o.dy : o.dx;
+    void start(DragStartDetails d) {
+      _startX = along(d.globalPosition);
+      widget.callbacks.start();
+    }
+
+    void update(DragUpdateDetails d) => widget.callbacks.update(along(d.globalPosition) - _startX);
     return GestureDetector(
       excludeFromSemantics: true,
       behavior: HitTestBehavior.opaque,
-      onHorizontalDragStart: (d) {
-        _startX = d.globalPosition.dx;
-        widget.callbacks.start();
-      },
-      onHorizontalDragUpdate: (d) => widget.callbacks.update(d.globalPosition.dx - _startX),
-      onHorizontalDragEnd: (_) => widget.callbacks.end(),
-      onHorizontalDragCancel: widget.callbacks.end,
+      onHorizontalDragStart: v ? null : start,
+      onHorizontalDragUpdate: v ? null : update,
+      onHorizontalDragEnd: v ? null : (_) => widget.callbacks.end(),
+      onHorizontalDragCancel: v ? null : widget.callbacks.end,
+      onVerticalDragStart: v ? start : null,
+      onVerticalDragUpdate: v ? update : null,
+      onVerticalDragEnd: v ? (_) => widget.callbacks.end() : null,
+      onVerticalDragCancel: v ? widget.callbacks.end : null,
       child: Center(
         child: Container(
-          width: 12,
-          height: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 1),
+          width: v ? double.infinity : 12,
+          height: v ? 12 : double.infinity,
+          margin: v ? const EdgeInsets.symmetric(horizontal: 1) : const EdgeInsets.symmetric(vertical: 1),
           decoration: BoxDecoration(
             color: scheme.surface,
             borderRadius: BorderRadius.circular(6),
@@ -1028,8 +1353,8 @@ class _ResizeHandleState extends State<_ResizeHandle> {
           ),
           child: Center(
             child: Container(
-              width: 2,
-              height: 10,
+              width: v ? 10 : 2,
+              height: v ? 2 : 10,
               decoration: BoxDecoration(color: scheme.onSurface, borderRadius: BorderRadius.circular(1)),
             ),
           ),
@@ -1189,7 +1514,10 @@ class _MissingNight extends StatelessWidget {
   }
 }
 
+/// Day numbers along the time axis: a row on top, or a column on the left
+/// when [vertical] ([height] is then the column's width).
 class _DayHeader extends StatelessWidget {
+  final bool vertical;
   final int firstDay;
   final int lastDay;
   final double dayWidth;
@@ -1198,6 +1526,7 @@ class _DayHeader extends StatelessWidget {
   final ValueChanged<int> onLongPress;
 
   const _DayHeader({
+    this.vertical = false,
     required this.firstDay,
     required this.lastDay,
     required this.dayWidth,
@@ -1217,51 +1546,62 @@ class _DayHeader extends StatelessWidget {
       fontFeatures: const [FontFeature.tabularFigures()],
       color: Theme.of(context).colorScheme.onSurface,
     );
-    return SizedBox(
-      height: height,
-      child: Row(
-        children: [
-          for (var d = firstDay; d <= lastDay; d++)
-            Semantics(
-              container: true,
-              label: context.l10n.day(tripStart, d, withDayNumber: tripStart != null),
-              onLongPressHint: context.l10n.a11yHintAddOnDay,
-              onLongPress: () => onLongPress(d),
-              excludeSemantics: true,
-              child: GestureDetector(
-                excludeFromSemantics: true,
-                onLongPress: () => onLongPress(d),
-                child: SizedBox(
-                  width: dayWidth,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4, top: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
-                        if (tripStart != null && dayWidth > 44)
-                          Text(
-                            context.l10n.day(tripStart, d),
-                            style: style,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  ),
+    final showDate = tripStart != null && dayWidth > 44;
+    final days = [
+      for (var d = firstDay; d <= lastDay; d++)
+        Semantics(
+          container: true,
+          label: context.l10n.day(tripStart, d, withDayNumber: tripStart != null),
+          onLongPressHint: context.l10n.a11yHintAddOnDay,
+          onLongPress: () => onLongPress(d),
+          excludeSemantics: true,
+          child: GestureDetector(
+            excludeFromSemantics: true,
+            onLongPress: () => onLongPress(d),
+            child: SizedBox(
+              width: vertical ? height : dayWidth,
+              height: vertical ? dayWidth : height,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4, top: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text((d + 1).toString().padLeft(2, '0'), style: number, maxLines: 1),
+                    if (showDate)
+                      Flexible(
+                        child: Text(
+                          context.l10n.day(tripStart, d),
+                          style: style,
+                          // Narrow day column: the date wraps.
+                          maxLines: vertical ? 3 : 1,
+                          softWrap: vertical,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-        ],
-      ),
-    );
+          ),
+        ),
+    ];
+    return vertical
+        ? SizedBox(
+            width: height,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: days),
+          )
+        : SizedBox(
+            height: height,
+            child: Row(children: days),
+          );
   }
 }
 
 /// Day separators, night shading (20:00–06:00) and weekend tint, so that
 /// days vs. nights are visible behind all lanes.
 class _GridPainter extends CustomPainter {
+  /// Time runs down; [headerH] is then the day column's width.
+  final bool vertical;
   final int firstDay;
   final double dayWidth;
   final double headerH;
@@ -1271,6 +1611,7 @@ class _GridPainter extends CustomPainter {
   final int? today;
 
   _GridPainter({
+    this.vertical = false,
     required this.firstDay,
     required this.dayWidth,
     required this.headerH,
@@ -1288,23 +1629,32 @@ class _GridPainter extends CustomPainter {
       ..strokeWidth = 1;
     final night = Paint()..color = nightColor;
     final weekend = Paint()..color = color.withValues(alpha: 0.03);
-    final days = (size.width / dayWidth).ceil();
+    // Main = along the time axis, cross = across it.
+    final mainSize = vertical ? size.height : size.width;
+    final crossSize = vertical ? size.width : size.height;
+    Rect rect(double main, double mainExtent, double cross, double crossExtent) => vertical
+        ? Rect.fromLTWH(cross, main, crossExtent, mainExtent)
+        : Rect.fromLTWH(main, cross, mainExtent, crossExtent);
+    void across(double main, Paint p) => canvas.drawLine(
+      vertical ? Offset(0, main) : Offset(main, 0),
+      vertical ? Offset(crossSize, main) : Offset(main, crossSize),
+      p,
+    );
+    final days = (mainSize / dayWidth).ceil();
     for (var k = 0; k <= days; k++) {
       final x = k * dayWidth;
       final d = firstDay + k;
       if (tripStart != null) {
         final wd = dateOfDay(tripStart!, d).weekday;
-        if (wd >= 6) canvas.drawRect(Rect.fromLTWH(x, 0, dayWidth, size.height), weekend);
+        if (wd >= 6) canvas.drawRect(rect(x, dayWidth, 0, crossSize), weekend);
       }
       // Night from 20:00 of this day to 06:00 of the next.
-      canvas.drawRect(Rect.fromLTWH(x + 20 * 60 * px, headerH, 10 * 60 * px, size.height - headerH), night);
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), line);
+      canvas.drawRect(rect(x + 20 * 60 * px, 10 * 60 * px, headerH, crossSize - headerH), night);
+      across(x, line);
     }
     if (today != null) {
-      final x = (today! - firstDay) * dayWidth + 12 * 60 * px;
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
+      across(
+        (today! - firstDay) * dayWidth + 12 * 60 * px,
         Paint()
           ..color = const Color(0xFFFFC21A)
           ..strokeWidth = 3,
@@ -1314,6 +1664,7 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GridPainter old) =>
+      old.vertical != vertical ||
       old.firstDay != firstDay ||
       old.dayWidth != dayWidth ||
       old.tripStart != tripStart ||
@@ -1328,6 +1679,8 @@ class _Toolbar extends ConsumerWidget {
   final TripData data;
   final String? dragLabel;
   final ValueChanged<double> onZoom;
+  final bool vertical;
+  final VoidCallback onToggleAxis;
 
   const _Toolbar({
     required this.mode,
@@ -1335,6 +1688,8 @@ class _Toolbar extends ConsumerWidget {
     required this.data,
     required this.dragLabel,
     required this.onZoom,
+    required this.vertical,
+    required this.onToggleAxis,
   });
 
   @override
@@ -1376,14 +1731,23 @@ class _Toolbar extends ConsumerWidget {
                       ),
                     )
                   else if (conflicts.isNotEmpty)
-                    ActionChip(
-                      avatar: Icon(Icons.warning_amber, color: scheme.error, size: 18),
-                      label: Text(l.conflictsCount(conflicts.length)),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => showConflictsSheet(context, ref, data),
+                    Flexible(
+                      child: ActionChip(
+                        avatar: Icon(Icons.warning_amber, color: scheme.error, size: 18),
+                        label: Text(l.conflictsCount(conflicts.length), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => showConflictsSheet(context, ref, data),
+                      ),
                     ),
                 ],
               ),
+            ),
+            IconButton(
+              key: const ValueKey('timeline-axis'),
+              tooltip: vertical ? l.timelineHorizontal : l.timelineVertical,
+              onPressed: onToggleAxis,
+              // Shows the layout it switches to: layers as rows or as columns.
+              icon: Icon(vertical ? Icons.view_agenda_outlined : Icons.view_week_outlined),
             ),
             IconButton(tooltip: l.zoomOut, onPressed: () => onZoom(1 / 1.3), icon: const Icon(Icons.zoom_out)),
             IconButton(tooltip: l.zoomIn, onPressed: () => onZoom(1.3), icon: const Icon(Icons.zoom_in)),

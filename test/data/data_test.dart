@@ -55,7 +55,7 @@ void main() {
     final train = demo.items.firstWhere((i) => i.kind == ItemKind.transport);
     final att = await repo.files.addBytes(
       tripId: demo.trip.id,
-      ownerId: train.id,
+      ownerIds: [train.id],
       bytes: Uint8List.fromList([1, 2, 3, 4]),
       fileName: 'ticket.pdf',
     );
@@ -70,7 +70,7 @@ void main() {
     expect(copy.items.length, demo.items.length);
     expect(copy.attachments, hasLength(1));
     final copiedTrain = copy.items.firstWhere((i) => i.title == train.title);
-    expect(copy.attachments.single.ownerId, copiedTrain.id);
+    expect(copy.attachments.single.ownerIds.single, copiedTrain.id);
     expect(await repo.files.fileFor(copy.attachments.single).readAsBytes(), [1, 2, 3, 4]);
     // References are remapped to the new ids.
     final ids = copy.items.map((i) => i.id).toSet();

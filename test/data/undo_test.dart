@@ -28,13 +28,13 @@ void main() {
     await tmp.delete(recursive: true);
   });
 
-  test('deleting a card with an attachment can be undone, file included', () async {
+  test('deleting a card keeps its file in the workspace; undo links it again', () async {
     final demo = demoInterrail();
     await repo.putTripData(demo);
     final card = demo.cards.first;
     final att = await repo.files.addBytes(
       tripId: demo.trip.id,
-      ownerId: card.id,
+      ownerIds: [card.id],
       bytes: Uint8List.fromList([7, 7, 7]),
       fileName: 'screenshot.png',
     );
@@ -43,8 +43,10 @@ void main() {
 
     final data = (await repo.loadTrip(demo.trip.id))!;
     await actions.record(demo.trip.id, 'Notiz gelöscht', (r) => r.deleteCard(data, card.id));
-    expect((await repo.loadTrip(demo.trip.id))!.card(card.id), isNull);
-    expect(await repo.files.fileFor(att).exists(), isFalse);
+    final after = (await repo.loadTrip(demo.trip.id))!;
+    expect(after.card(card.id), isNull);
+    expect(after.attachment(att.id)!.ownerIds, isEmpty);
+    expect(await repo.files.fileFor(att).exists(), isTrue);
 
     expect(await actions.undo(demo.trip.id), 'Notiz gelöscht');
     final restored = (await repo.loadTrip(demo.trip.id))!;
@@ -86,7 +88,7 @@ void main() {
     late Attachment att;
     await actions.record(demo.trip.id, 'angehängt', (r) async {
       att = await r.files.addBytes(
-          tripId: demo.trip.id, ownerId: demo.items.first.id, bytes: Uint8List(3), fileName: 'ticket.pdf');
+          tripId: demo.trip.id, ownerIds: [demo.items.first.id], bytes: Uint8List(3), fileName: 'ticket.pdf');
       await r.saveAttachment(att);
     });
     await actions.undo(demo.trip.id);

@@ -1,15 +1,16 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:open_filex/open_filex.dart';
 
+import '../../data/file_sources.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common/dialogs.dart';
 import '../common/l10n.dart';
+import '../files/files_page.dart';
 
-/// Tickets, screenshots and photos attached to an item or card.
+/// Tickets, screenshots and photos linked to an item or card. New files go
+/// into the top level of the trip's file workspace; removing one here only
+/// unlinks it, the file stays in the workspace.
 class AttachmentsSection extends ConsumerWidget {
   final String tripId;
   final String ownerId;
@@ -31,7 +32,7 @@ class AttachmentsSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            // Shrinks first, so the three 48 dp buttons always fit.
+            // Shrinks first, so the four 48 dp buttons always fit.
             Expanded(
               child: Text(
                 l.attachmentsTitle,
@@ -43,17 +44,22 @@ class AttachmentsSection extends ConsumerWidget {
             IconButton(
               tooltip: l.takePhoto,
               icon: const Icon(Icons.photo_camera_outlined),
-              onPressed: () => _addImage(context, ref, ImageSource.camera),
+              onPressed: () => _add(context, ref, (s) async => [?await s.takePhoto()]),
             ),
             IconButton(
               tooltip: l.imageFromGallery,
               icon: const Icon(Icons.image_outlined),
-              onPressed: () => _addImage(context, ref, ImageSource.gallery),
+              onPressed: () => _add(context, ref, (s) => s.pickImages()),
             ),
             IconButton(
               tooltip: l.attachFileTooltip,
               icon: const Icon(Icons.attach_file),
-              onPressed: () => _addFile(context, ref),
+              onPressed: () => _add(context, ref, (s) => s.pickFiles(dialogTitle: l.attachFileDialog)),
+            ),
+            IconButton(
+              tooltip: l.filesChooseFromWorkspace,
+              icon: const Icon(Icons.folder_open_outlined),
+              onPressed: () => _fromWorkspace(context, ref),
             ),
           ],
         ),
@@ -72,8 +78,8 @@ class AttachmentsSection extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
-                      onTap: () => OpenFilex.open(repo.files.fileFor(a).path),
-                      onLongPress: () => _delete(context, ref, a),
+                      onTap: () => openAttachment(context, ref, a),
+                      onLongPress: () => _unlink(context, ref, a),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.file(repo.files.fileFor(a), width: 96, height: 96, fit: BoxFit.cover,
@@ -87,43 +93,56 @@ class AttachmentsSection extends ConsumerWidget {
         for (final a in attachments.where((a) => !a.isImage))
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(a.mime == 'application/pdf' ? Icons.picture_as_pdf : Icons.insert_drive_file),
+            leading: Icon(fileIcon(a)),
             title: Text(a.fileName, maxLines: 1, overflow: TextOverflow.ellipsis),
-            onTap: () => OpenFilex.open(repo.files.fileFor(a).path, type: a.mime),
-            trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _delete(context, ref, a)),
+            subtitle: a.folder.isEmpty ? null : Text(a.folder.replaceAll('/', ' › ')),
+            onTap: () => openAttachment(context, ref, a),
+            trailing: IconButton(
+              tooltip: l.filesUnlink,
+              icon: const Icon(Icons.link_off),
+              onPressed: () => _unlink(context, ref, a),
+            ),
           ),
       ],
     );
   }
 
-  Future<void> _addImage(BuildContext context, WidgetRef ref, ImageSource source) async {
-    final x = await ImagePicker().pickImage(source: source, maxWidth: 2400, imageQuality: 85);
-    if (x == null) return;
-    final bytes = await x.readAsBytes();
-    if (!context.mounted) return;
-    await ref.read(planActionsProvider).record(tripId, context.l10n.stepImageAttached, (repo) async {
-      final a = await repo.files.addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: x.name);
-      await repo.saveAttachment(a);
-    });
-  }
-
-  Future<void> _addFile(BuildContext context, WidgetRef ref) async {
+  Future<void> _add(BuildContext context, WidgetRef ref, Future<List<PickedFile>> Function(FileSources) pick) async {
     final l = context.l10n;
-    final f = await FilePicker.pickFile(dialogTitle: l.attachFileDialog);
-    if (f == null) return;
-    final bytes = await f.xFile.readAsBytes();
-    await ref.read(planActionsProvider).record(tripId, l.stepFileAttached(f.name), (repo) async {
-      final a = await repo.files.addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: f.name);
-      await repo.saveAttachment(a);
-    });
-  }
-
-  Future<void> _delete(BuildContext context, WidgetRef ref, Attachment a) async {
-    final l = context.l10n;
-    if (await confirm(context, l.removeQuestion(a.fileName))) {
-      await ref
-          .read(planActionsProvider)
-          .record(tripId, l.stepFileRemoved(a.fileName), (repo) => repo.deleteAttachment(a));
+    final List<PickedFile> files;
+    try {
+      files = await pick(ref.read(fileSourcesProvider));
+    } catch (e) {
+      if (context.mounted) showSnack(context, l.errorWith('$e'));
+      return;
     }
+    final data = ref.read(tripDataProvider(tripId)).value;
+    if (files.isEmpty || data == null) return;
+    final label = files.length == 1 ? l.stepFileAttached(files.single.name) : l.stepFilesAdded(files.length);
+    await addFilesToWorkspace(ref, data, files, label, ownerIds: [ownerId]);
+  }
+
+  Future<void> _fromWorkspace(BuildContext context, WidgetRef ref) async {
+    final data = ref.read(tripDataProvider(tripId)).value;
+    if (data == null) return;
+    final l = context.l10n;
+    final picked = await pickWorkspaceFiles(context, data, exclude: {for (final a in attachments) a.id});
+    if (picked == null || picked.isEmpty) return;
+    final label = picked.length == 1 ? l.stepFileAttached(picked.single.fileName) : l.stepFilesAdded(picked.length);
+    await ref.read(planActionsProvider).record(tripId, label, (repo) async {
+      for (final a in picked) {
+        await repo.linkAttachment(a, ownerId);
+      }
+    });
+  }
+
+  Future<void> _unlink(BuildContext context, WidgetRef ref, Attachment a) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final actions = ref.read(planActionsProvider);
+    final label = l.stepFileUnlinked(a.fileName);
+    await actions.record(tripId, label, (repo) => repo.unlinkAttachment(a, ownerId));
+    final step = actions.lastStep(tripId);
+    showUndoSnack(messenger, label, () => actions.undoStep(tripId, step));
   }
 }

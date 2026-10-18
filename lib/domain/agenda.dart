@@ -112,9 +112,16 @@ DayAgenda agendaFor(List<PlanItem> items, int day, {int? now}) {
 }
 
 /// Files that belong to item [itemId]: its own attachments plus those of
-/// the notes linked to it (a ticket screenshot on a card about the train).
-List<Attachment> ticketsFor(TripData data, String itemId) => [
+/// the notes linked to it (a ticket screenshot on a card about the train),
+/// each file once.
+List<Attachment> ticketsFor(TripData data, String itemId) {
+  final seen = <String>{};
+  return [
+    for (final a in [
       ...data.attachmentsOf(itemId),
       for (final c in data.cards)
         if (c.itemId == itemId) ...data.attachmentsOf(c.id),
-    ];
+    ])
+      if (seen.add(a.id)) a,
+  ];
+}

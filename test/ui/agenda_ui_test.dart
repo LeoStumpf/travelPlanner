@@ -128,7 +128,7 @@ void main() {
       final ticket = Attachment(
         id: 'tgv-ticket',
         tripId: demo.trip.id,
-        ownerId: tgv.id,
+        ownerIds: [tgv.id],
         fileName: 'tgv.pdf',
         relPath: '${demo.trip.id}/tgv.pdf',
         mime: 'application/pdf',

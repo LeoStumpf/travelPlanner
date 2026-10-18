@@ -131,6 +131,10 @@ class ItemEditorPage extends ConsumerStatefulWidget {
 
 class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
   late PlanItem _i = widget.initial;
+
+  /// Files added since then are the editor's own (see
+  /// [Repository.discardOwnerFiles]).
+  final _openedAt = DateTime.now();
   late final _title = TextEditingController(text: _i.title);
   late final _notes = TextEditingController(text: _i.notes);
   // Transport ticket details.
@@ -201,10 +205,7 @@ class _ItemEditorPageState extends ConsumerState<ItemEditorPage> {
     // Done here and not in dispose(), where ref must not be used any more.
     if (widget.isNew && !_saved) {
       final data = ref.read(tripDataProvider(widget.tripId)).value;
-      final repo = ref.read(repositoryProvider);
-      for (final a in data?.attachmentsOf(_i.id) ?? const <Attachment>[]) {
-        repo.deleteAttachment(a);
-      }
+      if (data != null) ref.read(repositoryProvider).discardOwnerFiles(data, _i.id, _openedAt);
     }
     Navigator.pop(context, result);
   }

@@ -132,7 +132,8 @@ class Backup {
       if (f == null) continue;
       atts.add(await repo.files.addBytes(
         tripId: a.tripId,
-        ownerId: a.ownerId,
+        ownerIds: a.ownerIds,
+        folder: a.folder,
         bytes: f.content,
         fileName: a.fileName,
         id: a.id,
@@ -174,14 +175,12 @@ class Backup {
       map(a.id);
     }
 
-    final trip = Trip(
-      id: tripId,
-      title: '${d.trip.title}$titleSuffix',
-      startDate: d.trip.startDate,
-      plannedDays: d.trip.plannedDays,
-      color: d.trip.color,
-      createdAt: DateTime.now(),
-    );
+    final trip = Trip.fromJson({
+      ...d.trip.toJson(),
+      'id': tripId,
+      'title': '${d.trip.title}$titleSuffix',
+      'createdAt': DateTime.now().toIso8601String(),
+    });
     final items = [
       for (final i in d.items)
         PlanItem.fromJson({
@@ -212,7 +211,8 @@ class Backup {
         Attachment(
           id: ids[a.id]!,
           tripId: tripId,
-          ownerId: mapN(a.ownerId)!,
+          ownerIds: [for (final o in a.ownerIds) mapN(o)!],
+          folder: a.folder,
           fileName: a.fileName,
           relPath: '${ids[a.id]}${_ext(a.relPath)}',
           mime: a.mime,

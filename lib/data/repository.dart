@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import '../domain/models.dart';
 import '../domain/packing.dart';
 import '../domain/places.dart';
+import '../domain/workspace.dart';
 import 'attachment_store.dart';
 import 'db.dart';
 import 'doc_migrations.dart';
@@ -197,6 +198,95 @@ class Repository {
     await files.delete(a);
   }
 
+  /// Deletes the files [ids] of [data] (moved to the file trash, so an
+  /// undo brings them back).
+  Future<void> deleteAttachments(TripData data, Iterable<String> ids) => db.transaction(() async {
+        for (final id in ids) {
+          final a = data.attachment(id);
+          if (a != null) await deleteAttachment(a);
+        }
+      });
+
+  /// Links file [a] to item or card [ownerId] as well.
+  Future<void> linkAttachment(Attachment a, String ownerId) async {
+    if (a.ownerIds.contains(ownerId)) return;
+    await saveAttachment(a.copyWith(ownerIds: [...a.ownerIds, ownerId]));
+  }
+
+  /// Removes the link between file [a] and [ownerId]; the file stays in the
+  /// trip's workspace.
+  Future<void> unlinkAttachment(Attachment a, String ownerId) async {
+    if (!a.ownerIds.contains(ownerId)) return;
+    await saveAttachment(a.copyWith(ownerIds: [for (final o in a.ownerIds) if (o != ownerId) o]));
+  }
+
+  /// Undoes the file links of a new item or card [ownerId] that is
+  /// discarded unsaved: files added to it since [since] that nothing else
+  /// uses are deleted, files picked from the workspace are only unlinked.
+  Future<void> discardOwnerFiles(TripData data, String ownerId, DateTime since) async {
+    for (final a in data.attachmentsOf(ownerId)) {
+      if (a.ownerIds.length == 1 && !a.createdAt.isBefore(since)) {
+        await deleteAttachment(a);
+      } else {
+        await unlinkAttachment(a, ownerId);
+      }
+    }
+  }
+
+  /// Sets the items and cards file [a] is linked to.
+  Future<void> setAttachmentOwners(Attachment a, List<String> ownerIds) =>
+      saveAttachment(a.copyWith(ownerIds: ownerIds));
+
+  /// Moves the files [ids] of [data] into workspace folder [folder]; names
+  /// that are taken there get a " (2)" suffix.
+  Future<void> moveAttachments(TripData data, Iterable<String> ids, String folder) => db.transaction(() async {
+        var d = data;
+        for (final id in ids) {
+          final a = d.attachment(id);
+          if (a == null || a.folder == folder) continue;
+          final moved = a.copyWith(folder: folder, fileName: d.uniqueFileName(folder, a.fileName, except: a.id));
+          await saveAttachment(moved);
+          d = d.withAttachment(moved);
+        }
+      });
+
+  /// Renames file [a] (made unique within its folder).
+  Future<void> renameAttachment(TripData data, Attachment a, String name) =>
+      saveAttachment(a.copyWith(fileName: data.uniqueFileName(a.folder, name.trim(), except: a.id)));
+
+  /// Adds the empty workspace folder [path] to [data]'s trip.
+  Future<void> createFolder(TripData data, String path) async {
+    final f = normalizeFolder(path);
+    if (f.isEmpty || data.trip.folders.contains(f)) return;
+    await saveTrip(data.trip.copyWith(folders: [...data.trip.folders, f]));
+  }
+
+  /// Renames or moves workspace folder [from] to [to], with its subfolders
+  /// and files.
+  Future<void> renameFolder(TripData data, String from, String to) => db.transaction(() async {
+        final target = normalizeFolder(to);
+        if (from.isEmpty || target.isEmpty || target == from || isInFolder(target, from)) return;
+        await saveTrip(data.trip.copyWith(folders: {
+          for (final f in data.trip.folders) movedFolderPath(normalizeFolder(f), from, target),
+          target,
+        }.toList()));
+        for (final a in data.filesBelow(from)) {
+          await saveAttachment(a.copyWith(folder: movedFolderPath(a.folder, from, target)));
+        }
+      });
+
+  /// Deletes workspace folder [path] with everything in it.
+  Future<void> deleteFolder(TripData data, String path) => db.transaction(() async {
+        if (path.isEmpty) return;
+        await saveTrip(data.trip.copyWith(folders: [
+          for (final f in data.trip.folders)
+            if (!isInFolder(normalizeFolder(f), path)) f,
+        ]));
+        for (final a in data.filesBelow(path)) {
+          await deleteAttachment(a);
+        }
+      });
+
   /// Deletes an item and unlinks everything that referenced it.
   Future<void> deleteItem(TripData data, String id) => db.transaction(() async {
         await _delete(id);
@@ -220,12 +310,14 @@ class Repository {
         await _unlinkOwner(data, id);
       });
 
+  /// Removes edges to [ownerId] and its file links; the files themselves
+  /// stay in the trip's workspace.
   Future<void> _unlinkOwner(TripData data, String ownerId) async {
     for (final e in data.edges) {
       if (e.fromId == ownerId || e.toId == ownerId) await _delete(e.id);
     }
     for (final a in data.attachmentsOf(ownerId)) {
-      await deleteAttachment(a);
+      await unlinkAttachment(a, ownerId);
     }
   }
 

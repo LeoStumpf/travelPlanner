@@ -4140,6 +4140,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 other accommodation is now an option} other{{count} other accommodations are now options}}'**
   String demotedToOption(int count);
+
+  /// No description provided for @moreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptions;
+
+  /// No description provided for @filesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get filesTitle;
+
+  /// No description provided for @filesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Files & tickets'**
+  String get filesTooltip;
+
+  /// No description provided for @filesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No files yet. Keep tickets, bookings, photos or whole folders here – they stay on this device, are part of the backup and can be linked to places, transports and notes.'**
+  String get filesEmpty;
+
+  /// No description provided for @filesFolderEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is empty.'**
+  String get filesFolderEmpty;
+
+  /// No description provided for @filesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get filesAdd;
+
+  /// No description provided for @filesPickFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose files'**
+  String get filesPickFiles;
+
+  /// No description provided for @filesPickFilesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Several at once: long-press the first, then tap the others'**
+  String get filesPickFilesHint;
+
+  /// No description provided for @filesPickImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos from gallery'**
+  String get filesPickImages;
+
+  /// No description provided for @filesImportFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Import folder'**
+  String get filesImportFolder;
+
+  /// No description provided for @filesNewFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get filesNewFolder;
+
+  /// No description provided for @filesFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get filesFolderName;
+
+  /// No description provided for @filesRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get filesRename;
+
+  /// No description provided for @filesMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get filesMove;
+
+  /// No description provided for @filesLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to elements'**
+  String get filesLink;
+
+  /// No description provided for @filesShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get filesShare;
+
+  /// No description provided for @filesOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get filesOpen;
+
+  /// No description provided for @filesSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get filesSelect;
+
+  /// No description provided for @filesUnlink.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get filesUnlink;
+
+  /// No description provided for @filesUntitledNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get filesUntitledNote;
+
+  /// No description provided for @filesChooseFromWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'From the trip’s files'**
+  String get filesChooseFromWorkspace;
+
+  /// No description provided for @filesNoneToPick.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no other files in this trip yet.'**
+  String get filesNoneToPick;
+
+  /// No description provided for @showInFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in files'**
+  String get showInFiles;
+
+  /// No description provided for @filesFolderUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Tripboard can’t read this folder. Use “Choose files” instead and select all files in it.'**
+  String get filesFolderUnreadable;
+
+  /// No description provided for @filesFolderCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Empty} =1{1 file} other{{count} files}}'**
+  String filesFolderCount(int count);
+
+  /// No description provided for @filesSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String filesSelected(int count);
+
+  /// No description provided for @filesFolderPartly.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file couldn’t be read.} other{{count} files couldn’t be read.}}'**
+  String filesFolderPartly(int count);
+
+  /// No description provided for @stepFilesAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file added} other{{count} files added}}'**
+  String stepFilesAdded(int count);
+
+  /// No description provided for @stepFolderCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder “{name}” created'**
+  String stepFolderCreated(String name);
+
+  /// No description provided for @stepFolderRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder renamed to “{name}”'**
+  String stepFolderRenamed(String name);
+
+  /// No description provided for @stepFolderDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder “{name}” deleted'**
+  String stepFolderDeleted(String name);
+
+  /// No description provided for @stepFilesMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to “{folder}”'**
+  String stepFilesMoved(String folder);
+
+  /// No description provided for @stepFileRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed to “{name}”'**
+  String stepFileRenamed(String name);
+
+  /// No description provided for @stepFilesDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file deleted} other{{count} files deleted}}'**
+  String stepFilesDeleted(int count);
+
+  /// No description provided for @stepFileLinksChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Links of “{name}” changed'**
+  String stepFileLinksChanged(String name);
+
+  /// No description provided for @stepFileUnlinked.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” unlinked – it stays in the trip’s files'**
+  String stepFileUnlinked(String name);
+
+  /// No description provided for @deleteFolderQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder “{name}”?'**
+  String deleteFolderQuestion(String name);
+
+  /// No description provided for @deleteFolderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{The file in it is deleted as well.} other{The {count} files in it are deleted as well.}}'**
+  String deleteFolderBody(int count);
+
+  /// No description provided for @deleteFilesQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Delete 1 file?} other{Delete {count} files?}}'**
+  String deleteFilesQuestion(int count);
+
+  /// No description provided for @deleteFilesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked places, transports and notes lose the file as well.'**
+  String get deleteFilesBody;
+
+  /// No description provided for @timelineVertical.
+  ///
+  /// In en, this message translates to:
+  /// **'Show vertically'**
+  String get timelineVertical;
+
+  /// No description provided for @timelineHorizontal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show horizontally'**
+  String get timelineHorizontal;
 }
 
 class _AppLocalizationsDelegate

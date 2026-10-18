@@ -15,6 +15,7 @@ import '../common/style.dart';
 import '../editor/card_editor_page.dart';
 import '../editor/item_editor_page.dart';
 import '../exchange/plan_exchange_ui.dart';
+import '../files/files_page.dart';
 import '../keep/notes_view.dart';
 import '../keep/packing_sheet.dart';
 import '../map/map_view.dart';
@@ -57,6 +58,11 @@ class _TripPageState extends ConsumerState<TripPage> {
             title: Text(data.trip.title),
             actions: [
               ConflictBadgeButton(data: data),
+              IconButton(
+                tooltip: l.filesTooltip,
+                onPressed: () => openFiles(context, widget.tripId),
+                icon: const Icon(Icons.folder_outlined),
+              ),
               IconButton(
                 tooltip: l.search,
                 onPressed: () => openSearch(context, tripId: widget.tripId),

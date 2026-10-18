@@ -38,4 +38,16 @@ void main() {
     final future = {...j, 'docVersion': currentDocVersion + 1};
     expect(() => Backup.fromJson(future), throwsFormatException);
   });
+
+  test('1 -> 2: an attachment owner becomes a list of linked owners', () {
+    final old = {'id': 'f', 'tripId': 't', 'ownerId': 'train', 'fileName': 'a.pdf', 'relPath': 'f.pdf'};
+    expect(migrateDoc('attachment', old, 1, to: 2), {
+      'id': 'f',
+      'tripId': 't',
+      'fileName': 'a.pdf',
+      'relPath': 'f.pdf',
+      'ownerIds': ['train'],
+    });
+    expect(migrateDoc('item', {'id': 'i', 'ownerId': 'x'}, 1, to: 2), {'id': 'i', 'ownerId': 'x'});
+  });
 }

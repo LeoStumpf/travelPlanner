@@ -8,6 +8,7 @@ import '../common/item_sheet.dart';
 import '../common/l10n.dart';
 import '../common/style.dart';
 import '../editor/card_editor_page.dart';
+import '../files/files_page.dart';
 import '../trips/trips_page.dart';
 
 /// Opens the global search. From inside a trip pass its [tripId]: the
@@ -154,6 +155,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     if (hit == null) return;
     if (hit.item != null) {
       showItemSheet(ctx, ref, data.trip.id, hit.item!.id);
+    } else if (hit.file != null) {
+      openFiles(ctx, data.trip.id, folder: hit.file!.folder);
     } else {
       if (!sameTrip) ref.read(tripUiProvider.notifier).setView(TripView.notes);
       openCardEditor(ctx, data, card: hit.card);
@@ -218,10 +221,13 @@ class _HitTile extends StatelessWidget {
     final theme = Theme.of(context);
     final item = hit.item;
     final card = hit.card;
+    final file = hit.file;
     final title = hit.title.isEmpty ? l.cardType(card!.type) : hit.title;
     final String subtitle;
     if (hit.field != SearchField.title) {
       subtitle = '${l.searchField(hit.field)}: ${searchSnippet(hit.text, terms)}';
+    } else if (file != null) {
+      subtitle = [l.filesTitle, ...file.folder.split('/').where((s) => s.isNotEmpty)].join(' › ');
     } else if (item != null) {
       subtitle = [l.kind(item.kind), if ((item.placeName ?? '').isNotEmpty) item.placeName!].join(' · ');
     } else {
@@ -231,7 +237,7 @@ class _HitTile extends StatelessWidget {
       key: ValueKey('hit-${hit.id}'),
       leading: item != null
           ? Icon(itemIcon(item), color: kindColor(item.kind))
-          : Icon(cardIcon(card!.type), color: theme.colorScheme.onSurfaceVariant),
+          : Icon(file != null ? fileIcon(file) : cardIcon(card!.type), color: theme.colorScheme.onSurfaceVariant),
       title: HighlightedText(title, terms: terms, maxLines: 1),
       subtitle: HighlightedText(subtitle, terms: terms, maxLines: 2),
       onTap: onTap,

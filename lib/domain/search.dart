@@ -29,6 +29,9 @@ enum SearchField {
 
   /// File name of an attachment (ticket PDF, photo).
   attachment,
+
+  /// Workspace folder of a file.
+  folder,
 }
 
 // Umlauts as escapes: lib/domain carries no German literals (l10n_test).
@@ -99,11 +102,13 @@ String searchSnippet(String text, List<String> terms, {int before = 24}) {
   return '…${line.substring(from)}';
 }
 
-/// One item or card that matches the query.
+/// One item, card or workspace file that matches the query. Files linked
+/// to an item or card are found through it; [file] hits are the others.
 class SearchHit {
   final String tripId;
   final PlanItem? item;
   final NoteCard? card;
+  final Attachment? file;
 
   /// The field shown under the title: the one with the most query words
   /// (the title itself when only the title matches).
@@ -119,15 +124,17 @@ class SearchHit {
     required this.tripId,
     this.item,
     this.card,
+    this.file,
     required this.field,
     required this.text,
     required this.score,
   });
 
-  String get id => item?.id ?? card!.id;
+  String get id => item?.id ?? card?.id ?? file!.id;
 
-  /// The item's title or [cardTitle]; may be empty for an untitled card.
-  String get title => item?.title ?? cardTitle(card!);
+  /// The item's title, [cardTitle] or the file name; may be empty for an
+  /// untitled card.
+  String get title => item?.title ?? file?.fileName ?? cardTitle(card!);
 }
 
 /// The hits of one trip.
@@ -228,7 +235,14 @@ List<SearchHit> searchTrip(TripData data, String query) {
       hits.add(SearchHit(tripId: data.trip.id, card: c, field: m.$1, text: m.$2, score: m.$3));
     }
   }
-  int order(SearchHit h) => h.item == null ? 2 : (h.item!.isScheduled ? 0 : 1);
+  for (final f in data.attachments) {
+    if (f.ownerIds.any((o) => data.item(o) != null || data.card(o) != null)) continue;
+    final m = _match([(SearchField.title, f.fileName), (SearchField.folder, f.folder)], terms);
+    if (m != null) {
+      hits.add(SearchHit(tripId: data.trip.id, file: f, field: m.$1, text: m.$2, score: m.$3));
+    }
+  }
+  int order(SearchHit h) => h.item != null ? (h.item!.isScheduled ? 0 : 1) : (h.card != null ? 2 : 3);
   // List.sort is not stable: ties fall back to the stored order.
   final seq = {for (final (k, h) in hits.indexed) h: k};
   hits.sort((a, b) {

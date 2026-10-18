@@ -59,6 +59,7 @@ extension DomainL10n on AppLocalizations {
         SearchField.text => searchFieldText,
         SearchField.checklistEntry => cardChecklist,
         SearchField.attachment => searchFieldAttachment,
+        SearchField.folder => filesFolderName,
       };
 
   String status(ItemStatus s) => switch (s) {

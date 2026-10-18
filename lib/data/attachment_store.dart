@@ -15,18 +15,20 @@ class AttachmentStore {
 
   Future<Attachment> addFile({
     required String tripId,
-    required String ownerId,
+    List<String> ownerIds = const [],
+    String folder = '',
     required String sourcePath,
     String? fileName,
   }) async {
     final name = fileName ?? p.basename(sourcePath);
     final bytes = await File(sourcePath).readAsBytes();
-    return addBytes(tripId: tripId, ownerId: ownerId, bytes: bytes, fileName: name);
+    return addBytes(tripId: tripId, ownerIds: ownerIds, folder: folder, bytes: bytes, fileName: name);
   }
 
   Future<Attachment> addBytes({
     required String tripId,
-    required String ownerId,
+    List<String> ownerIds = const [],
+    String folder = '',
     required Uint8List bytes,
     required String fileName,
     String? id,
@@ -41,7 +43,8 @@ class AttachmentStore {
     return Attachment(
       id: attId,
       tripId: tripId,
-      ownerId: ownerId,
+      ownerIds: ownerIds,
+      folder: folder,
       fileName: fileName,
       relPath: rel,
       mime: mimeFor(fileName),
@@ -81,6 +84,12 @@ class AttachmentStore {
     if (await _trash.exists()) await _trash.delete(recursive: true);
   }
 
+  /// Size of the stored file in bytes, or null when it is missing.
+  int? sizeOf(Attachment a) {
+    final f = fileFor(a);
+    return f.existsSync() ? f.lengthSync() : null;
+  }
+
   static String mimeFor(String fileName) {
     switch (p.extension(fileName).toLowerCase()) {
       case '.jpg':
@@ -102,6 +111,50 @@ class AttachmentStore {
         return 'text/html';
       case '.pkpass':
         return 'application/vnd.apple.pkpass';
+      case '.htm':
+        return 'text/html';
+      case '.csv':
+        return 'text/csv';
+      case '.json':
+        return 'application/json';
+      case '.md':
+        return 'text/markdown';
+      case '.doc':
+        return 'application/msword';
+      case '.docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case '.xls':
+        return 'application/vnd.ms-excel';
+      case '.xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case '.ppt':
+        return 'application/vnd.ms-powerpoint';
+      case '.pptx':
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      case '.odt':
+        return 'application/vnd.oasis.opendocument.text';
+      case '.ods':
+        return 'application/vnd.oasis.opendocument.spreadsheet';
+      case '.zip':
+        return 'application/zip';
+      case '.gpx':
+        return 'application/gpx+xml';
+      case '.kml':
+        return 'application/vnd.google-earth.kml+xml';
+      case '.ics':
+        return 'text/calendar';
+      case '.eml':
+        return 'message/rfc822';
+      case '.mp3':
+        return 'audio/mpeg';
+      case '.m4a':
+        return 'audio/mp4';
+      case '.mp4':
+        return 'video/mp4';
+      case '.mov':
+        return 'video/quicktime';
+      case '.webm':
+        return 'video/webm';
       default:
         return 'application/octet-stream';
     }

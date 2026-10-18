@@ -87,7 +87,9 @@ void main() {
       _card('img', 'a', type: CardType.image),
     ], attachments: [
       Attachment(
-          id: 'f1', tripId: 'a', ownerId: 'train', fileName: 'ticket-ella.pdf', relPath: 'x', mime: 'application/pdf', createdAt: _t0),
+          id: 'f1', tripId: 'a', ownerIds: ['train'], fileName: 'ticket-ella.pdf', relPath: 'x', mime: 'application/pdf', createdAt: _t0),
+      Attachment(
+          id: 'f2', tripId: 'a', folder: 'Flights/Return', fileName: 'CMB-FRA.pdf', relPath: 'y', mime: 'application/pdf', createdAt: _t0),
     ]);
 
     List<String> ids(String q) => [for (final h in searchTrip(data, q)) h.id];
@@ -102,6 +104,13 @@ void main() {
       expect((entry.id, entry.field, entry.text), ('pack', SearchField.checklistEntry, 'Power adapter'));
       expect(searchTrip(data, 'ella-rock').single.id, 'link');
       expect(searchTrip(data, 'ticket-ella').single.field, SearchField.attachment);
+    });
+
+    test('finds workspace files without links by name and folder', () {
+      final byName = searchTrip(data, 'cmb').single;
+      expect((byName.id, byName.file?.folder, byName.title), ('f2', 'Flights/Return', 'CMB-FRA.pdf'));
+      final byFolder = searchTrip(data, 'return flights').single;
+      expect((byFolder.id, byFolder.field), ('f2', SearchField.folder));
     });
 
     test('is case and accent insensitive', () {

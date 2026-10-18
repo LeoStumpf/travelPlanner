@@ -43,14 +43,16 @@ void main() {
     }
   });
 
-  test('migration from v1 to v2 keeps the rows and sets doc version 1', () async {
+  test('migration from v1 to v2 keeps the rows; opening brings them to the current doc version', () async {
     const oldDocsData = [
       v1.DocsData(id: 't1', tripId: 't1', type: 'trip', json: '{"id":"t1"}', updatedAt: 10),
       v1.DocsData(id: 'i1', tripId: 't1', type: 'item', json: '{"id":"i1"}', updatedAt: 20),
     ];
-    const expectedNewDocsData = [
-      v2.DocsData(id: 't1', tripId: 't1', type: 'trip', json: '{"id":"t1"}', updatedAt: 10, docVersion: 1),
-      v2.DocsData(id: 'i1', tripId: 't1', type: 'item', json: '{"id":"i1"}', updatedAt: 20, docVersion: 1),
+    // The schema step sets doc version 1, beforeOpen then runs the doc steps
+    // (which leave trips and items as they are).
+    final expectedNewDocsData = [
+      v2.DocsData(id: 't1', tripId: 't1', type: 'trip', json: '{"id":"t1"}', updatedAt: 10, docVersion: currentDocVersion),
+      v2.DocsData(id: 'i1', tripId: 't1', type: 'item', json: '{"id":"i1"}', updatedAt: 20, docVersion: currentDocVersion),
     ];
 
     await verifier.testWithDataIntegrity(
