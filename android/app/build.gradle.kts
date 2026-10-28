@@ -42,6 +42,13 @@ android {
         versionName = flutter.versionName
     }
 
+    // No AGP "dependencies info" block in the APK / bundle: an encrypted blob,
+    // readable only by Google, that F-Droid and IzzyOnDroid flag.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {

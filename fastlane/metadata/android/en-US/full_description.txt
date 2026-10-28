@@ -1,0 +1,54 @@
+Tripboard plans your trip in four views of the same data – a free canvas, a notes board, a day-by-day schedule and a map – plus a Today agenda for when you are on the road. It works offline, needs no account and keeps everything on your phone.
+
+SCHEDULE
+• Places, transport, accommodation (in nights) and activities as layers on a timeline
+• Long-press and drag to move; following items move along, fixed ones stay put
+• Spots conflicts, free days and nights without a bed – with one-tap fixes
+• Ticket details on transports: stations, train or flight number, seat, booking reference
+• Optional time zones, so flight durations and order are always right
+• Horizontal or vertical layout, zoom down to the hour
+
+MAP
+• OpenStreetMap-based map, long-press to add a place
+• My location, navigation hand-off to your maps app
+• Save the trip's map offline before you leave
+
+TODAY
+• Where you are, where you sleep, your next transport and the day's programme
+• Tickets and attachments open with one tap
+• Works completely offline
+
+NOTES, FILES & CHECKLISTS
+• Keep-style notes, links with previews, images and checklists
+• Packing lists from templates (basics, beach, hiking, city) or from another trip
+• A file area per trip for tickets, bookings and photos, with folders
+• Link one file to several items, e.g. one PDF for both flights
+• Share links, text, screenshots or files to Tripboard from any app
+
+BUDGET
+• Costs per item, per person or total, paid or open
+• Your own exchange rates, so the budget works offline
+
+SHARE WITH FELLOW TRAVELLERS
+• Itinerary as text, as PDF or as a calendar file (ICS)
+• Only planned and booked items are shared – options and ideas stay private
+
+REMINDERS
+• Notifications before departures, check-in and check-out
+• Choose the lead times yourself
+
+PLAN WITH CLAUDE
+• Copy a guide and your plan into the Claude app, let it research
+• Apply its answer with a preview of every change, undoable in one step
+
+YOUR DATA
+• No account, no ads, no tracking
+• Search across all trips, notes, tickets and attachments
+• Export trips as ZIP backups, automatic daily backups, 30-day trash
+• Accessible: screen-reader labels and alternatives to drag gestures
+• In English and German
+
+Map data © OpenStreetMap contributors, tiles by OpenFreeMap.
+
+Free software under the GNU AGPL v3. Source code: github.com/LeoStumpf/travelPlanner
+Written with Claude (Anthropic's AI assistant) under the developer's direction.

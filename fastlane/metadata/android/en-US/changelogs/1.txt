@@ -1,0 +1,7 @@
+First release of Tripboard.
+• Plan a trip on a canvas, a layered schedule (places, transport, stays, activities) and a map
+• Conflicts and missing nights shown, each with a one-tap fix
+• Today view for on the road, works offline; offline maps
+• Files and tickets per trip, checklists, costs, reminders
+• Share as text, PDF or calendar file; backups as ZIP
+English and German. No account, no ads, no tracking.
