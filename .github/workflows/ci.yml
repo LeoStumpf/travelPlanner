@@ -47,6 +47,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Flutter + Gradle + MapLibre for three ABIs plus the bundle fill the
+      # runner's disk; drop toolchains this job never uses.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost \
+            /usr/local/lib/node_modules /opt/hostedtoolcache/CodeQL /usr/share/swift
+          df -h /
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -111,6 +120,9 @@ jobs:
 
       - name: App Bundle (AAB) for Google Play
         run: flutter build appbundle --release
+
+      - name: Disk after the build
+        run: df -h /
 
       - name: Signed with the upload key, not debug
         if: env.HAVE_KEYSTORE != ''
