@@ -113,6 +113,18 @@ jobs:
             echo "keyAlias=upload"
           } > android/key.properties
 
+      # android/gradle.properties asks for an 8 GB Gradle heap (fine on the
+      # laptop); on the 16 GB runner that plus the Kotlin daemon and R8 thrashes
+      # until the job hangs. The user-level file overrides the project's.
+      - name: Gradle memory for the runner
+        run: |
+          mkdir -p ~/.gradle
+          {
+            echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
+            echo "kotlin.daemon.jvmargs=-Xmx2g"
+            echo "org.gradle.workers.max=2"
+          } >> ~/.gradle/gradle.properties
+
       # Only split APKs, never a universal one: Flutter numbers each split
       # abi * 1000 + versionCode, so a universal APK would look like a downgrade.
       - name: Release APKs (split per ABI)
